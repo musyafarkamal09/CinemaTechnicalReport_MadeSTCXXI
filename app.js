@@ -18,12 +18,12 @@ function conn(s){$('conn').textContent=s;$('conn').className=/gagal/i.test(s)?'b
 function uuid(){return window.crypto&&crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2)}
 
 function api(a,p){
- p=p||{};p.action=a;p.token=TOKEN;conn('Memuat data...');
- if(navigator.onLine===false){conn('Gagal terhubung');return Promise.reject(new Error('Tidak ada koneksi internet. Periksa jaringan Anda lalu coba lagi.'))}
+ p=p||{};var qt=p.quiet,qn=qt?function(){}:conn;delete p.quiet;p.action=a;p.token=TOKEN;qn('Memuat data...');
+ if(navigator.onLine===false){qn('Gagal terhubung');return Promise.reject(new Error('Tidak ada koneksi internet. Periksa jaringan Anda lalu coba lagi.'))}
  var ac=window.AbortController?new AbortController():null,to=ac?setTimeout(function(){ac.abort()},a==='photo_save'||a==='rep_zip'||a==='rep_export'?120000:45000):0;
   return fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(p),signal:ac?ac.signal:undefined})
- .then(function(r){clearTimeout(to);return r.json().catch(function(){conn('Gagal');throw new Error('Respons server tidak valid. Pastikan Web App Apps Script sudah di-deploy ulang (versi baru).')})},function(e){clearTimeout(to);conn('Gagal terhubung');throw new Error(e&&e.name==='AbortError'?'Koneksi terlalu lambat (waktu habis). Periksa sinyal lalu coba lagi.':'Gagal terhubung ke server. Periksa koneksi lalu coba lagi.')})
- .then(function(j){conn('Terhubung');if(j.now)SKEW=j.now-Date.now();
+ .then(function(r){clearTimeout(to);return r.json().catch(function(){qn('Gagal');throw new Error('Respons server tidak valid. Pastikan Web App Apps Script sudah di-deploy ulang (versi baru).')})},function(e){clearTimeout(to);qn('Gagal terhubung');throw new Error(e&&e.name==='AbortError'?'Koneksi terlalu lambat (waktu habis). Periksa sinyal lalu coba lagi.':'Gagal terhubung ke server. Periksa koneksi lalu coba lagi.')})
+ .then(function(j){qn('Terhubung');if(j.now)SKEW=j.now-Date.now();
   if(j.ok)return j.data;
   if(TOKEN&&a!=='login'&&(j.code==='AUTH'||/sesi.*(berakhir|habis|tidak valid)|token|kedaluwarsa|expired/i.test(j.message||''))){clearSess();showLogin();$('lerr').textContent='Sesi ditolak server (aksi: '+a+', kode: '+(j.code||'-')+', pesan: '+(j.message||'-')+'). Silakan login lagi.'}
   throw new Error(j.message||'Gagal')});
@@ -78,9 +78,9 @@ var GRP={dashboard:'Utama',work:'Laporan',pengguna:'Administrasi'},TB=[['dashboa
 function tbFor(){return U&&U.role==='REPORTER'?TBR:TB}
 function can(m){if(m[2])return U.role==='ADMIN';if(U.role==='REPORTER')return RO.indexOf(m[0])>=0;return true}
 /* ---- shell ---- */
-function showLogin(){U=null;$('app').classList.add('hidden');$('login').classList.remove('hidden');$('lform').reset()}
+function showLogin(){ntStop();U=null;$('app').classList.add('hidden');$('login').classList.remove('hidden');$('lform').reset()}
 function enter(u,page){u=normU(u);U=u;LS.setItem('stc_u',JSON.stringify(u));$('hname').textContent=u.name;$('hrole').textContent=rn(u.role);$('av').textContent=String(u.name||'?').charAt(0).toUpperCase();$('login').classList.add('hidden');$('app').classList.remove('hidden');
- if(u.mustChange){pwModal(true)}go(page||'dashboard')}
+ if(u.mustChange){pwModal(true)}go(page||'dashboard');ntStart()}
 var SOON_MSG='Fitur laporan film akan segera tersedia';
 function soonOf(p){return MENU.filter(function(m){return m[0]===p&&m[3]})[0]}
 function go(p){if(soonOf(p)){toast(SOON_MSG);return}if(!MENU.some(function(m){return m[0]===p&&can(m)}))p='dashboard';CUR=p;LS.setItem('stc_p',p);var adm=U.role==='ADMIN',h='';
@@ -526,6 +526,63 @@ function uForm(u){var n=!u;u=u||{};modal('<h3>'+(n?'Akun baru':'Edit akun')+'</h
 function vAudit(){var pg=1;(function load(){api('audit',{page:pg}).then(function(r){$('view').innerHTML='<h2>Audit Log</h2><div class="scroll cards"><table class="rt"><tr><th>Ringkasan</th><th>Waktu</th><th>Pengguna</th><th>Aksi</th><th>Kategori</th><th>Record</th></tr>'+r.items.map(function(x){return '<tr><td class="sm">'+esc(x.summary||x.action)+'</td><td data-l="Waktu">'+dt(x.at)+'</td><td data-l="Pengguna">'+esc(x.userName)+' ('+x.role+')</td><td data-l="Aksi">'+esc(x.action)+'</td><td data-l="Kategori">'+esc(x.category)+'</td><td data-l="Record">'+esc(x.recordId)+'</td></tr>'}).join('')+'</table></div><div class="pg"><button class="btn sec" id="ap"'+(pg<2?' disabled':'')+'>‹</button> Hal. '+pg+' / '+Math.max(1,Math.ceil(r.total/r.size))+' <button class="btn sec" id="an"'+(pg*r.size>=r.total?' disabled':'')+'>›</button></div>';
   $('ap').onclick=function(){pg--;load()};$('an').onclick=function(){pg++;load()}}).catch(err)})()}
 function vSet(){api('dashboard').then(function(){$('view').innerHTML='<h2>Pengaturan Sistem</h2><div class="card"><b>Integrasi</b><p>Google Apps Script: terhubung<br>Google Spreadsheet: terhubung (dashboard berhasil membaca data)<br>Zona waktu: Asia/Jakarta</p><p>Pengelolaan akun ada di menu Manajemen Pengguna. Ganti password lewat tombol Profil.</p></div>'}).catch(err)}
+
+/* ---- notifikasi: polling ringan (45 dtk, berhenti saat tab tersembunyi) memakai endpoint yang sudah ada.
+   Data diambil dengan endpoint yang sama dengan halaman terkait, sehingga hak akses mengikuti filter server.
+   Status baca disimpan per pengguna di browser ini (localStorage). ---- */
+var NT={t:0,busy:0,src:{},st:null,list:[],seen:null,key:'',open:false},NTMS=45000,NTWIN=7*864e5;
+function ntJ(){return [].filter.call(arguments,Boolean).join(' \u00b7 ')}
+function ntLoad(){var s=null;try{s=JSON.parse(LS.getItem(NT.key)||'null')}catch(e){}
+ if(!s||typeof s!=='object')s={i:now(),r:{},a:null,n:[]};s.r=s.r||{};s.n=s.n||[];NT.st=s}
+function ntSave(){var st=NT.st,k=Object.keys(st.r);if(k.length>600)k.slice(0,200).forEach(function(x){delete st.r[x]});try{LS.setItem(NT.key,JSON.stringify(st))}catch(e){}}
+function ago(ms){var s=Math.floor((now()-ms)/1000);return s<60?'Baru saja':s<3600?Math.floor(s/60)+' mnt lalu':s<86400?Math.floor(s/3600)+' jam lalu':''}
+function ntAts(l){var st=NT.st,cur={};l.forEach(function(f){cur[f.id]=f.status});
+ if(st.a)l.forEach(function(f){var o=st.a[f.id];if(o===f.status)return;
+  st.n.unshift({k:'ats:'+f.id+':'+f.status+':'+now(),t:now(),h:o===undefined?'Film ATS baru':'Status tiket diperbarui',b:ntJ(f.title,o===undefined?f.status:o+' \u2192 '+f.status),p:'ats'})});
+ st.a=cur;st.n=st.n.filter(function(n){return n.t>now()-NTWIN}).slice(0,30)}
+function ntBuild(){var out=[],st=NT.st,S=NT.src,me=U.name,rp=U.role==='REPORTER';
+ (S.ann||[]).forEach(function(a){if(a.status!=='Aktif'||!a.publishedAt||a.createdBy===me)return;
+  out.push({k:'ann:'+a.id,t:+a.publishedAt,h:'Pengumuman baru'+(a.priority&&a.priority!=='Informasi'?' ('+a.priority+')':''),b:a.title,p:'pengumuman'})});
+ (S.work||[]).forEach(function(x){var d=x.data||{};if(x.reporter===me)return;
+  if(d.status==='Need Follow-up'){st.r['work:'+x.id]=1;out.push({k:'wfu:'+x.id,t:+(x.updatedAt||x.createdAt),h:'Pekerjaan perlu tindak lanjut',b:ntJ(x.title,d.location),p:'work',id:x.id})}
+  else out.push({k:'work:'+x.id,t:+x.createdAt,h:'Laporan pekerjaan baru',b:ntJ(x.title,d.location),p:'work',id:x.id})});
+ (S.issue||[]).forEach(function(x){var d=x.data||{},rs=d.responses||[],lr=rs.length?rs[rs.length-1]:null,b=ntJ(x.title,d.location,d.priority);
+  if(d.status==='Menunggu'){if(rp||x.reporter===me)return;out.push({k:'iss:'+x.id+':Menunggu',t:+x.createdAt,h:'Perlu diperbaiki: laporan baru',b:b,p:'issue',id:x.id})}
+  else if(!(lr&&lr.by===me))out.push({k:'iss:'+x.id+':'+d.status,t:+((lr&&lr.at)||x.updatedAt||x.createdAt),h:'Status tiket: '+d.status,b:b,p:'issue',id:x.id})});
+ st.n.forEach(function(n){out.push(n)});return out}
+function ntRefresh(fromPoll){var st=NT.st,l=ntBuild().filter(function(n){return n.t>now()-NTWIN}).sort(function(a,b){return b.t-a.t}).slice(0,40),nw=[];
+ l.forEach(function(n){n.u=n.t>st.i&&!st.r[n.k]});NT.list=l;
+ if(fromPoll&&NT.seen)l.forEach(function(n){if(n.u&&!NT.seen[n.k])nw.push(n)});
+ NT.seen={};l.forEach(function(n){NT.seen[n.k]=1});
+ if(nw.length)toast(nw.length>1?nw.length+' notifikasi baru':nw[0].h+': '+nw[0].b);
+ ntSave();ntDraw()}
+function ntDraw(){var l=NT.list,un=l.filter(function(n){return n.u}).length,b=$('bcnt');
+ b.textContent=un>99?'99+':un;b.classList.toggle('hidden',!un);$('bell').setAttribute('aria-label','Notifikasi'+(un?', '+un+' belum dibaca':''));
+ if(!NT.open)return;
+ $('npanel').innerHTML='<div class="nh"><b>Notifikasi</b><button type="button" class="lnk" id="nall"'+(un?'':' disabled')+'>Tandai semua dibaca</button></div><div class="nl">'+(l.length?l.map(function(n){
+  return '<div class="ni'+(n.u?' un':'')+'" role="button" tabindex="0" data-k="'+esc(n.k)+'"><span class="nd"></span><div class="nb"><b>'+esc(n.h)+'</b><span>'+esc(n.b)+'</span><small>'+[ago(n.t),dt(n.t),n.u?'Belum dibaca':'Sudah dibaca'].filter(Boolean).join(' \u00b7 ')+'</small></div>'+(n.u?'<button type="button" class="btn sec nr" data-r="'+esc(n.k)+'">Tandai dibaca</button>':'')+'</div>'}).join(''):'<div class="empty"><b>Belum ada notifikasi</b>Aktivitas baru akan muncul di sini.</div>')+'</div>'}
+function ntRead(k){NT.st.r[k]=1;ntRefresh()}
+function ntGo(n){if(n.id&&(n.p==='work'||n.p==='issue')){go(n.p);detail(n.id,function(){go(n.p)})}else go(n.p)}
+function ntClose(){NT.open=false;$('npanel').classList.add('hidden');$('bell').setAttribute('aria-expanded','false')}
+function ntPoll(){if(!TOKEN||!U||NT.busy||document.hidden)return;NT.busy=1;
+ var key=NT.key,rp=U.role==='REPORTER',ad=U.role==='ADMIN',rl=function(t){return api('rep_list',{type:t,q:'',from:'',to:'',status:'',page:1,quiet:1})},
+  jobs=[['ann',api('ann_list',{quiet:1})],['issue',rl('issue')]];
+ if(!rp)jobs.push(['work',rl('work')]);if(!ad)jobs.push(['ats',api('ats_list',{quiet:1})]);
+ Promise.all(jobs.map(function(j){return j[1].then(function(r){return [j[0],r]},function(){return null})})).then(function(rs){
+  NT.busy=0;if(!U||NT.key!==key)return;
+  rs.forEach(function(x){if(!x)return;var r=x[1];if(x[0]==='ats')ntAts(Array.isArray(r)?r:[]);else NT.src[x[0]]=Array.isArray(r)?r:((r&&r.items)||[])});
+  ntRefresh(true)})}
+function ntStart(){ntStop();NT.key='stc_nt_'+(U.userId||U.username||U.name);ntLoad();NT.src={};NT.seen=null;ntDraw();ntPoll();NT.t=setInterval(ntPoll,NTMS)}
+function ntStop(){clearInterval(NT.t);NT.t=0;NT.busy=0;NT.list=[];NT.src={};NT.seen=null;NT.open=false;var p=$('npanel'),b=$('bcnt');if(p)p.classList.add('hidden');if(b)b.classList.add('hidden')}
+$('bell').onclick=function(e){e.stopPropagation();if(NT.open){ntClose();return}NT.open=true;$('npanel').classList.remove('hidden');this.setAttribute('aria-expanded','true');ntDraw();ntPoll()};
+$('npanel').onclick=function(e){var r=e.target.closest('[data-r]');if(r){e.stopPropagation();ntRead(r.dataset.r);return}
+ if(e.target.closest('#nall')){NT.list.forEach(function(n){if(n.u)NT.st.r[n.k]=1});ntRefresh();return}
+ var i=e.target.closest('.ni');if(!i)return;var n=NT.list.filter(function(x){return x.k===i.dataset.k})[0];if(!n)return;ntRead(n.k);ntClose();ntGo(n)};
+$('npanel').onkeydown=function(e){if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('ni')){e.preventDefault();e.target.click()}};
+document.addEventListener('click',function(e){if(NT.open&&!e.target.closest('#npanel,#bell'))ntClose()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&NT.open)ntClose()});
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&NT.t)ntPoll()});
+window.addEventListener('online',function(){if(NT.t)ntPoll()});
 
 /* ---- mulai ---- */
 if(TOKEN){var cu=null,pg=LS.getItem('stc_p')||'dashboard';try{cu=JSON.parse(LS.getItem('stc_u')||'null')}catch(e){}
