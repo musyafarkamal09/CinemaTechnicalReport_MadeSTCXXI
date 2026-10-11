@@ -274,7 +274,9 @@ tr:hover td{background:var(--row2)}
  #rg{grid-column:1/2}
  #rx{grid-column:2/3;margin-left:0}
  #ua{grid-column:1/-1}
- #ra{position:fixed;right:16px;bottom:calc(76px + var(--safe-b));z-index:25;border-radius:99px;padding:12px 20px;min-height:48px;box-shadow:0 8px 22px #07312466}
+ /* tombol buat laporan: melayang tepat di atas bilah tab (tinggi 64px + safe area), dengan ruang cadangan di bawah daftar agar pagination tidak tertutup */
+ #ra{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(64px + 12px + var(--safe-b));z-index:25;border-radius:99px;padding:10px 18px;min-height:46px;font-size:14px;box-shadow:0 6px 18px #07312459}
+ #rl{padding-bottom:72px}
  /* tabel jadi kartu */
  .scroll.cards{overflow:visible;background:none;border:0}
  .rt,.rt tbody{display:block;width:100%}
@@ -371,6 +373,10 @@ tr:hover td{background:var(--row2)}
 #app.enter{animation:appin .5s ease both}
 @keyframes appin{from{opacity:0;transform:translateY(10px)}}
 @media(prefers-reduced-motion:reduce){#login.ok .lbox,#app.enter{animation:none}}
+
+/* ---- kategori Film (SOON): hanya penanda, belum bisa dipakai ---- */
+nav a.soon{opacity:.72}
+nav a .sb{margin-left:auto;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--g950);background:var(--brass-l);border-radius:99px;padding:2px 8px}
 
 /* ---- v8: ZIP foto, status AC ---- */
 .zipbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 0;padding:10px 12px;border:1px solid var(--bd);border-radius:12px;background:var(--g50)}

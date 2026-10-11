@@ -19,8 +19,10 @@ function uuid(){return window.crypto&&crypto.randomUUID?crypto.randomUUID():Date
 
 function api(a,p){
  p=p||{};p.action=a;p.token=TOKEN;conn('Memuat data...');
-  return fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(p)})
- .then(function(r){return r.json().catch(function(){conn('Gagal');throw new Error('Respons server tidak valid. Pastikan Web App Apps Script sudah di-deploy ulang (versi baru).')})},function(){conn('Gagal terhubung');throw new Error('Gagal terhubung ke server. Periksa koneksi lalu coba lagi.')})
+ if(navigator.onLine===false){conn('Gagal terhubung');return Promise.reject(new Error('Tidak ada koneksi internet. Periksa jaringan Anda lalu coba lagi.'))}
+ var ac=window.AbortController?new AbortController():null,to=ac?setTimeout(function(){ac.abort()},a==='photo_save'||a==='rep_zip'||a==='rep_export'?120000:45000):0;
+  return fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(p),signal:ac?ac.signal:undefined})
+ .then(function(r){clearTimeout(to);return r.json().catch(function(){conn('Gagal');throw new Error('Respons server tidak valid. Pastikan Web App Apps Script sudah di-deploy ulang (versi baru).')})},function(e){clearTimeout(to);conn('Gagal terhubung');throw new Error(e&&e.name==='AbortError'?'Koneksi terlalu lambat (waktu habis). Periksa sinyal lalu coba lagi.':'Gagal terhubung ke server. Periksa koneksi lalu coba lagi.')})
  .then(function(j){conn('Terhubung');if(j.now)SKEW=j.now-Date.now();
   if(j.ok)return j.data;
   if(TOKEN&&a!=='login'&&(j.code==='AUTH'||/sesi.*(berakhir|habis|tidak valid)|token|kedaluwarsa|expired/i.test(j.message||''))){clearSess();showLogin();$('lerr').textContent='Sesi ditolak server (aksi: '+a+', kode: '+(j.code||'-')+', pesan: '+(j.message||'-')+'). Silakan login lagi.'}
@@ -41,7 +43,10 @@ function lightbox(src){var d=document.createElement('div');d.style.cssText='posi
 /* ---- modal ---- */
 function modal(h){$('mbox').innerHTML='<button type="button" class="mx" id="mx" aria-label="Tutup">&times;</button>'+h;$('mx').onclick=closeM;$('modal').classList.remove('hidden')}
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('modal').classList.contains('hidden'))closeM()});
-function closeM(){$('modal').classList.add('hidden');$('mbox').innerHTML=''}
+/* BUSY: true selama laporan sedang dikirim; modal tidak boleh ditutup agar tidak terjadi kirim ganda / upload terputus */
+var BUSY=false;
+window.addEventListener('beforeunload',function(e){if(BUSY){e.preventDefault();e.returnValue=''}});
+function closeM(){if(BUSY){toast('Laporan sedang dikirim, mohon tunggu sampai selesai.',1);return}$('modal').classList.add('hidden');$('mbox').innerHTML=''}
 $('modal').onclick=function(e){if(e.target===this)closeM()};
 
 /* ---- definisi laporan ---- */
@@ -59,7 +64,7 @@ var T={
  issue:{label:'Perlu Diperbaiki',f:[['title','Judul masalah','text',1],['location','Lokasi','text',1],['priority','Prioritas','select',1,ISPR],['desc','Uraian masalah','textarea',1]]}
 };
 var FS=['Upcoming ATS','ATS Open','Coming Soon','Coming to Theater','Now Showing','Completed'];
-var MENU=[['dashboard','Dashboard',0],['pengumuman','Pengumuman',0],['ats','Advanced Ticket Sales',0],['work','Laporan Pekerjaan',0],['issue','Perlu Diperbaiki',0],['meter','Laporan Meteran',0],['ac','Daily Monitoring AC',0],['purchase','Laporan Pembelian',0],['pengguna','Manajemen Pengguna',1],['audit','Audit Log',1],['pengaturan','Pengaturan Sistem',1]];
+var MENU=[['dashboard','Dashboard',0],['pengumuman','Pengumuman',0],['ats','Advanced Ticket Sales',0],['work','Laporan Pekerjaan',0],['issue','Perlu Diperbaiki',0],['meter','Laporan Meteran',0],['ac','Daily Monitoring AC',0],['purchase','Laporan Pembelian',0],['film','Laporan Film',0,'SOON'],['pengguna','Manajemen Pengguna',1],['audit','Audit Log',1],['pengaturan','Pengaturan Sistem',1]];
 
 var DESC={dashboard:'Ringkasan aktivitas dan informasi terkini',pengumuman:'Informasi internal untuk Tim Teknikal',ats:'Jadwal penjualan tiket dan film mendatang',work:'Pencatatan pekerjaan teknikal dan perawatan',issue:'Laporkan masalah, Teknisi menanggapi sampai selesai',meter:'Pencatatan pembacaan meteran listrik dan air',ac:'Pemantauan harian kondisi dan suhu unit AC',purchase:'Pencatatan pembelian barang dan perlengkapan',pengguna:'Kelola akun dan hak akses',audit:'Riwayat aktivitas sistem',pengaturan:'Status integrasi sistem'};
 var IC={dashboard:'<svg class="ic" viewBox="0 0 24 24"><path d="M3 13h8V3H3zM13 21h8V11h-8zM13 3v6h8V3zM3 21h8v-6H3z"/></svg>',pengumuman:'<svg class="ic" viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 8a5 5 0 0 1 0 8"/></svg>',ats:'<svg class="ic" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/></svg>',work:'<svg class="ic" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.2-.6-.6-2.2z"/></svg>',meter:'<svg class="ic" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',purchase:'<svg class="ic" viewBox="0 0 24 24"><path d="M6 6h15l-2 9H8zM6 6 5 3H2M9 20h.01M18 20h.01"/></svg>',pengguna:'<svg class="ic" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM21 21v-2a4 4 0 0 0-3-3.9"/></svg>',audit:'<svg class="ic" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h8"/></svg>',pengaturan:'<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>'};
@@ -67,6 +72,7 @@ IC.issue='<svg class="ic" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 
 IC.today='<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>';
 IC.ac='<svg class="ic" viewBox="0 0 24 24"><path d="M12 2v20M4.9 7l14.2 10M4.9 17 19.1 7M9 4l3 2 3-2M9 20l3-2 3 2"/></svg>';
 IC.water='<svg class="ic" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>';
+IC.film='<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg>';
 IC.menu='<svg class="ic" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
 var GRP={dashboard:'Utama',work:'Laporan',pengguna:'Administrasi'},TB=[['dashboard','Beranda'],['work','Pekerjaan'],['meter','Meteran'],['purchase','Pembelian']],TBR=[['dashboard','Beranda'],['issue','Perbaikan'],['pengumuman','Pengumuman']],RO=['dashboard','pengumuman','ats','issue'];
 function tbFor(){return U&&U.role==='REPORTER'?TBR:TB}
@@ -75,8 +81,10 @@ function can(m){if(m[2])return U.role==='ADMIN';if(U.role==='REPORTER')return RO
 function showLogin(){U=null;$('app').classList.add('hidden');$('login').classList.remove('hidden');$('lform').reset()}
 function enter(u,page){u=normU(u);U=u;LS.setItem('stc_u',JSON.stringify(u));$('hname').textContent=u.name;$('hrole').textContent=rn(u.role);$('av').textContent=String(u.name||'?').charAt(0).toUpperCase();$('login').classList.add('hidden');$('app').classList.remove('hidden');
  if(u.mustChange){pwModal(true)}go(page||'dashboard')}
-function go(p){if(!MENU.some(function(m){return m[0]===p&&can(m)}))p='dashboard';CUR=p;LS.setItem('stc_p',p);var adm=U.role==='ADMIN',h='';
- MENU.forEach(function(m){if(!can(m))return;if(GRP[m[0]])h+='<div class="ng">'+GRP[m[0]]+'</div>';h+='<a data-p="'+m[0]+'" class="'+(p===m[0]?'on':'')+'"><i>'+(IC[m[0]]||'')+'</i>'+m[1]+'</a>'});
+var SOON_MSG='Fitur laporan film akan segera tersedia';
+function soonOf(p){return MENU.filter(function(m){return m[0]===p&&m[3]})[0]}
+function go(p){if(soonOf(p)){toast(SOON_MSG);return}if(!MENU.some(function(m){return m[0]===p&&can(m)}))p='dashboard';CUR=p;LS.setItem('stc_p',p);var adm=U.role==='ADMIN',h='';
+ MENU.forEach(function(m){if(!can(m))return;if(GRP[m[0]])h+='<div class="ng">'+GRP[m[0]]+'</div>';h+='<a data-p="'+m[0]+'" class="'+(p===m[0]?'on':'')+(m[3]?' soon':'')+'"'+(m[3]?' aria-disabled="true"':'')+'><i>'+(IC[m[0]]||'')+'</i>'+m[1]+(m[3]?'<span class="sb">'+m[3]+'</span>':'')+'</a>'});
  var TBX=tbFor();$('tabs').innerHTML=TBX.map(function(m){return '<a data-p="'+m[0]+'" class="'+(p===m[0]?'on':'')+'"><i>'+IC[m[0]]+'</i>'+m[1]+'</a>'}).join('')+'<a data-p="menu" class="'+(TBX.some(function(m){return m[0]===p})?'':'on')+'"><i>'+IC.menu+'</i>Menu</a>';
  $('nav').innerHTML=h;$('ptitle').textContent=(MENU.filter(function(m){return m[0]===p})[0]||[0,''])[1];$('psub').textContent=DESC[p]||'';closeMenu();var v=$('view');v.innerHTML='<div class="sk" style="height:30px;width:240px"></div><div class="sk" style="height:110px;margin-top:18px"></div><div class="sk" style="height:280px;margin-top:18px"></div>';
  ({dashboard:vDash,pengumuman:vAnn,ats:vAts,work:function(){vRep('work')},issue:function(){vRep('issue')},meter:function(){vRep('meter')},ac:function(){vRep('ac')},purchase:function(){vRep('purchase')},pengguna:vUsers,audit:vAudit,pengaturan:vSet})[p]()}
@@ -335,15 +343,17 @@ function repForm(t,rec,after){var c=T[t],d=rec?rec.data:(t==='issue'?{priority:'
    if(c.team)data.team=[].map.call(document.querySelectorAll('#tm input:checked'),function(i){return i.value});
    if(c.items&&[].some.call(document.querySelectorAll('.irow'),function(r){return !unitVal(r)})){$('re').textContent='Isi satuan barang (untuk "Lainnya", ketik satuannya).';return}
    if(c.items)data.items=[].map.call(document.querySelectorAll('.irow'),function(r){return {name:r.querySelector('.in').value,category:r.querySelector('.ic').value,qty:r.querySelector('.iq').value,unit:unitVal(r),price:r.querySelector('.ip').value}});
-   var b=$('rsv'),rc=$('rc'),phs=PH.slice(),sent=0,failed=0;b.disabled=true;rc.disabled=true;b.textContent='Menyimpan...';$('re').textContent='';
+   if(BUSY)return;
+   if(navigator.onLine===false){$('re').textContent='Tidak ada koneksi internet. Isian Anda tidak dihapus; coba lagi saat koneksi kembali.';return}
+   var b=$('rsv'),rc=$('rc'),phs=PH.slice(),sent=0,failed=0;BUSY=true;b.disabled=true;rc.disabled=true;b.textContent='Menyimpan laporan...';$('re').textContent='';
    api('rep_save',{type:t,id:rec&&rec.id,reqId:rid,data:data}).then(function(r){
     if(!phs.length)return r;
     var chunks=[],i;for(i=0;i<phs.length;i+=PHBATCH)chunks.push(phs.slice(i,i+PHBATCH));
     function send(ch,n){return api('photo_save',{id:r.id,photos:ch.map(function(p){return {mime:p.mime,b64:p.b64,kind:p.kind}})}).then(function(x){failed+=x.failed},function(e){if(n<2)return send(ch,n+1);failed+=ch.length})}
     return chunks.reduce(function(p,ch){return p.then(function(){b.textContent='Mengunggah foto '+sent+'/'+phs.length+'...';return send(ch,0).then(function(){sent+=ch.length;b.textContent='Mengunggah foto '+sent+'/'+phs.length+'...'})})},Promise.resolve())
      .then(function(){b.textContent='Menyelesaikan...';return api('photo_done',{id:r.id}).catch(function(){})}).then(function(){r.photoFailed=failed;return r})
-   }).then(function(r){closeM();toast(r.photoFailed?'Laporan '+r.id+' tersimpan, tetapi '+r.photoFailed+' foto gagal diunggah. Buka laporan lalu pilih Edit untuk menambah foto lagi.':'Laporan berhasil disimpan: '+r.id,!!r.photoFailed);after&&after()},
-   function(x){$('re').textContent=x.message+' Isian Anda tidak dihapus; silakan coba lagi.';b.disabled=false;rc.disabled=false;b.textContent='Simpan laporan'})}};
+   }).then(function(r){BUSY=false;closeM();toast(r.photoFailed?'Laporan '+r.id+' tersimpan, tetapi '+r.photoFailed+' foto gagal diunggah. Buka laporan lalu pilih Edit untuk menambah foto lagi.':'Laporan berhasil disimpan: '+r.id,!!r.photoFailed);after&&after()},
+   function(x){BUSY=false;$('re').textContent=x.message+' Isian Anda tidak dihapus; silakan coba lagi.';toast('Laporan gagal disimpan: '+x.message,1);b.disabled=false;rc.disabled=false;b.textContent='Simpan laporan'})}};
  if(c.team)api('team').then(function(n){team=n;go2()}).catch(function(x){toast(x.message,1)});else go2()}
 
 /* ---- pengguna, audit, pengaturan ---- */
