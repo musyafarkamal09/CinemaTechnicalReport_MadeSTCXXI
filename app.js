@@ -181,7 +181,7 @@ function upPh(id,phs,prog){var failed=0,sent=0;if(!phs.length)return Promise.res
  return chunks.reduce(function(p,ch){return p.then(function(){return send(ch,0).then(function(){sent+=ch.length;if(prog)prog(sent)})})},Promise.resolve())
   .then(function(){return api('photo_done',{id:id}).catch(function(){})}).then(function(){return failed})}
 /* ---- meteran: detail, akumulasi, grafik ---- */
-var NF=new Intl.NumberFormat('id-ID',{maximumFractionDigits:2}),NF3=new Intl.NumberFormat('id-ID',{maximumFractionDigits:3}),MON=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],CC={lwbp:'#b9964a',wbp:'#17684b',genset:'#5b7fb8',air:'#2e8fbf'};
+var NF=new Intl.NumberFormat('id-ID',{maximumFractionDigits:2}),NF3=new Intl.NumberFormat('id-ID',{maximumFractionDigits:3}),MON=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],CC={lwbp:'#c9a24d',wbp:'#2fa476',genset:'#9a6fcf',air:'#2e9bd6'};
 function nf(v){return v==null||isNaN(v)?'-':NF.format(v)}
 function mfmt(v){return v==null?'-':NF3.format(v)}
 function dd(s){return s?new Intl.DateTimeFormat('id-ID',{timeZone:TZ,dateStyle:'medium'}).format(new Date(s+'T12:00:00+07:00')):'-'}
@@ -196,26 +196,104 @@ function meterDetail(d){var rows=[],x=d.diffs||{},p=d.prevs||{};
 function meterCum(d){api('meter_prev',{location:d.location,until:d.date+' '+(d.time||'00:00'),inclusive:1}).then(function(s){var b=$('mcum');if(!b||!s.count)return;
  var M=[['lwbp','LWBP','kWh','e'],['wbp','WBP','kWh','e'],['genset','Genset','kWh','e'],['air','Air','m³','w']].filter(function(m){return s.has[m[3]]});
  b.innerHTML='<div class="mh">Akumulasi pemakaian di '+esc(d.location)+'</div><div class="macc">'+M.map(function(m){return '<div><small>'+m[1]+'</small><b>'+nf(s.cum[m[0]])+' '+m[2]+'</b></div>'}).join('')+'</div><small class="mnote">Total selisih antar laporan sejak '+dd(s.since)+' sampai laporan ini ('+s.count+' laporan terkirim).</small>'}).catch(function(){})}
-function chartBlock(title,data,keys,names,unit,gr){
- var n=data.length,W=Math.max(640,62+n*(keys.length*16+12)),H=250,L=52,T=12,B=40,ph=H-T-B,pw=W-L-10,mx=0,g='',i;
- data.forEach(function(o){keys.forEach(function(k){if(o[k]>mx)mx=o[k]})});if(!mx)mx=1;
- var st=nice(mx/4),top=Math.ceil(mx/st-1e-9)*st,gw=pw/n,bw=Math.min(26,(gw-8)/keys.length),ev=Math.ceil(n/Math.max(1,Math.floor(pw/48)));
- for(i=0;i*st<=top+st/1e6;i++){var y=T+ph-i*st/top*ph;g+='<line class="cgr" x1="'+L+'" x2="'+(W-10)+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+'"/><text class="ctx" x="'+(L-6)+'" y="'+(y+4).toFixed(1)+'" text-anchor="end">'+nf(i*st)+'</text>'}
- data.forEach(function(o,i){var x0=L+i*gw+(gw-keys.length*bw)/2;
-  keys.forEach(function(k,j){var v=o[k],hh=v/top*ph;g+='<rect x="'+(x0+j*bw).toFixed(1)+'" y="'+(T+ph-hh).toFixed(1)+'" width="'+Math.max(1,bw-1).toFixed(1)+'" height="'+hh.toFixed(1)+'" rx="2" fill="'+CC[k]+'"><title>'+tl(o.k,gr)+' - '+names[j]+': '+nf(v)+' '+unit+'</title></rect>'});
-  if(i%ev===0)g+='<text class="ctx" x="'+(L+i*gw+gw/2).toFixed(1)+'" y="'+(H-B+16)+'" text-anchor="middle">'+bl(o.k,gr)+'</text>'});
- g+='<line class="cax" x1="'+L+'" x2="'+(W-10)+'" y1="'+(T+ph)+'" y2="'+(T+ph)+'"/>';
- return '<div class="mh">'+title+'</div><div class="mlg">'+keys.map(function(k,j){return '<span><i style="background:'+CC[k]+'"></i>'+names[j]+'</span>'}).join('')+'</div><div class="mch"><svg viewBox="0 0 '+W+' '+H+'" style="width:100%;min-width:'+(W>640?W:0)+'px" role="img" aria-label="'+esc(title)+'">'+g+'</svg></div>'+
-  '<details class="mdet"><summary>Lihat tabel data</summary><div class="scroll"><table class="mt"><tr><th>'+(gr==='month'?'Bulan':'Tanggal')+'</th>'+names.map(function(m){return '<th>'+m+' ('+unit+')</th>'}).join('')+'</tr>'+data.map(function(o){return '<tr><td>'+tl(o.k,gr)+'</td>'+keys.map(function(k){return '<td>'+nf(o[k])+'</td>'}).join('')+'</tr>'}).join('')+'</table></div></details>'}
-function mRender(r){var U2=[['lwbp','LWBP','kWh'],['wbp','WBP','kWh'],['genset','Genset','kWh'],['air','Air','m³']];
+var DAY=864e5,CH=null;
+function tm(k){return Date.parse(k.length===7?k+'-01T00:00:00Z':k+'T00:00:00Z')}
+function fx(t,gr,sp){var d=new Date(t);return gr==='month'?MON[d.getUTCMonth()]+' '+String(d.getUTCFullYear()).slice(2):('0'+d.getUTCDate()).slice(-2)+'/'+('0'+(d.getUTCMonth()+1)).slice(-2)+(sp>240*DAY?'/'+String(d.getUTCFullYear()).slice(2):'')}
+function xt(a,b,n,gr){var o=[],i,t,d;
+ if(gr==='month'){var S=[1,2,3,6,12,24],st=24;for(i=0;i<S.length;i++)if((b-a)/(S[i]*30.44*DAY)<=n){st=S[i];break}
+  d=new Date(a);var y=d.getUTCFullYear(),m=d.getUTCMonth();if(Date.UTC(y,m,1)<a)m++;
+  for(;;m+=st){t=Date.UTC(y,m,1);if(t>b)break;o.push(t)}}
+ else{var D=[1,2,3,7,14,30,60,90,180,365],s=365;for(i=0;i<D.length;i++)if((b-a)/(D[i]*DAY)<=n){s=D[i];break}
+  for(t=Math.ceil(a/(s*DAY))*s*DAY;t<=b;t+=s*DAY)o.push(t)}
+ return o}
+/* grafik garis gabungan (LWBP, WBP, Genset = kWh di sumbu kiri; Air = m³ di sumbu kanan) dengan zoom & geser.
+   Data: seri dari server (seluruh riwayat bila tersedia), tampilan awal = periode yang dipilih. */
+function mChartInit(r,all){
+ var S=all.series,gr=r.group,K=['lwbp','wbp','genset','air'],
+  on=K.filter(function(k){return S.some(function(o){return o[k]>0})}),
+  P=S.map(function(o){return {t:tm(o.k),o:o}}),pad=gr==='month'?16*DAY:DAY,mn=P[0].t,mx=P[P.length-1].t,f0=r.from?tm(r.from):mn,f1=r.to?tm(r.to):mx;
+ if(gr==='month'){var d0=new Date(f0),d1=new Date(f1);f0=Date.UTC(d0.getUTCFullYear(),d0.getUTCMonth(),1);f1=Date.UTC(d1.getUTCFullYear(),d1.getUTCMonth(),1)}
+ CH={P:P,on:on,hid:{},sel:-1,gr:gr,i0:f0-pad,i1:f1+pad,F0:Math.min(mn-pad,f0-pad),F1:Math.max(mx+pad,f1+pad),minSp:gr==='month'?50*DAY:4*DAY,NM:{lwbp:'LWBP',wbp:'WBP',genset:'Genset',air:'Air'},UN:{lwbp:'kWh',wbp:'kWh',genset:'kWh',air:'m³'},raf:0};
+ mSet(CH.i0,CH.i1)}
+function mSet(a,b){var c=CH,sp=Math.min(Math.max(b-a,c.minSp),c.F1-c.F0),ct=(a+b)/2;a=ct-sp/2;
+ if(a<c.F0)a=c.F0;if(a+sp>c.F1)a=c.F1-sp;c.a=a;c.b=a+sp}
+function mZoom(f,fr){var c=CH,sp=c.b-c.a,an=c.a+fr*sp,ns=sp*f;mSet(an-fr*ns,an-fr*ns+ns)}
+function mReq(){var c=CH;if(!c||c.raf)return;c.raf=requestAnimationFrame(function(){c.raf=0;mDraw()})}
+function mDraw(){var c=CH,el=$('mchart');if(!c||!el)return;
+ var W=Math.max(280,el.clientWidth||600),H=W<520?200:230,vis=c.on.filter(function(k){return !c.hid[k]}),
+  E=vis.filter(function(k){return k!=='air'}),A=vis.filter(function(k){return k==='air'}),
+  top=function(ks){var m=0;c.P.forEach(function(p){if(p.t>=c.a&&p.t<=c.b)ks.forEach(function(k){if(p.o[k]>m)m=p.o[k]})});return nice((m||1)/4)*4},
+  ax=[];
+ if(E.length)ax.push({tp:top(E),u:'kWh'});if(A.length)ax.push({tp:top(A),u:'m³'});if(!ax.length)ax.push({tp:4,u:''});
+ var tE=E.length?ax[0].tp:0,tA=A.length?ax[ax.length-1].tp:0,
+  L=Math.max(34,nf(ax[0].tp).length*6.6+12),R=ax.length>1?Math.max(34,nf(ax[1].tp).length*6.6+12):12,
+  T=20,B=24,pw=W-L-R,ph=H-T-B,g='',i,
+  X=function(t){return L+(t-c.a)/(c.b-c.a)*pw},Y=function(v,tp){return T+ph-v/tp*ph};
+ c.g={L:L,pw:pw};
+ for(i=0;i<=4;i++){var y=T+ph-i*ph/4;g+='<line class="cgr" x1="'+L+'" x2="'+(W-R)+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+'"/><text class="ctx" x="'+(L-5)+'" y="'+(y+4).toFixed(1)+'" text-anchor="end">'+nf(i*ax[0].tp/4)+'</text>';
+  if(ax[1])g+='<text class="ctx" x="'+(W-R+5)+'" y="'+(y+4).toFixed(1)+'">'+nf(i*ax[1].tp/4)+'</text>'}
+ g+='<text class="ctx" x="4" y="11">'+ax[0].u+'</text>'+(ax[1]?'<text class="ctx" x="'+(W-4)+'" y="11" text-anchor="end">'+ax[1].u+'</text>':'');
+ xt(c.a,c.b,Math.max(2,Math.floor(pw/62)),c.gr).forEach(function(t){var x=X(t).toFixed(1);g+='<line class="cax" x1="'+x+'" x2="'+x+'" y1="'+(T+ph)+'" y2="'+(T+ph+4)+'"/><text class="ctx" x="'+x+'" y="'+(H-8)+'" text-anchor="middle">'+fx(t,c.gr,c.b-c.a)+'</text>'});
+ g+='<line class="cax" x1="'+L+'" x2="'+(W-R)+'" y1="'+(T+ph)+'" y2="'+(T+ph)+'"/>';
+ var inV=c.P.filter(function(p){return p.t>=c.a&&p.t<=c.b}),dots=inV.length<=80;
+ g+='<clipPath id="mclip"><rect x="'+(L-5)+'" y="'+(T-5)+'" width="'+(pw+10)+'" height="'+(ph+10)+'"/></clipPath><g clip-path="url(#mclip)">';
+ vis.forEach(function(k){var tp=k==='air'?tA:tE,d=c.P.map(function(p,j){return (j?'L':'M')+X(p.t).toFixed(1)+','+Y(p.o[k],tp).toFixed(1)}).join('');
+  g+='<path d="'+d+'" fill="none" stroke="'+CC[k]+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+  if(dots)inV.forEach(function(p){g+='<circle cx="'+X(p.t).toFixed(1)+'" cy="'+Y(p.o[k],tp).toFixed(1)+'" r="2.8" fill="'+CC[k]+'" stroke="var(--card)" stroke-width="1"/>'})});
+ g+='</g>';
+ if(!inV.length)g+='<text class="ctx" x="'+(L+pw/2)+'" y="'+(T+ph/2)+'" text-anchor="middle">Tidak ada pemakaian pada rentang ini. Geser untuk melihat periode lain.</text>';
+ var sp=c.sel>=0&&c.P[c.sel];
+ if(sp&&sp.t>=c.a&&sp.t<=c.b&&vis.length){var sx=X(sp.t),rows=vis.map(function(k){return {k:k,t:c.NM[k]+': '+nf(sp.o[k])+' '+c.UN[k]}}),ttl=tl(sp.o.k,c.gr),
+   bw=Math.max(ttl.length,rows.reduce(function(m,o){return Math.max(m,o.t.length)},0)+3)*6.3+16,bh=rows.length*15+22,bx=sx+10+bw<W-R+8?sx+10:sx-10-bw;
+  g+='<line class="ctl" x1="'+sx.toFixed(1)+'" x2="'+sx.toFixed(1)+'" y1="'+T+'" y2="'+(T+ph)+'"/>';
+  vis.forEach(function(k){g+='<circle cx="'+sx.toFixed(1)+'" cy="'+Y(sp.o[k],k==='air'?tA:tE).toFixed(1)+'" r="4.5" fill="'+CC[k]+'" stroke="var(--card)" stroke-width="1.5"/>'});
+  g+='<rect class="ctb" x="'+bx.toFixed(1)+'" y="'+(T+2)+'" width="'+bw.toFixed(1)+'" height="'+bh+'" rx="6"/><text class="ctt" x="'+(bx+8).toFixed(1)+'" y="'+(T+16)+'">'+esc(ttl)+'</text>'+
+   rows.map(function(o,j){var yy=T+31+j*15;return '<circle cx="'+(bx+12).toFixed(1)+'" cy="'+(yy-3.5)+'" r="3.5" fill="'+CC[o.k]+'"/><text class="cts" x="'+(bx+20).toFixed(1)+'" y="'+yy+'">'+esc(o.t)+'</text>'}).join('')}
+ el.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Grafik garis pemakaian listrik dan air">'+g+'</svg>'}
+function mBind(){var c=CH,el=$('mchart');if(!c||!el)return;
+ var ptr={},moved=0,pd=0,xin=function(ev){return ev.clientX-el.getBoundingClientRect().left},
+  fr=function(x){return Math.min(1,Math.max(0,(x-c.g.L)/c.g.pw))},
+  pick=function(x){var t=c.a+fr(x)*(c.b-c.a),bi=-1,bd=1e18;c.P.forEach(function(p,j){var d=Math.abs(p.t-t);if(d<bd){bd=d;bi=j}});c.sel=bi;mReq()},
+  cnt=function(){return Object.keys(ptr).length},
+  dist=function(){var k=Object.keys(ptr);return Math.abs(ptr[k[0]]-ptr[k[1]])||1};
+ el.onpointerdown=function(ev){try{el.setPointerCapture(ev.pointerId)}catch(e){}ptr[ev.pointerId]=ev.clientX;moved=0;if(cnt()===2)pd=dist()};
+ el.onpointermove=function(ev){
+  if(ptr[ev.pointerId]==null){if(ev.pointerType==='mouse')pick(xin(ev));return}
+  var n=cnt();
+  if(n===1){var dx=ev.clientX-ptr[ev.pointerId];ptr[ev.pointerId]=ev.clientX;moved+=Math.abs(dx);
+   if(moved>5){var sp=c.b-c.a,dt=-dx/c.g.pw*sp;mSet(c.a+dt,c.b+dt);c.sel=-1;mReq()}}
+  else if(n===2){ptr[ev.pointerId]=ev.clientX;var k=Object.keys(ptr),d=dist(),mid=(ptr[k[0]]+ptr[k[1]])/2-el.getBoundingClientRect().left;mZoom(pd/d,fr(mid));pd=d;moved=99;c.sel=-1;mReq()}};
+ var up=function(ev){if(ptr[ev.pointerId]==null)return;var tap=cnt()===1&&moved<=5;delete ptr[ev.pointerId];
+  try{el.releasePointerCapture(ev.pointerId)}catch(e){}
+  if(tap)pick(xin(ev));if(cnt()===1)moved=99};
+ el.onpointerup=up;el.onpointercancel=up;
+ el.onpointerleave=function(ev){if(ev.pointerType==='mouse'&&!cnt()){c.sel=-1;mReq()}};
+ el.onwheel=function(ev){
+  if(ev.ctrlKey){ev.preventDefault();mZoom(Math.exp(ev.deltaY*.002),fr(xin(ev)));c.sel=-1;mReq()}
+  else if(Math.abs(ev.deltaX)>Math.abs(ev.deltaY)){ev.preventDefault();var dt=ev.deltaX/c.g.pw*(c.b-c.a);mSet(c.a+dt,c.b+dt);c.sel=-1;mReq()}};
+ var ct=$('mctl');
+ if(ct)ct.onclick=function(ev){var b=ev.target.closest('[data-a]');if(!b)return;var a=b.dataset.a,sp=c.b-c.a;
+  if(a==='zi')mZoom(.6,.5);else if(a==='zo')mZoom(1/.6,.5);else if(a==='pl')mSet(c.a-sp*.3,c.b-sp*.3);else if(a==='pr')mSet(c.a+sp*.3,c.b+sp*.3);else mSet(c.i0,c.i1);
+  c.sel=-1;mDraw()};
+ var lg=$('mlg');
+ if(lg)lg.onclick=function(ev){var b=ev.target.closest('[data-k]');if(!b)return;var k=b.dataset.k;c.hid[k]=!c.hid[k];b.classList.toggle('off',!!c.hid[k]);b.setAttribute('aria-pressed',String(!c.hid[k]));c.sel=-1;mDraw()};
+ if(!window.__mrz){window.__mrz=1;window.addEventListener('resize',function(){mReq()})}}
+function mChartHtml(r,all){
+ var NM={lwbp:'LWBP (kWh)',wbp:'WBP (kWh)',genset:'Genset (kWh)',air:'Air (m³)'},gl=r.group==='month'?'bulan':'hari';
+ mChartInit(r,all);
+ return '<div class="mh">Pemakaian listrik &amp; air per '+gl+'</div><div class="mcc"><div class="mlg" id="mlg">'+CH.on.map(function(k){return '<button type="button" class="mlb" data-k="'+k+'" aria-pressed="true"><i style="background:'+CC[k]+'"></i>'+NM[k]+'</button>'}).join('')+'</div>'+
+  '<div class="mct" id="mctl"><button type="button" class="btn sec" data-a="pl" aria-label="Geser ke kiri" title="Geser ke kiri">&#9664;</button><button type="button" class="btn sec" data-a="pr" aria-label="Geser ke kanan" title="Geser ke kanan">&#9654;</button><button type="button" class="btn sec" data-a="zi" aria-label="Perbesar" title="Perbesar">+</button><button type="button" class="btn sec" data-a="zo" aria-label="Perkecil" title="Perkecil">&minus;</button><button type="button" class="btn sec" data-a="rs" title="Kembali ke periode yang dipilih">Reset zoom</button></div></div>'+
+  '<div class="mch" id="mchart"></div><small class="mnote">Geser dengan mouse atau jari. Zoom: tombol +/&minus;, cubit layar, atau Ctrl+scroll. Arahkan atau ketuk grafik untuk melihat nilai. Sumbu kiri kWh, sumbu kanan m³.</small>'}
+function mRender(r,all){var U2=[['lwbp','LWBP','kWh'],['wbp','WBP','kWh'],['genset','Genset','kWh'],['air','Air','m³']];
  if(!r.count.total)return '<div class="empty"><b>Belum ada data meteran</b>Akumulasi dan grafik muncul setelah ada laporan meteran.</div>';
  var h='<div class="mlts">'+r.latest.map(function(o){var e=o.elec,w=o.water;return '<div class="mlt"><b>'+esc(o.loc)+'</b><small>Pembacaan terakhir</small><span>'+(e?'LWBP '+mfmt(e.lwbp)+' · WBP '+mfmt(e.wbp)+' · Genset '+mfmt(e.genset)+' kWh ('+dd(e.date)+')':'')+(e&&w?'<br>':'')+(w?'Air '+mfmt(w.reading)+' m³ ('+dd(w.date)+')':'')+'</span></div>'}).join('')+'</div>';
  h+='<div class="mh">Akumulasi pemakaian <small>(total selisih antar laporan sejak '+dd(r.since)+', '+r.count.total+' laporan)</small></div><div class="macc">'+U2.map(function(m){return '<div><small>'+m[1]+'</small><b>'+nf(r.cum[m[0]])+' '+m[2]+'</b><span>Periode ini: '+(r.per[m[0]]>0?'+':'')+nf(r.per[m[0]])+' '+m[2]+'</span></div>'}).join('')+'</div>';
  h+='<small class="mnote">Periode '+dd(r.from)+' – '+dd(r.to)+' · '+r.count.period+' laporan. Pemakaian dihitung dari selisih angka antar pencatatan di lokasi yang sama dan dicatat pada tanggal laporan yang lebih baru.</small>';
- if(!r.series.length)return h+'<div class="empty" style="margin-top:12px"><b>Tidak ada pemakaian pada periode ini</b>Ubah rentang tanggal. Pemakaian baru terhitung setelah ada minimal dua pencatatan di lokasi yang sama.</div>';
- var gl=r.group==='month'?'bulan':'hari';
- if(r.series.some(function(o){return o.lwbp||o.wbp||o.genset}))h+=chartBlock('Pemakaian listrik per '+gl+' (kWh)',r.series,['lwbp','wbp','genset'],['LWBP','WBP','Genset'],'kWh',r.group);
- if(r.series.some(function(o){return o.air}))h+=chartBlock('Pemakaian air per '+gl+' (m³)',r.series,['air'],['Air'],'m³',r.group);
+ var src=(all&&all.series&&all.series.length)?all:r,NM=[['lwbp','LWBP'],['wbp','WBP'],['genset','Genset']],gr=r.group;
+ if(!src.series.length){CH=null;return h+'<div class="empty" style="margin-top:12px"><b>Tidak ada pemakaian pada periode ini</b>Ubah rentang tanggal. Pemakaian baru terhitung setelah ada minimal dua pencatatan di lokasi yang sama.</div>'}
+ if(!r.series.length)h+='<div class="empty" style="margin-top:12px"><b>Tidak ada pemakaian pada periode ini</b>Geser grafik untuk melihat periode lain yang punya data.</div>';
+ h+=mChartHtml(r,src);
+ if(r.series.length)h+='<details class="mdet"><summary>Lihat tabel data</summary><div class="scroll"><table class="mt"><tr><th>'+(gr==='month'?'Bulan':'Tanggal')+'</th>'+NM.map(function(m){return '<th>'+m[1]+' (kWh)</th>'}).join('')+'<th>Air (m³)</th></tr>'+r.series.map(function(o){return '<tr><td>'+tl(o.k,gr)+'</td>'+NM.map(function(m){return '<td>'+nf(o[m[0]])+'</td>'}).join('')+'<td>'+nf(o.air)+'</td></tr>'}).join('')+'</table></div></details>';
  return h}
 var MS={loc:'',pre:'30',from:'',to:'',group:'day'};
 function mPre(v){var s=MS,t=jkd(0),y=+t.slice(0,4),m=+t.slice(5,7)-1,iso=function(x){return x.toISOString().slice(0,10)};
@@ -228,9 +306,9 @@ function meterPanel(){var b=$('mstat');if(!b)return;var s=MS;if(!s.from)mPre('30
  var PR=[['7','7 hari terakhir'],['30','30 hari terakhir'],['90','90 hari terakhir'],['m0','Bulan ini'],['m1','Bulan lalu'],['y','Tahun ini'],['c','Kustom']];
  b.innerHTML='<div class="card mp"><h3>Akumulasi &amp; grafik pemakaian</h3><div class="bar mbar"><label class="fl">Lokasi<select id="ml"><option value="">Semua lokasi</option>'+(s.loc?'<option selected>'+esc(s.loc)+'</option>':'')+'</select></label><label class="fl">Periode<select id="mpr">'+PR.map(function(p){return '<option value="'+p[0]+'"'+(p[0]===s.pre?' selected':'')+'>'+p[1]+'</option>'}).join('')+'</select></label><label class="fl">Dari tanggal<input type="date" id="mf" value="'+s.from+'"></label><label class="fl">Sampai tanggal<input type="date" id="mto" value="'+s.to+'"></label><label class="fl">Tampilan<select id="mg"><option value="day"'+(s.group==='day'?' selected':'')+'>Harian</option><option value="month"'+(s.group==='month'?' selected':'')+'>Bulanan</option></select></label></div><div id="mres"><div class="sk" style="height:160px"></div></div></div>';
  var run=function(){s.loc=$('ml').value;s.from=$('mf').value;s.to=$('mto').value;s.group=$('mg').value;
-  api('meter_stats',{location:s.loc,from:s.from,to:s.to,group:s.group}).then(function(r){if(!$('mres'))return;
+  Promise.all([api('meter_stats',{location:s.loc,from:s.from,to:s.to,group:s.group}),api('meter_stats',{location:s.loc,from:'',to:'',group:s.group}).catch(function(){return null})]).then(function(ar){var r=ar[0];if(!$('mres'))return;
    $('ml').innerHTML='<option value="">Semua lokasi</option>'+r.locations.map(function(n){return '<option'+(n===s.loc?' selected':'')+'>'+esc(n)+'</option>'}).join('');
-   $('mres').innerHTML=mRender(r)}).catch(function(x){if($('mres'))$('mres').innerHTML='<div class="empty">'+esc(x.message)+'</div>'})};
+   $('mres').innerHTML=mRender(r,ar[1]);mDraw();mBind()}).catch(function(x){if($('mres'))$('mres').innerHTML='<div class="empty">'+esc(x.message)+'</div>'})};
  $('ml').onchange=run;$('mg').onchange=run;
  $('mpr').onchange=function(){mPre(this.value);$('mf').value=s.from;$('mto').value=s.to;run()};
  $('mf').onchange=$('mto').onchange=function(){s.pre='c';$('mpr').value='c';run()};
