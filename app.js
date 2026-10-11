@@ -47,11 +47,10 @@ $('modal').onclick=function(e){if(e.target===this)closeM()};
 /* ---- definisi laporan ---- */
 var WC=['Electrical','Mechanical','HVAC / AC','Plumbing','Audio','Projector','Building Maintenance','Preventive Maintenance','Corrective Maintenance','Lainnya'];
 var WS=['Open','In Progress','Completed','Pending','Need Follow-up'];
-var ACS=['Normal','Perlu Perhatian','Rusak'];
 var T={
  work:{label:'Laporan Pekerjaan',f:[['title','Judul pekerjaan','text',1],['category','Kategori','select',1,WC],['location','Lokasi','text',1],['date','Tanggal pekerjaan','date',1],['time','Jam pekerjaan','time'],['status','Status','select',1,WS],['desc','Deskripsi','textarea'],['note','Catatan','textarea']],team:1},
  meter:{label:'Laporan Meteran',f:[['kind','Jenis meteran','select',1,['Listrik','Air']],['location','Lokasi meteran','text',1],['date','Tanggal pencatatan','date',1],['time','Jam pencatatan','time',1],['lwbp','Angka LWBP (kWh)','number',1,null,'Listrik'],['wbp','Angka WBP (kWh)','number',1,null,'Listrik'],['genset','Angka Genset (kWh)','number',1,null,'Listrik'],['reading','Angka meteran air (m³)','number',1,null,'Air'],['note','Catatan','textarea']]},
- ac:{label:'Daily Monitoring AC',f:[['date','Tanggal','date',1],['time','Jam','time',1],['location','Area / ruangan','text',1],['unit','Unit AC (kode / nama)','text',1],['setpoint','Setpoint (°C)','number'],['roomTemp','Suhu ruangan (°C)','number',1],['supplyTemp','Suhu hembusan (°C)','number'],['filter','Kondisi filter','select',0,['Bersih','Kotor']],['leak','Kebocoran air','select',0,['Tidak ada','Ada']],['noise','Suara unit','select',0,['Normal','Berisik / abnormal']],['status','Kondisi AC','select',1,ACS],['note','Catatan','textarea']]},
+ ac:{label:'Daily Monitoring AC',f:[['location','Area / ruangan','text',1],['unit','Nama unit AC','select',1,['Daikin','York']],['roomTemp','Suhu AC sekarang (°C)','number',1],['note','Catatan','textarea']]},
  purchase:{label:'Laporan Pembelian Barang',f:[['date','Tanggal pembelian','date',1],['time','Jam pembelian','time'],['store','Nama toko / pemasok','text',1],['buyer','Nama pembeli','text',1],['receiver','Nama penerima barang','text'],['purpose','Keperluan','text'],['note','Catatan','textarea']],items:1}
 };
 var FS=['Upcoming ATS','ATS Open','Coming Soon','Coming to Theater','Now Showing','Completed'];
@@ -162,9 +161,9 @@ function comp(file){return new Promise(function(res,rej){
 function mtr(d){var f=function(v,x){return v==null?'-':v+(x!=null?' (+'+x+')':'')};
  if(d.kind==='Listrik'){if(d.lwbp==null)return d.reading+' kWh (data lama)';var x=d.diffs||{};return 'LWBP '+f(d.lwbp,x.lwbp)+' · WBP '+f(d.wbp,x.wbp)+' · Genset '+f(d.genset,x.genset)+' kWh'}
  return d.reading+' '+d.unit+(d.diff!=null?' (selisih '+d.diff+')':'')}
-function sum(t,r){var d=r.data;return t==='work'?esc(r.title)+'<br><small>'+esc(d.location)+'</small> '+stb(d.status):t==='meter'?esc(d.kind)+' – '+esc(d.location)+'<br><small>'+mtr(d)+'</small>':t==='ac'?esc(d.location)+' · '+esc(d.unit)+'<br><small>Suhu ruangan '+d.roomTemp+' °C</small> '+stb(d.status):esc(d.store)+'<br><small>'+RP.format(d.total)+' · '+d.items.length+' barang</small>'}
+function sum(t,r){var d=r.data;return t==='work'?esc(r.title)+'<br><small>'+esc(d.location)+'</small> '+stb(d.status):t==='meter'?esc(d.kind)+' – '+esc(d.location)+'<br><small>'+mtr(d)+'</small>':t==='ac'?esc(d.location)+' · '+esc(d.unit)+'<br><small>Suhu AC '+d.roomTemp+' °C</small>':esc(d.store)+'<br><small>'+RP.format(d.total)+' · '+d.items.length+' barang</small>'}
 function vRep(t){var s=ST[t]=ST[t]||{page:1,q:'',from:'',to:'',status:''},c=T[t];
- $('view').innerHTML='<h2>'+c.label+'</h2><div class="bar"><input id="rq" type="search" placeholder="Cari nomor, judul, lokasi, atau pelapor" value="'+esc(s.q)+'"><label class="fl">Dari tanggal<input type="date" id="rf" value="'+s.from+'"></label><label class="fl">Sampai tanggal<input type="date" id="rt" value="'+s.to+'"></label>'+((t==='work'||t==='ac')?'<select id="rs"><option value="">Semua status</option>'+(t==='ac'?ACS:WS).map(function(o){return '<option'+(o===s.status?' selected':'')+'>'+o+'</option>'}).join('')+'</select>':'')+'<button class="btn sec" id="rg">Cari</button><button class="btn sec" id="rx">Unduh Excel</button><button class="btn" id="ra">+ Buat laporan</button></div><div id="rl"><div class="sk" style="height:84px"></div><div class="sk" style="height:84px;margin-top:10px"></div><div class="sk" style="height:84px;margin-top:10px"></div></div>';
+ $('view').innerHTML='<h2>'+c.label+'</h2><div class="bar"><input id="rq" type="search" placeholder="Cari nomor, judul, lokasi, atau pelapor" value="'+esc(s.q)+'"><label class="fl">Dari tanggal<input type="date" id="rf" value="'+s.from+'"></label><label class="fl">Sampai tanggal<input type="date" id="rt" value="'+s.to+'"></label>'+(t==='work'?'<select id="rs"><option value="">Semua status</option>'+WS.map(function(o){return '<option'+(o===s.status?' selected':'')+'>'+o+'</option>'}).join('')+'</select>':'')+'<button class="btn sec" id="rg">Cari</button><button class="btn sec" id="rx">Unduh Excel</button><button class="btn" id="ra">+ Buat laporan</button></div><div id="rl"><div class="sk" style="height:84px"></div><div class="sk" style="height:84px;margin-top:10px"></div><div class="sk" style="height:84px;margin-top:10px"></div></div>';
  function load(){s.q=$('rq').value;s.from=$('rf').value;s.to=$('rt').value;s.status=$('rs')?$('rs').value:'';
   api('rep_list',{type:t,q:s.q,from:s.from,to:s.to,status:s.status,page:s.page}).then(function(r){
    $('rl').className='';$('rl').innerHTML=r.items.length?'<div class="scroll cards"><table class="rt"><tr><th>No. Laporan</th><th>Waktu</th><th>Ringkasan</th><th>Pelapor</th><th>Aksi</th></tr>'+r.items.map(function(x){return '<tr><td data-l="No. laporan">'+esc(x.id)+'</td><td data-l="Waktu">'+dt(x.createdAt)+'</td><td class="sm">'+sum(t,x)+'</td><td data-l="Pelapor">'+esc(x.reporter)+'</td><td class="act"><button class="btn sec" data-d="'+x.id+'">Lihat detail</button></td></tr>'}).join('')+'</table></div><div class="pg"><button class="btn sec" id="pp"'+(r.page<2?' disabled':'')+'>‹</button> Hal. '+r.page+' / '+Math.ceil(r.total/r.size)+' ('+r.total+') <button class="btn sec" id="pn"'+(r.page*r.size>=r.total?' disabled':'')+'>›</button></div>':'<div class="empty"><b>Belum ada laporan</b>Ubah filter pencarian atau klik "+ Buat laporan" untuk mulai mencatat.</div>';
@@ -198,9 +197,9 @@ function exportXls(t){
     function(x){var d=x.data;return [x.id,d.date,d.time,d.location,n(d.reading),n(d.prev),n(d.diff),n(d.note),x.reporter,dt(x.createdAt)]},
     [22,12,8,26,18,17,13,30,16,20],1);
   }else if(t==='ac'){
-   add('Daily Monitoring AC',['No. Laporan','Tanggal','Jam','Area / Ruangan','Unit AC','Setpoint (°C)','Suhu Ruangan (°C)','Suhu Hembusan (°C)','Filter','Kebocoran','Suara Unit','Kondisi AC','Catatan','Pelapor','Dibuat'],it,
-    function(x){var d=x.data;return [x.id,d.date,d.time,d.location,d.unit,n(d.setpoint),n(d.roomTemp),n(d.supplyTemp),n(d.filter),n(d.leak),n(d.noise),d.status,n(d.note),x.reporter,dt(x.createdAt)]},
-    [22,12,8,26,18,13,16,17,10,12,18,16,30,16,20],1);
+   add('Daily Monitoring AC',['No. Laporan','Tanggal','Jam','Area / Ruangan','Nama Unit AC','Suhu AC (°C)','Catatan','Pelapor','Dibuat'],it,
+    function(x){var d=x.data;return [x.id,d.date,d.time,d.location,d.unit,n(d.roomTemp),n(d.note),x.reporter,dt(x.createdAt)]},
+    [22,12,8,26,16,13,30,16,20],1);
   }else{
    add('Laporan Pembelian',['No. Laporan','Tanggal','Jam','Toko / Pemasok','Pembeli','Penerima','Keperluan','Jumlah Item','Total (Rp)','Catatan','Pelapor','Dibuat'],it,
     function(x){var d=x.data;return [x.id,d.date,d.time,d.store,d.buyer,d.receiver,d.purpose,(d.items||[]).length,d.total,d.note,x.reporter,dt(x.createdAt)]},
@@ -267,6 +266,7 @@ function repForm(t,rec,after){var c=T[t],d=rec?rec.data:{},PH=[],rid=uuid(),team
     fs.reduce(function(p,f){return p.then(function(){if(PH.length>=PHMAX){bad++;return}return comp(f).then(function(x){x.kind=g[0];PH.push(x)},function(){bad++})})},Promise.resolve()).then(function(){prev();$('re').textContent=bad?bad+' file ditolak (format/ukuran tidak valid atau melebihi '+PHMAX+' foto).':''})};$('fi_'+g[0]).onchange=onPick;$('fc_'+g[0]).onchange=onPick});
   $('rfm').onsubmit=function(e){e.preventDefault();var f=e.target,data={};
    c.f.forEach(function(x){if(x[5]&&x[5]!==data.kind)return;data[x[0]]=f.elements[x[0]].value});
+   if(t==='ac'){var nw=new Date(now()+7*36e5).toISOString();data.date=rec&&d.date?d.date:nw.slice(0,10);data.time=rec&&d.time?d.time:nw.slice(11,16)}
    if(c.team)data.team=[].map.call(document.querySelectorAll('#tm input:checked'),function(i){return i.value});
    if(c.items&&[].some.call(document.querySelectorAll('.irow'),function(r){return !unitVal(r)})){$('re').textContent='Isi satuan barang (untuk "Lainnya", ketik satuannya).';return}
    if(c.items)data.items=[].map.call(document.querySelectorAll('.irow'),function(r){return {name:r.querySelector('.in').value,category:r.querySelector('.ic').value,qty:r.querySelector('.iq').value,unit:unitVal(r),price:r.querySelector('.ip').value}});
