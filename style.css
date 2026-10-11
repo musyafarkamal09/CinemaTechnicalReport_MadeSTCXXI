@@ -390,3 +390,29 @@ tr:hover td{background:var(--row2)}
 /* ---- hak cipta ---- */
 #cp{margin-top:auto;padding:18px 16px 22px;text-align:center;font-size:12px;color:var(--mut)}
 @media(max-width:820px){#cp{padding:6px 16px 14px}}
+
+/* ---- meteran gabungan: form, akumulasi, grafik ---- */
+.msec{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--gt);margin:18px 0 2px;padding-bottom:6px;border-bottom:1px solid var(--bd)}
+.msec i{display:flex}.msec .ic{width:18px;height:18px}
+.mlive{background:var(--row2);border:1px solid var(--bd);border-radius:12px;padding:12px;margin:14px 0 4px;font-size:13.5px}
+.mlive .scroll{border-radius:10px}
+.mt{width:100%;border-collapse:collapse;font-size:13.5px}
+.mt th,.mt td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--bd);white-space:nowrap}
+.mt th{color:var(--mut);font-size:12px;font-weight:700}
+.mt td.neg,.neg{color:var(--red);font-weight:700}
+.mh{font-weight:700;color:var(--ink);margin:16px 0 8px}.mh small{font-weight:500;color:var(--mut)}
+.mnote{display:block;color:var(--mut);margin:6px 0 0;line-height:1.45}
+.macc{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:8px 0}
+.macc>div{background:var(--row2);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.macc small{color:var(--mut);font-weight:600}.macc b{font-size:18px;color:var(--ink)}.macc span{font-size:12px;color:var(--mut)}
+.mp{margin-bottom:16px}.mp h3{margin:0 0 10px}
+.mbar{margin:0 0 12px;padding:0;border:0;background:none}
+.mlts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.mlt{border:1px solid var(--brass-l);background:var(--brass-50);color:#4f3f14;border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;font-size:13px}
+.mlt small{color:#7b6020}
+:root[data-theme=dark] .mlt{background:#2a2410;border-color:#5b4a1c;color:#ecdca8}:root[data-theme=dark] .mlt small{color:#cdb36a}
+.mch{overflow-x:auto;margin:4px 0}.mch svg{display:block;height:auto}
+.cax{stroke:var(--bd2);stroke-width:1}.cgr{stroke:var(--bd);stroke-width:1}.ctx{fill:var(--mut);font-size:11px;font-family:inherit}
+.mlg{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--mut)}
+.mlg i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.mdet summary{cursor:pointer;color:var(--gt);font-weight:600;margin:8px 0}
