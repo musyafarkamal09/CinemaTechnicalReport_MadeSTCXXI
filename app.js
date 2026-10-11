@@ -47,11 +47,12 @@ $('modal').onclick=function(e){if(e.target===this)closeM()};
 /* ---- definisi laporan ---- */
 var WC=['Electrical','Mechanical','HVAC / AC','Plumbing','Audio','Projector','Building Maintenance','Preventive Maintenance','Corrective Maintenance','Lainnya'];
 var WS=['Open','In Progress','Completed','Pending','Need Follow-up'];
-var ACA=['TH1','TH2','TH3','TH4','KORIDOR','LOBBY','Lainnya'];
+var ACA=['TH1','TH2','TH3','TH4','KORIDOR','LOBBY','Lainnya'],ACU=['Daikin','York'],ACD=['TH1','TH2','TH3','TH4','KORIDOR','LOBBY'];
+function acRowsOf(d){d=d||{};if(Array.isArray(d.rows)&&d.rows.length)return d.rows;return d.location?[{location:d.location,unit:d.unit,roomTemp:d.roomTemp,note:''}]:[]}
 var T={
  work:{label:'Laporan Pekerjaan',f:[['title','Judul pekerjaan','text',1],['category','Kategori','select',1,WC],['location','Lokasi','text',1],['date','Tanggal pekerjaan','date',1],['time','Jam pekerjaan','time'],['status','Status','select',1,WS],['desc','Deskripsi','textarea'],['note','Catatan','textarea']],team:1},
  meter:{label:'Laporan Meteran',f:[['kind','Jenis meteran','select',1,['Listrik','Air']],['location','Lokasi meteran','text',1],['date','Tanggal pencatatan','date',1],['time','Jam pencatatan','time',1],['lwbp','Angka LWBP (kWh)','number',1,null,'Listrik'],['wbp','Angka WBP (kWh)','number',1,null,'Listrik'],['genset','Angka Genset (kWh)','number',1,null,'Listrik'],['reading','Angka meteran air (m³)','number',1,null,'Air'],['note','Catatan','textarea']]},
- ac:{label:'Daily Monitoring AC',f:[['location','Area / ruangan','area',1,ACA],['unit','Nama unit AC','select',1,['Daikin','York']],['roomTemp','Suhu AC sekarang (°C)','number',1],['note','Catatan','textarea']]},
+ ac:{label:'Daily Monitoring AC',f:[['note','Catatan umum','textarea']],rows:1},
  purchase:{label:'Laporan Pembelian Barang',f:[['date','Tanggal pembelian','date',1],['time','Jam pembelian','time'],['store','Nama toko / pemasok','text',1],['buyer','Nama pembeli','text',1],['receiver','Nama penerima barang','text'],['purpose','Keperluan','text'],['note','Catatan','textarea']],items:1}
 };
 var FS=['Upcoming ATS','ATS Open','Coming Soon','Coming to Theater','Now Showing','Completed'];
@@ -162,7 +163,7 @@ function comp(file){return new Promise(function(res,rej){
 function mtr(d){var f=function(v,x){return v==null?'-':v+(x!=null?' (+'+x+')':'')};
  if(d.kind==='Listrik'){if(d.lwbp==null)return d.reading+' kWh (data lama)';var x=d.diffs||{};return 'LWBP '+f(d.lwbp,x.lwbp)+' · WBP '+f(d.wbp,x.wbp)+' · Genset '+f(d.genset,x.genset)+' kWh'}
  return d.reading+' '+d.unit+(d.diff!=null?' (selisih '+d.diff+')':'')}
-function sum(t,r){var d=r.data;return t==='work'?esc(r.title)+'<br><small>'+esc(d.location)+'</small> '+stb(d.status):t==='meter'?esc(d.kind)+' – '+esc(d.location)+'<br><small>'+mtr(d)+'</small>':t==='ac'?esc(d.location)+' · '+esc(d.unit)+'<br><small>Suhu AC '+d.roomTemp+' °C</small>':esc(d.store)+'<br><small>'+RP.format(d.total)+' · '+d.items.length+' barang</small>'}
+function sum(t,r){var d=r.data;return t==='work'?esc(r.title)+'<br><small>'+esc(d.location)+'</small> '+stb(d.status):t==='meter'?esc(d.kind)+' – '+esc(d.location)+'<br><small>'+mtr(d)+'</small>':t==='ac'?acRowsOf(d).length+' area<br><small>'+acRowsOf(d).map(function(a){return esc(a.location)+' '+a.roomTemp+'°'}).join(' · ')+'</small>':esc(d.store)+'<br><small>'+RP.format(d.total)+' · '+d.items.length+' barang</small>'}
 function vRep(t){var s=ST[t]=ST[t]||{page:1,q:'',from:'',to:'',status:''},c=T[t];
  $('view').innerHTML='<h2>'+c.label+'</h2><div class="bar"><input id="rq" type="search" placeholder="Cari nomor, judul, lokasi, atau pelapor" value="'+esc(s.q)+'"><label class="fl">Dari tanggal<input type="date" id="rf" value="'+s.from+'"></label><label class="fl">Sampai tanggal<input type="date" id="rt" value="'+s.to+'"></label>'+(t==='work'?'<select id="rs"><option value="">Semua status</option>'+WS.map(function(o){return '<option'+(o===s.status?' selected':'')+'>'+o+'</option>'}).join('')+'</select>':'')+'<button class="btn sec" id="rg">Cari</button><button class="btn sec" id="rx">Unduh Excel</button><button class="btn" id="ra">+ Buat laporan</button></div><div id="rl"><div class="sk" style="height:84px"></div><div class="sk" style="height:84px;margin-top:10px"></div><div class="sk" style="height:84px;margin-top:10px"></div></div>';
  function load(){s.q=$('rq').value;s.from=$('rf').value;s.to=$('rt').value;s.status=$('rs')?$('rs').value:'';
@@ -198,9 +199,10 @@ function exportXls(t){
     function(x){var d=x.data;return [x.id,d.date,d.time,d.location,n(d.reading),n(d.prev),n(d.diff),n(d.note),x.reporter,dt(x.createdAt)]},
     [22,12,8,26,18,17,13,30,16,20],1);
   }else if(t==='ac'){
-   add('Daily Monitoring AC',['No. Laporan','Tanggal','Jam','Area / Ruangan','Nama Unit AC','Suhu AC (°C)','Catatan','Pelapor','Dibuat'],it,
-    function(x){var d=x.data;return [x.id,d.date,d.time,d.location,d.unit,n(d.roomTemp),n(d.note),x.reporter,dt(x.createdAt)]},
-    [22,12,8,26,16,13,30,16,20],1);
+   var fl=[];it.forEach(function(x){acRowsOf(x.data).forEach(function(a){fl.push({id:x.id,reporter:x.reporter,createdAt:x.createdAt,ph:x.ph,data:{date:x.data.date,time:x.data.time,note:x.data.note,a:a}})})});
+   add('Daily Monitoring AC',['No. Laporan','Tanggal','Jam','Area / Ruangan','Merk AC','Suhu AC (°C)','Catatan Area','Catatan Umum','Pelapor','Dibuat'],fl,
+    function(x){var d=x.data,a=d.a;return [x.id,d.date,d.time,a.location,a.unit,n(a.roomTemp),n(a.note),n(d.note),x.reporter,dt(x.createdAt)]},
+    [22,12,8,18,12,13,28,30,16,20],1);
   }else{
    add('Laporan Pembelian',['No. Laporan','Tanggal','Jam','Toko / Pemasok','Pembeli','Penerima','Keperluan','Jumlah Item','Total (Rp)','Catatan','Pelapor','Dibuat'],it,
     function(x){var d=x.data;return [x.id,d.date,d.time,d.store,d.buyer,d.receiver,d.purpose,(d.items||[]).length,d.total,d.note,x.reporter,dt(x.createdAt)]},
@@ -222,9 +224,10 @@ function detail(id,after){modal('<div class="empty">Memuat...</div>');api('rep_g
   else if(d.lwbp==null&&d.reading!=null)h+='<tr><th>Pembacaan (data lama)</th><td>'+d.reading+' kWh</td></tr>';
   else if(d.lwbp!=null){var xf=d.diffs||{},ff=function(v){return v!=null?v+' kWh':'-'};h+='<tr><th>Selisih pemakaian</th><td>LWBP: '+ff(xf.lwbp)+'<br>WBP: '+ff(xf.wbp)+'<br>Genset: '+ff(xf.genset)+(d.prevs?'':'<br><small>Belum ada pencatatan sebelumnya</small>')+'</td></tr>'}}
  h+='<tr><th>Pelapor</th><td>'+esc(r.reporter)+'</td></tr><tr><th>Dibuat</th><td>'+dt(r.createdAt)+'</td></tr><tr><th>Diubah</th><td>'+dt(r.updatedAt)+'</td></tr></table>';
+ if(t==='ac')h+='<div class="scroll"><table><tr><th>Area</th><th>Merk</th><th>Suhu</th><th>Catatan</th></tr>'+acRowsOf(d).map(function(a){return '<tr><td>'+esc(a.location)+'</td><td>'+esc(a.unit)+'</td><td>'+esc(a.roomTemp)+' °C</td><td>'+esc(a.note||'-')+'</td></tr>'}).join('')+'</table></div>';
  if(t==='purchase')h+='<div class="scroll"><table><tr><th>Barang</th><th>Jml</th><th>Harga</th><th>Total</th></tr>'+d.items.map(function(i){return '<tr><td>'+esc(i.name)+'<br><small>'+esc(i.category)+'</small></td><td>'+i.qty+' '+esc(i.unit)+'</td><td>'+RP.format(i.price)+'</td><td>'+RP.format(i.total)+'</td></tr>'}).join('')+'<tr><th colspan="3">Total transaksi</th><th>'+RP.format(d.total)+'</th></tr></table></div>';
- var gk=t==='work'?[['Sebelum','Sebelum (Before)'],['Sesudah','Sesudah (After)'],['Foto','Lainnya']]:[['','Foto']];
- h+='<div id="gal">'+gk.map(function(g){var ps=(r.photos||[]).filter(function(p){return t!=='work'||p.kind===g[0]||(g[0]==='Foto'&&p.kind!=='Sebelum'&&p.kind!=='Sesudah')});return ps.length?'<b>'+g[1]+'</b><div class="ph">'+ps.map(function(p){return '<div><img loading="lazy" data-p="'+p.id+'" data-u="'+esc(p.url||'')+'" alt="Foto dokumentasi" title="Klik untuk memperbesar"></div>'}).join('')+'</div>':''}).join('')+'</div>';
+ var gk=t==='work'?[['Sebelum','Sebelum (Before)'],['Sesudah','Sesudah (After)'],['Foto','Lainnya']]:t==='ac'?(r.photos||[]).map(function(p){return p.kind||'Foto'}).filter(function(k,i,a){return a.indexOf(k)===i}).map(function(k){return [k,k==='Foto'?'Foto':'Foto area '+k]}):[['','Foto']];
+ h+='<div id="gal">'+gk.map(function(g){var ps=(r.photos||[]).filter(function(p){return (t!=='work'&&t!=='ac')||(t==='ac'&&(p.kind||'Foto')===g[0])||(t==='work'&&p.kind===g[0])||(g[0]==='Foto'&&p.kind!=='Sebelum'&&p.kind!=='Sesudah')});return ps.length?'<b>'+g[1]+'</b><div class="ph">'+ps.map(function(p){return '<div><img loading="lazy" data-p="'+p.id+'" data-u="'+esc(p.url||'')+'" alt="Foto dokumentasi" title="Klik untuk memperbesar"></div>'}).join('')+'</div>':''}).join('')+'</div>';
  var np=(r.photos||[]).length;if(np)h+='<div class="zipbar"><span>'+np+' foto'+(np>10?' · ZIP dibuat otomatis':'')+'</span><button type="button" class="btn sec" id="dz">Unduh semua foto (ZIP)</button>'+(r.folder?'<a class="btn sec" href="'+esc(r.folder)+'" target="_blank" rel="noopener">Buka folder Drive</a>':'')+'</div>';
  var left=r.remainMs,t0=Date.now();
  if(U.role!=='ADMIN'&&r.own)h+=r.editable?'<div class="info">Anda dapat mengedit laporan ini selama 30 menit setelah laporan berhasil disimpan. Sisa: <b id="lf"></b></div>':'<div class="info">Batas waktu edit telah berakhir. Hubungi Admin jika diperlukan koreksi.</div>';
@@ -239,24 +242,44 @@ function detail(id,after){modal('<div class="empty">Memuat...</div>');api('rep_g
 
 /* ---- laporan: form ---- */
 function fld(f,v){var k=f[0],q=f[3]?' required':'',h='<label>'+f[1]+(f[3]?' *':'')+'</label>',v2=v==null?'':v;
- if(f[2]==='area'){var ex=v2!==''&&f[4].indexOf(v2)<0&&v2!=='Lainnya',oth=ex||v2==='Lainnya';return h+'<select class="as" aria-label="Area"'+q+'><option value="">Pilih area</option>'+f[4].map(function(o){return '<option'+((o===v2||(ex&&o==='Lainnya'))?' selected':'')+'>'+esc(o)+'</option>'}).join('')+'</select><input class="ao" name="'+k+'" type="text" maxlength="200" placeholder="Ketik nama area" value="'+esc(ex?v2:(v2==='Lainnya'?'':v2))+'"'+q+(oth?'':' style="display:none"')+'>'}
  if(f[2]==='select')return h+'<select name="'+k+'"'+q+'>'+f[4].map(function(o){return '<option'+(o===v2?' selected':'')+'>'+esc(o)+'</option>'}).join('')+'</select>';
  if(f[2]==='textarea')return h+'<textarea name="'+k+'" rows="3">'+esc(v2)+'</textarea>';
  return h+'<input name="'+k+'" type="'+f[2]+'"'+(f[2]==='number'?' step="any" min="0"':'')+' value="'+esc(v2)+'"'+q+'>'}
+function acRow(id,r){r=r||{};var loc=r.location||'',mm=ACA.filter(function(o){return o.toLowerCase()===String(loc).toLowerCase()})[0];if(mm)loc=mm;var ex=loc!==''&&ACA.indexOf(loc)<0,oth=ex||loc==='Lainnya';
+ return '<div class="acr" data-r="'+id+'"><div class="acr-h"><select class="as" aria-label="Area / ruangan">'+ACA.map(function(o){return '<option'+((o===loc||(ex&&o==='Lainnya'))?' selected':'')+'>'+esc(o)+'</option>'}).join('')+'</select><button type="button" class="btn sec rm" aria-label="Hapus area">×</button></div>'
+ +'<input class="ao" type="text" maxlength="100" placeholder="Ketik nama area" value="'+esc(ex?loc:'')+'"'+(oth?'':' style="display:none"')+'>'
+ +'<div class="acr-g"><label>Merk AC<select class="au">'+ACU.map(function(o){return '<option'+(o===(r.unit||'Daikin')?' selected':'')+'>'+o+'</option>'}).join('')+'</select></label><label>Suhu AC (°C)<input class="at" type="number" step="any" min="-10" max="80" inputmode="decimal" placeholder="mis. 24" value="'+(r.roomTemp==null?'':esc(r.roomTemp))+'"></label></div>'
+ +'<input class="an" type="text" maxlength="300" placeholder="Catatan area (opsional)" value="'+esc(r.note)+'">'
+ +'<div class="pick"><label class="btn sec pk" for="gi_'+id+'">Galeri</label><label class="btn sec pk" for="gc_'+id+'">Kamera</label></div><input class="vh" type="file" id="gi_'+id+'" accept="image/jpeg,image/png,image/webp" multiple><input class="vh" type="file" id="gc_'+id+'" accept="image/*" capture="environment"><div class="ph" id="pv_'+id+'"></div></div>'}
 var PHMAX=50,PHBATCH=3; /* PHMAX sama dengan MAXPH di Code.gs; PHBATCH = jumlah foto per kiriman */
 var UNITS=['Pcs','Unit','Buah','Batang','Kotak','Botol','Liter','Meter','Kg','Set'];
 function unitSel(u){u=u||'';var known=UNITS.indexOf(u)>=0,other=u&&!known;
  return '<div class="iu"><select class="us" aria-label="Satuan">'+UNITS.map(function(o){return '<option'+(o===u?' selected':'')+'>'+o+'</option>'}).join('')+'<option value="__o"'+(other?' selected':'')+'>Lainnya</option></select><input class="uo" placeholder="Ketik satuan" maxlength="20" value="'+esc(other?u:'')+'"'+(other?'':' style="display:none"')+'></div>'}
 function unitVal(r){var s=r.querySelector('.us');return s.value==='__o'?r.querySelector('.uo').value.trim():s.value}
 function irow(i){i=i||{};return '<div class="irow"><input class="in" placeholder="Nama barang" value="'+esc(i.name)+'"><input class="ic" placeholder="Kategori" value="'+esc(i.category)+'"><input class="iq" type="number" step="any" min="0" placeholder="Jml" value="'+(i.qty||'')+'">'+unitSel(i.unit)+'<input class="ip" type="number" step="any" min="0" placeholder="Harga satuan" value="'+(i.price==null?'':i.price)+'"><b class="it"></b><button type="button" class="btn sec rm">×</button></div>'}
-function repForm(t,rec,after){var c=T[t],d=rec?rec.data:{},PH=[],rid=uuid(),team=[],GR=t==='work'?[['Sebelum','Foto Sebelum (Before)'],['Sesudah','Foto Sesudah (After)']]:[['Foto','Foto dokumentasi']];
+function repForm(t,rec,after){var c=T[t],d=rec?rec.data:{},PH=[],rid=uuid(),team=[],GR=t==='work'?[['Sebelum','Foto Sebelum (Before)'],['Sesudah','Foto Sesudah (After)']]:t==='ac'?[]:[['Foto','Foto dokumentasi']],AR=[],ARN=0;
  var go2=function(){
   var h='<h3>'+(rec?'Edit '+esc(rec.id):'Buat '+c.label)+'</h3><form id="rfm"><div class="row2">'+c.f.map(function(f){return '<div'+(f[5]?' data-k="'+f[5]+'"':'')+(f[2]==='textarea'||f[0]==='kind'?' class="full"':'')+'>'+fld(f,d[f[0]]!=null?d[f[0]]:(f[0]==='date'?new Date(now()+7*36e5).toISOString().slice(0,10):f[0]==='time'?new Date(now()+7*36e5).toISOString().slice(11,16):''))+'</div>'}).join('')+'</div>';
+  if(t==='ac'){var ir=rec&&acRowsOf(d).length?acRowsOf(d):ACD.map(function(n){return {location:n,unit:'Daikin'}});
+   h=h.replace('<div class=\"row2\">','<p class=\"info\">Isi suhu seluruh area, lampirkan foto bukti per area, lalu kirim sekaligus. Area yang suhunya dikosongkan tidak ikut dikirim.</p><div id=\"acs\">'+ir.map(function(r){AR.push(++ARN);return acRow(ARN,r)}).join('')+'</div><div class=\"acbar\"><button type=\"button\" class=\"btn sec\" id=\"aad\">+ Tambah area</button><span id=\"apc\"></span></div><div class=\"row2\">')}
   if(c.team)h+='<label>Anggota tim yang mengerjakan</label><div id="tm">'+team.map(function(n){return '<label style="font-weight:400;margin:4px 0"><input type="checkbox" style="width:auto;min-height:0" value="'+esc(n)+'"'+((d.team||[]).indexOf(n)>=0?' checked':'')+'> '+esc(n)+'</label>'}).join('')+'</div>';
   if(c.items)h+='<label>Barang *</label><div id="its">'+(d.items||[{}]).map(irow).join('')+'</div><button type="button" class="btn sec" id="ai">+ Tambah Barang</button><p><b>Total transaksi: <span id="gt">Rp 0</span></b></p>';
   h+=GR.map(function(g){return '<label>'+g[1]+' (JPG/PNG/WebP, maks '+PHMAX+' foto total)</label><div class="pick"><label class="btn sec pk" for="fi_'+g[0]+'">Pilih dari galeri</label><label class="btn sec pk" for="fc_'+g[0]+'">Ambil dengan kamera</label></div><input class="vh" type="file" id="fi_'+g[0]+'" accept="image/jpeg,image/png,image/webp" multiple><input class="vh" type="file" id="fc_'+g[0]+'" accept="image/*" capture="environment"><div class="ph" id="pv_'+g[0]+'"></div>'}).join('')+'<div class="merr" id="re"></div><div class="fact"><button class="btn" id="rsv">Simpan laporan</button><button type="button" class="btn sec" id="rc">Batal</button></div></form>';
   modal(h);$('rc').onclick=closeM;
-  if(t==='ac'){var as=document.querySelector('#rfm .as'),ao=document.querySelector('#rfm .ao'),sa=function(){if(as.value==='Lainnya'){ao.style.display='';ao.required=true;if(ACA.indexOf(ao.value)>=0)ao.value=''}else{ao.style.display='none';ao.value=as.value;ao.required=false}};as.onchange=function(){sa();if(as.value==='Lainnya')ao.focus()};if(as.value&&as.value!=='Lainnya')ao.value=as.value;if(as.value==='Lainnya')ao.required=true;as.required=true}
+  if(t==='ac'){var acs=$('acs'),cnt=function(){$('apc').textContent='Foto: '+PH.length+' / '+PHMAX};
+   var pv=function(id){var el=$('pv_'+id);if(el)el.innerHTML=PH.map(function(p,i){return p.rid===id?'<div><img src="'+p.url+'"><button type="button" class="x" data-i="'+i+'">×</button></div>':''}).join('')};
+   var allPv=function(){[].forEach.call(acs.children,function(el){pv(+el.dataset.r)});cnt()};
+   var wire=function(el){var id=+el.dataset.r,sel=el.querySelector('.as'),oth=el.querySelector('.ao');
+    sel.onchange=function(){var o=sel.value==='Lainnya';oth.style.display=o?'':'none';if(o)oth.focus()};
+    el.querySelector('.rm').onclick=function(){if(acs.children.length<2){$('re').textContent='Minimal harus ada satu area.';return}PH=PH.filter(function(p){return p.rid!==id});el.remove();allPv()};
+    $('pv_'+id).onclick=function(e){if(e.target.dataset.i!=null){PH.splice(+e.target.dataset.i,1);allPv()}};
+    var onPick=function(){var fs=[].slice.call(this.files),bad=0;this.value='';
+     fs.reduce(function(p,f){return p.then(function(){if(PH.length>=PHMAX){bad++;return}return comp(f).then(function(x){x.rid=id;PH.push(x)},function(){bad++})})},Promise.resolve()).then(function(){allPv();$('re').textContent=bad?bad+' file ditolak (format/ukuran tidak valid atau melebihi '+PHMAX+' foto).':''})};
+    $('gi_'+id).onchange=onPick;$('gc_'+id).onchange=onPick};
+   [].forEach.call(acs.children,wire);cnt();
+   $('aad').onclick=function(){if(acs.children.length>=20){$('re').textContent='Maksimal 20 area per laporan.';return}
+    var used=[].map.call(acs.querySelectorAll('.as'),function(x){return x.value}),nx=ACD.filter(function(n){return used.indexOf(n)<0})[0]||'Lainnya';
+    acs.insertAdjacentHTML('beforeend',acRow(++ARN,{location:nx,unit:'Daikin'}));var el=acs.lastElementChild;wire(el);el.scrollIntoView({block:'center',behavior:'smooth'})}}
   if(t==='meter'){var ks=$('rfm').elements['kind'],tk=function(){document.querySelectorAll('#rfm [data-k]').forEach(function(w){var on=w.dataset.k===ks.value;w.style.display=on?'':'none';w.querySelectorAll('input').forEach(function(i){i.disabled=!on;i.required=on})})};ks.onchange=tk;tk();
    var sg=document.createElement('div');sg.className='seg';sg.innerHTML=['Listrik','Air'].map(function(o){return '<button type="button" data-v="'+o+'"><i>'+(o==='Air'?IC.water:IC.meter)+'</i>'+o+'</button>'}).join('');ks.style.display='none';ks.parentNode.appendChild(sg);
    var sy=function(){[].forEach.call(sg.children,function(b){b.classList.toggle('on',b.dataset.v===ks.value)})};sg.onclick=function(e){var b=e.target.closest('button');if(!b)return;ks.value=b.dataset.v;tk();sy()};sy()}
@@ -269,7 +292,17 @@ function repForm(t,rec,after){var c=T[t],d=rec?rec.data:{},PH=[],rid=uuid(),team
     fs.reduce(function(p,f){return p.then(function(){if(PH.length>=PHMAX){bad++;return}return comp(f).then(function(x){x.kind=g[0];PH.push(x)},function(){bad++})})},Promise.resolve()).then(function(){prev();$('re').textContent=bad?bad+' file ditolak (format/ukuran tidak valid atau melebihi '+PHMAX+' foto).':''})};$('fi_'+g[0]).onchange=onPick;$('fc_'+g[0]).onchange=onPick});
   $('rfm').onsubmit=function(e){e.preventDefault();var f=e.target,data={};
    c.f.forEach(function(x){if(x[5]&&x[5]!==data.kind)return;data[x[0]]=f.elements[x[0]].value});
-   if(t==='ac'){var nw=new Date(now()+7*36e5).toISOString();data.date=rec&&d.date?d.date:nw.slice(0,10);data.time=rec&&d.time?d.time:nw.slice(11,16)}
+   if(t==='ac'){var er='',rs=[],rids={},seen={};
+    [].forEach.call(acs.children,function(el,i){var id=+el.dataset.r,sv=el.querySelector('.as').value,loc=sv==='Lainnya'?el.querySelector('.ao').value.trim():sv,tp=el.querySelector('.at').value.trim(),hp=PH.some(function(p){return p.rid===id});
+     if(tp===''){if(hp&&!er)er='Area '+(loc||('ke-'+(i+1)))+' punya foto tetapi suhunya kosong. Isi suhu atau hapus fotonya.';return}
+     if(!loc||loc==='Lainnya'){if(!er)er='Nama area baris ke-'+(i+1)+' belum diisi.';return}
+     if(isNaN(+tp)||+tp<-10||+tp>80){if(!er)er='Suhu '+loc+' harus berupa angka -10 sampai 80.';return}
+     if(seen[loc.toLowerCase()]){if(!er)er='Area '+loc+' terisi lebih dari satu kali.';return}
+     seen[loc.toLowerCase()]=1;rs.push({location:loc,unit:el.querySelector('.au').value,roomTemp:tp,note:el.querySelector('.an').value.trim()});rids[id]=loc});
+    if(!er&&!rs.length)er='Isi suhu minimal satu area.';
+    if(er){$('re').textContent=er;return}
+    data.rows=rs;PH=PH.filter(function(p){return rids[p.rid]!=null});PH.forEach(function(p){p.kind=rids[p.rid]});
+    var nw=new Date(now()+7*36e5).toISOString();data.date=rec&&d.date?d.date:nw.slice(0,10);data.time=rec&&d.time?d.time:nw.slice(11,16)}
    if(c.team)data.team=[].map.call(document.querySelectorAll('#tm input:checked'),function(i){return i.value});
    if(c.items&&[].some.call(document.querySelectorAll('.irow'),function(r){return !unitVal(r)})){$('re').textContent='Isi satuan barang (untuk "Lainnya", ketik satuannya).';return}
    if(c.items)data.items=[].map.call(document.querySelectorAll('.irow'),function(r){return {name:r.querySelector('.in').value,category:r.querySelector('.ic').value,qty:r.querySelector('.iq').value,unit:unitVal(r),price:r.querySelector('.ip').value}});
