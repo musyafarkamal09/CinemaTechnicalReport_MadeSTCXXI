@@ -181,7 +181,10 @@ function upPh(id,phs,prog){var failed=0,sent=0;if(!phs.length)return Promise.res
  return chunks.reduce(function(p,ch){return p.then(function(){return send(ch,0).then(function(){sent+=ch.length;if(prog)prog(sent)})})},Promise.resolve())
   .then(function(){return api('photo_done',{id:id}).catch(function(){})}).then(function(){return failed})}
 /* ---- meteran: detail, akumulasi, grafik ---- */
-var NF=new Intl.NumberFormat('id-ID',{maximumFractionDigits:2}),NF3=new Intl.NumberFormat('id-ID',{maximumFractionDigits:3}),MON=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],CC={lwbp:'#c9a24d',wbp:'#2fa476',genset:'#9a6fcf',air:'#2e9bd6'};
+var NF=new Intl.NumberFormat('id-ID',{maximumFractionDigits:2}),NF3=new Intl.NumberFormat('id-ID',{maximumFractionDigits:3}),MON=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],CC={listrik:'#c9a24d',lwbp:'#c9a24d',wbp:'#2fa476',genset:'#9a6fcf',air:'#2e9bd6'};
+/* listrik = LWBP + WBP digabung; pemakaian harian = selisih total (LWBP+WBP) hari ini dengan sebelumnya */
+function addL(o){var q=Object.assign({},o);q.listrik=Math.round(((+o.lwbp||0)+(+o.wbp||0))*1000)/1000;return q}
+function addT(o){if(o)o.listrik=Math.round(((+o.lwbp||0)+(+o.wbp||0))*1000)/1000}
 function nf(v){return v==null||isNaN(v)?'-':NF.format(v)}
 function mfmt(v){return v==null?'-':NF3.format(v)}
 function dd(s){return s?new Intl.DateTimeFormat('id-ID',{timeZone:TZ,dateStyle:'medium'}).format(new Date(s+'T12:00:00+07:00')):'-'}
@@ -193,8 +196,8 @@ function meterDetail(d){var rows=[],x=d.diffs||{},p=d.prevs||{};
  if(d.kind!=='Air'){if(d.lwbp!=null)[['LWBP','lwbp'],['WBP','wbp'],['Genset','genset']].forEach(function(m){rows.push([m[0]+' (kWh)',d[m[1]],p[m[1]],x[m[1]]])});else if(d.reading!=null)rows.push(['Listrik (data lama, kWh)',d.reading,null,null])}
  if(d.kind==='Air'||d.kind==='Gabungan')rows.push(['Air (m³)',d.reading,d.prev,d.diff]);
  return '<div class="mh">Pembacaan meteran</div><div class="scroll"><table class="mt"><tr><th>Meter</th><th>Angka</th><th>Sebelumnya</th><th>Pemakaian</th></tr>'+rows.map(function(r){return '<tr><td>'+r[0]+'</td><td>'+mfmt(r[1])+'</td><td>'+mfmt(r[2])+'</td><td>'+(r[3]!=null?'<b>+'+mfmt(r[3])+'</b>':'-')+'</td></tr>'}).join('')+'</table></div>'+(rows.every(function(r){return r[3]==null})?'<small class="mnote">Belum ada pencatatan sebelumnya di lokasi ini, atau angka lebih kecil dari sebelumnya.</small>':'')+'<div id="mcum"></div>'}
-function meterCum(d){api('meter_prev',{location:d.location,until:d.date+' '+(d.time||'00:00'),inclusive:1}).then(function(s){var b=$('mcum');if(!b||!s.count)return;
- var M=[['lwbp','LWBP','kWh','e'],['wbp','WBP','kWh','e'],['genset','Genset','kWh','e'],['air','Air','m³','w']].filter(function(m){return s.has[m[3]]});
+function meterCum(d){api('meter_prev',{location:d.location,until:d.date+' '+(d.time||'00:00'),inclusive:1}).then(function(s){var b=$('mcum');if(!b||!s.count)return;addT(s.cum);
+ var M=[['listrik','Listrik (LWBP+WBP)','kWh','e'],['genset','Genset','kWh','e'],['air','Air','m³','w']].filter(function(m){return s.has[m[3]]});
  b.innerHTML='<div class="mh">Akumulasi pemakaian di '+esc(d.location)+'</div><div class="macc">'+M.map(function(m){return '<div><small>'+m[1]+'</small><b>'+nf(s.cum[m[0]])+' '+m[2]+'</b></div>'}).join('')+'</div><small class="mnote">Total selisih antar laporan sejak '+dd(s.since)+' sampai laporan ini ('+s.count+' laporan terkirim).</small>'}).catch(function(){})}
 var DAY=864e5,CH=null;
 function tm(k){return Date.parse(k.length===7?k+'-01T00:00:00Z':k+'T00:00:00Z')}
@@ -209,11 +212,11 @@ function xt(a,b,n,gr){var o=[],i,t,d;
 /* grafik garis gabungan (LWBP, WBP, Genset = kWh di sumbu kiri; Air = m³ di sumbu kanan) dengan zoom & geser.
    Data: seri dari server (seluruh riwayat bila tersedia), tampilan awal = periode yang dipilih. */
 function mChartInit(r,all){
- var S=all.series,gr=r.group,K=['lwbp','wbp','genset','air'],
+ var S=all.series.map(addL),gr=r.group,K=['listrik','genset','air'],
   on=K.filter(function(k){return S.some(function(o){return o[k]>0})}),
   P=S.map(function(o){return {t:tm(o.k),o:o}}),pad=gr==='month'?16*DAY:DAY,mn=P[0].t,mx=P[P.length-1].t,f0=r.from?tm(r.from):mn,f1=r.to?tm(r.to):mx;
  if(gr==='month'){var d0=new Date(f0),d1=new Date(f1);f0=Date.UTC(d0.getUTCFullYear(),d0.getUTCMonth(),1);f1=Date.UTC(d1.getUTCFullYear(),d1.getUTCMonth(),1)}
- CH={P:P,on:on,hid:{},sel:-1,gr:gr,i0:f0-pad,i1:f1+pad,F0:Math.min(mn-pad,f0-pad),F1:Math.max(mx+pad,f1+pad),minSp:gr==='month'?50*DAY:4*DAY,NM:{lwbp:'LWBP',wbp:'WBP',genset:'Genset',air:'Air'},UN:{lwbp:'kWh',wbp:'kWh',genset:'kWh',air:'m³'},raf:0};
+ CH={P:P,on:on,hid:{},sel:-1,gr:gr,i0:f0-pad,i1:f1+pad,F0:Math.min(mn-pad,f0-pad),F1:Math.max(mx+pad,f1+pad),minSp:gr==='month'?50*DAY:4*DAY,NM:{listrik:'Listrik',genset:'Genset',air:'Air'},UN:{listrik:'kWh',genset:'kWh',air:'m³'},raf:0};
  mSet(CH.i0,CH.i1)}
 function mSet(a,b){var c=CH,sp=Math.min(Math.max(b-a,c.minSp),c.F1-c.F0),ct=(a+b)/2;a=ct-sp/2;
  if(a<c.F0)a=c.F0;if(a+sp>c.F1)a=c.F1-sp;c.a=a;c.b=a+sp}
@@ -279,17 +282,17 @@ function mBind(){var c=CH,el=$('mchart');if(!c||!el)return;
  if(lg)lg.onclick=function(ev){var b=ev.target.closest('[data-k]');if(!b)return;var k=b.dataset.k;c.hid[k]=!c.hid[k];b.classList.toggle('off',!!c.hid[k]);b.setAttribute('aria-pressed',String(!c.hid[k]));c.sel=-1;mDraw()};
  if(!window.__mrz){window.__mrz=1;window.addEventListener('resize',function(){mReq()})}}
 function mChartHtml(r,all){
- var NM={lwbp:'LWBP (kWh)',wbp:'WBP (kWh)',genset:'Genset (kWh)',air:'Air (m³)'},gl=r.group==='month'?'bulan':'hari';
+ var NM={listrik:'Listrik LWBP+WBP (kWh)',genset:'Genset (kWh)',air:'Air (m³)'},gl=r.group==='month'?'bulan':'hari';
  mChartInit(r,all);
  return '<div class="mh">Pemakaian listrik &amp; air per '+gl+'</div><div class="mcc"><div class="mlg" id="mlg">'+CH.on.map(function(k){return '<button type="button" class="mlb" data-k="'+k+'" aria-pressed="true"><i style="background:'+CC[k]+'"></i>'+NM[k]+'</button>'}).join('')+'</div>'+
   '<div class="mct" id="mctl"><button type="button" class="btn sec" data-a="pl" aria-label="Geser ke kiri" title="Geser ke kiri">&#9664;</button><button type="button" class="btn sec" data-a="pr" aria-label="Geser ke kanan" title="Geser ke kanan">&#9654;</button><button type="button" class="btn sec" data-a="zi" aria-label="Perbesar" title="Perbesar">+</button><button type="button" class="btn sec" data-a="zo" aria-label="Perkecil" title="Perkecil">&minus;</button><button type="button" class="btn sec" data-a="rs" title="Kembali ke periode yang dipilih">Reset zoom</button></div></div>'+
   '<div class="mch" id="mchart"></div><small class="mnote">Geser dengan mouse atau jari. Zoom: tombol +/&minus;, cubit layar, atau Ctrl+scroll. Arahkan atau ketuk grafik untuk melihat nilai. Sumbu kiri kWh, sumbu kanan m³.</small>'}
-function mRender(r,all){var U2=[['lwbp','LWBP','kWh'],['wbp','WBP','kWh'],['genset','Genset','kWh'],['air','Air','m³']];
+function mRender(r,all){var U2=[['listrik','Listrik (LWBP+WBP)','kWh'],['genset','Genset','kWh'],['air','Air','m³']];addT(r.cum);addT(r.per);r.series=(r.series||[]).map(addL);
  if(!r.count.total)return '<div class="empty"><b>Belum ada data meteran</b>Akumulasi dan grafik muncul setelah ada laporan meteran.</div>';
  var h='<div class="mlts">'+r.latest.map(function(o){var e=o.elec,w=o.water;return '<div class="mlt"><b>'+esc(o.loc)+'</b><small>Pembacaan terakhir</small><span>'+(e?'LWBP '+mfmt(e.lwbp)+' · WBP '+mfmt(e.wbp)+' · Genset '+mfmt(e.genset)+' kWh ('+dd(e.date)+')':'')+(e&&w?'<br>':'')+(w?'Air '+mfmt(w.reading)+' m³ ('+dd(w.date)+')':'')+'</span></div>'}).join('')+'</div>';
  h+='<div class="mh">Akumulasi pemakaian <small>(total selisih antar laporan sejak '+dd(r.since)+', '+r.count.total+' laporan)</small></div><div class="macc">'+U2.map(function(m){return '<div><small>'+m[1]+'</small><b>'+nf(r.cum[m[0]])+' '+m[2]+'</b><span>Periode ini: '+(r.per[m[0]]>0?'+':'')+nf(r.per[m[0]])+' '+m[2]+'</span></div>'}).join('')+'</div>';
  h+='<small class="mnote">Periode '+dd(r.from)+' – '+dd(r.to)+' · '+r.count.period+' laporan. Pemakaian dihitung dari selisih angka antar pencatatan di lokasi yang sama dan dicatat pada tanggal laporan yang lebih baru.</small>';
- var src=(all&&all.series&&all.series.length)?all:r,NM=[['lwbp','LWBP'],['wbp','WBP'],['genset','Genset']],gr=r.group;
+ var src=(all&&all.series&&all.series.length)?all:r,NM=[['listrik','Listrik (LWBP+WBP)'],['genset','Genset']],gr=r.group;
  if(!src.series.length){CH=null;return h+'<div class="empty" style="margin-top:12px"><b>Tidak ada pemakaian pada periode ini</b>Ubah rentang tanggal. Pemakaian baru terhitung setelah ada minimal dua pencatatan di lokasi yang sama.</div>'}
  if(!r.series.length)h+='<div class="empty" style="margin-top:12px"><b>Tidak ada pemakaian pada periode ini</b>Geser grafik untuk melihat periode lain yang punya data.</div>';
  h+=mChartHtml(r,src);
