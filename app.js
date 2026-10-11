@@ -47,10 +47,11 @@ $('modal').onclick=function(e){if(e.target===this)closeM()};
 /* ---- definisi laporan ---- */
 var WC=['Electrical','Mechanical','HVAC / AC','Plumbing','Audio','Projector','Building Maintenance','Preventive Maintenance','Corrective Maintenance','Lainnya'];
 var WS=['Open','In Progress','Completed','Pending','Need Follow-up'];
+var ACA=['TH1','TH2','TH3','TH4','KORIDOR','LOBBY','Lainnya'];
 var T={
  work:{label:'Laporan Pekerjaan',f:[['title','Judul pekerjaan','text',1],['category','Kategori','select',1,WC],['location','Lokasi','text',1],['date','Tanggal pekerjaan','date',1],['time','Jam pekerjaan','time'],['status','Status','select',1,WS],['desc','Deskripsi','textarea'],['note','Catatan','textarea']],team:1},
  meter:{label:'Laporan Meteran',f:[['kind','Jenis meteran','select',1,['Listrik','Air']],['location','Lokasi meteran','text',1],['date','Tanggal pencatatan','date',1],['time','Jam pencatatan','time',1],['lwbp','Angka LWBP (kWh)','number',1,null,'Listrik'],['wbp','Angka WBP (kWh)','number',1,null,'Listrik'],['genset','Angka Genset (kWh)','number',1,null,'Listrik'],['reading','Angka meteran air (m³)','number',1,null,'Air'],['note','Catatan','textarea']]},
- ac:{label:'Daily Monitoring AC',f:[['location','Area / ruangan','text',1],['unit','Nama unit AC','select',1,['Daikin','York']],['roomTemp','Suhu AC sekarang (°C)','number',1],['note','Catatan','textarea']]},
+ ac:{label:'Daily Monitoring AC',f:[['location','Area / ruangan','area',1,ACA],['unit','Nama unit AC','select',1,['Daikin','York']],['roomTemp','Suhu AC sekarang (°C)','number',1],['note','Catatan','textarea']]},
  purchase:{label:'Laporan Pembelian Barang',f:[['date','Tanggal pembelian','date',1],['time','Jam pembelian','time'],['store','Nama toko / pemasok','text',1],['buyer','Nama pembeli','text',1],['receiver','Nama penerima barang','text'],['purpose','Keperluan','text'],['note','Catatan','textarea']],items:1}
 };
 var FS=['Upcoming ATS','ATS Open','Coming Soon','Coming to Theater','Now Showing','Completed'];
@@ -238,6 +239,7 @@ function detail(id,after){modal('<div class="empty">Memuat...</div>');api('rep_g
 
 /* ---- laporan: form ---- */
 function fld(f,v){var k=f[0],q=f[3]?' required':'',h='<label>'+f[1]+(f[3]?' *':'')+'</label>',v2=v==null?'':v;
+ if(f[2]==='area'){var ex=v2!==''&&f[4].indexOf(v2)<0&&v2!=='Lainnya',oth=ex||v2==='Lainnya';return h+'<select class="as" aria-label="Area"'+q+'><option value="">Pilih area</option>'+f[4].map(function(o){return '<option'+((o===v2||(ex&&o==='Lainnya'))?' selected':'')+'>'+esc(o)+'</option>'}).join('')+'</select><input class="ao" name="'+k+'" type="text" maxlength="200" placeholder="Ketik nama area" value="'+esc(ex?v2:(v2==='Lainnya'?'':v2))+'"'+q+(oth?'':' style="display:none"')+'>'}
  if(f[2]==='select')return h+'<select name="'+k+'"'+q+'>'+f[4].map(function(o){return '<option'+(o===v2?' selected':'')+'>'+esc(o)+'</option>'}).join('')+'</select>';
  if(f[2]==='textarea')return h+'<textarea name="'+k+'" rows="3">'+esc(v2)+'</textarea>';
  return h+'<input name="'+k+'" type="'+f[2]+'"'+(f[2]==='number'?' step="any" min="0"':'')+' value="'+esc(v2)+'"'+q+'>'}
@@ -254,6 +256,7 @@ function repForm(t,rec,after){var c=T[t],d=rec?rec.data:{},PH=[],rid=uuid(),team
   if(c.items)h+='<label>Barang *</label><div id="its">'+(d.items||[{}]).map(irow).join('')+'</div><button type="button" class="btn sec" id="ai">+ Tambah Barang</button><p><b>Total transaksi: <span id="gt">Rp 0</span></b></p>';
   h+=GR.map(function(g){return '<label>'+g[1]+' (JPG/PNG/WebP, maks '+PHMAX+' foto total)</label><div class="pick"><label class="btn sec pk" for="fi_'+g[0]+'">Pilih dari galeri</label><label class="btn sec pk" for="fc_'+g[0]+'">Ambil dengan kamera</label></div><input class="vh" type="file" id="fi_'+g[0]+'" accept="image/jpeg,image/png,image/webp" multiple><input class="vh" type="file" id="fc_'+g[0]+'" accept="image/*" capture="environment"><div class="ph" id="pv_'+g[0]+'"></div>'}).join('')+'<div class="merr" id="re"></div><div class="fact"><button class="btn" id="rsv">Simpan laporan</button><button type="button" class="btn sec" id="rc">Batal</button></div></form>';
   modal(h);$('rc').onclick=closeM;
+  if(t==='ac'){var as=document.querySelector('#rfm .as'),ao=document.querySelector('#rfm .ao'),sa=function(){if(as.value==='Lainnya'){ao.style.display='';ao.required=true;if(ACA.indexOf(ao.value)>=0)ao.value=''}else{ao.style.display='none';ao.value=as.value;ao.required=false}};as.onchange=function(){sa();if(as.value==='Lainnya')ao.focus()};if(as.value&&as.value!=='Lainnya')ao.value=as.value;if(as.value==='Lainnya')ao.required=true;as.required=true}
   if(t==='meter'){var ks=$('rfm').elements['kind'],tk=function(){document.querySelectorAll('#rfm [data-k]').forEach(function(w){var on=w.dataset.k===ks.value;w.style.display=on?'':'none';w.querySelectorAll('input').forEach(function(i){i.disabled=!on;i.required=on})})};ks.onchange=tk;tk();
    var sg=document.createElement('div');sg.className='seg';sg.innerHTML=['Listrik','Air'].map(function(o){return '<button type="button" data-v="'+o+'"><i>'+(o==='Air'?IC.water:IC.meter)+'</i>'+o+'</button>'}).join('');ks.style.display='none';ks.parentNode.appendChild(sg);
    var sy=function(){[].forEach.call(sg.children,function(b){b.classList.toggle('on',b.dataset.v===ks.value)})};sg.onclick=function(e){var b=e.target.closest('button');if(!b)return;ks.value=b.dataset.v;tk();sy()};sy()}
