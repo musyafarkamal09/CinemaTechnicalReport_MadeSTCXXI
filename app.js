@@ -151,9 +151,6 @@ function pwModal(force){
  $('pf').onsubmit=function(e){e.preventDefault();api('changepw',{old:$('po').value,pw:$('pn').value}).then(function(r){if(r&&r.token)saveSess(r.token,U);U.mustChange=false;LS.setItem('stc_u',JSON.stringify(U));closeM();toast('Password berhasil diganti.');if(force)go(CUR)}).catch(function(x){$('pe').textContent=x.message})}}
 
 /* ---- dashboard ---- */
-/* strip dekoratif tema ruang proyektor / teknis (statis, tanpa data) */
-function rigHtml(rr){if(rr)return '';var I={p:'<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="8" width="14" height="9" rx="2"/><circle cx="10" cy="12.5" r="2.5"/><path d="M17 11l4-2v7l-4-2"/></svg>',d:'<svg class="ic" viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9v6M12 9v6M16 9v6"/></svg>',h:'<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 12l5-3M12 12l-5-3M12 12v6"/></svg>',e:'<svg class="ic" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>'};
- return '<div class="rig" aria-label="Peralatan teknis"><span class="rig-t"><i class="led"></i>Projection Room</span>'+[['p','Barco DP4K-32B'],['p','Christie CP4330-RGB'],['d','Dolby Cinema'],['h','HVAC'],['e','Panel Teknis']].map(function(x){return '<span class="rg">'+I[x[0]]+x[1]+'</span>'}).join('')+'</div>'}
 function vDash(){Promise.all([api('dashboard'),api('ats_list')]).then(function(r){var d=r[0],fl=r[1].filter(function(f){return f.status!=='Completed'}),
  hr=Number(new Intl.DateTimeFormat('en-GB',{timeZone:TZ,hour:'2-digit',hour12:false}).format(new Date()))%24,
  gr=hr<11?'Selamat pagi':hr<15?'Selamat siang':hr<18?'Selamat sore':'Selamat malam',
@@ -162,7 +159,7 @@ function vDash(){Promise.all([api('dashboard'),api('ats_list')]).then(function(r
  qa=rr?[['issue','Laporkan masalah']]:[['work','Catat pekerjaan'],['issue','Lapor perbaikan'],['meter','Catat meteran'],['ac','Monitoring AC'],['purchase','Catat pembelian']];
  var tix=fl.length?fl.slice(0,3).map(function(f){return '<div class="tk"><div class="tl"><span class="pri">'+esc(f.status)+'</span><b>'+esc(f.title)+'</b><small>'+esc([f.genre,f.duration,f.rating].filter(Boolean).join(', ')||'Detail film belum diisi')+'</small><div class="tm"><div><small>Mulai ATS</small><span>'+dt(f.atsAt)+'</span></div><div><small>Mulai tayang</small><span>'+dt(f.showAt)+'</span></div></div></div><div class="tr"><div class="cdl" data-f=\''+esc(JSON.stringify({status:f.status,atsAt:f.atsAt,showAt:f.showAt}))+'\'></div></div></div>'}).join(''):'<div class="empty"><b>Belum ada film ATS</b>Film yang dijadwalkan Admin akan tampil di sini.</div>';
  $('view').innerHTML='<h2>Dashboard</h2><div class="welcome"><div><b>'+gr+', '+esc(U.name)+'</b><small>'+new Intl.DateTimeFormat('id-ID',{timeZone:TZ,dateStyle:'full'}).format(new Date())+'</small></div><div class="quick">'+qa.map(function(x){return '<button class="qa" data-new="'+x[0]+'"><i>'+IC[x[0]]+'</i>'+x[1]+'</button>'}).join('')+'</div></div>'+
- rigHtml(rr)+'<div class="grid">'+kp.map(function(x){var tg=x[2]?'button':'div';return '<'+tg+' class="card kpi"'+(x[2]?' data-go="'+x[2]+'"':'')+'><div class="kt"><span class="l">'+x[0]+'</span><i class="ki">'+IC[x[3]]+'</i></div><div class="n">'+x[1]+'</div>'+(x[2]?'<span class="kf">Buka daftar</span>':'<span class="kf" style="color:var(--mut)">Sejak 00.00 WIB</span>')+'</'+tg+'>'}).join('')+'</div>'+
+ '<div class="grid">'+kp.map(function(x){var tg=x[2]?'button':'div';return '<'+tg+' class="card kpi"'+(x[2]?' data-go="'+x[2]+'"':'')+'><div class="kt"><span class="l">'+x[0]+'</span><i class="ki">'+IC[x[3]]+'</i></div><div class="n">'+x[1]+'</div>'+(x[2]?'<span class="kf">Buka daftar</span>':'<span class="kf" style="color:var(--mut)">Sejak 00.00 WIB</span>')+'</'+tg+'>'}).join('')+'</div>'+
  '<div class="two"><div><div class="sh"><h2>Pengumuman terbaru</h2><button class="lnk" data-go="pengumuman">Lihat semua</button></div>'+(d.announcements.length?d.announcements.map(annCard).join(''):'<div class="empty"><b>Belum ada pengumuman</b>Informasi dari Admin akan tampil di sini.</div>')+'</div><div><div class="sh"><h2>Advanced Ticket Sales</h2><button class="lnk" data-go="ats">Lihat semua</button></div>'+tix+'</div></div>'+
  '<div class="sh"><h2>Aktivitas terbaru</h2></div>'+(d.recent.length?'<div class="scroll cards"><table class="rt"><tr><th>No. laporan</th><th>Kategori</th><th>Judul</th><th>Pelapor</th><th>Waktu</th><th></th></tr>'+
  d.recent.map(function(x){return '<tr><td data-l="No. laporan">'+esc(x.id)+'</td><td data-l="Kategori"><span class="kat">'+T[x.type].label+'</span></td><td class="sm">'+esc(x.title)+'</td><td data-l="Pelapor">'+esc(x.reporter)+'</td><td data-l="Waktu">'+dt(x.createdAt)+'</td><td class="act"><button class="btn sec" data-d="'+x.id+'">Detail</button></td></tr>'}).join('')+'</table></div>':'<div class="empty"><b>Belum ada laporan</b>Gunakan tombol "Catat" di atas untuk membuat laporan pertama.</div>');
@@ -209,31 +206,15 @@ function filmForm(f){f=f||{};var poster=null;
 
 /* ---- foto ---- */
 function comp(file){return new Promise(function(res,rej){
- if(file.size>25e6||(file.type&&file.type.indexOf('image/')!==0))return rej();
- var im=new Image(),u=URL.createObjectURL(file);im.decoding='async';
- im.onload=function(){try{var s=Math.min(1,1280/Math.max(im.width,im.height)),c=document.createElement('canvas'),x;c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));
-  x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
-  var q=.8,url=c.toDataURL('image/jpeg',q);while(url.length>1.3e6&&q>.5){q-=.1;url=c.toDataURL('image/jpeg',q)}
-  var t=document.createElement('canvas'),k=Math.min(1,200/Math.max(c.width,c.height));t.width=Math.max(1,Math.round(c.width*k));t.height=Math.max(1,Math.round(c.height*k));t.getContext('2d').drawImage(c,0,0,t.width,t.height);
-  URL.revokeObjectURL(u);res({mime:'image/jpeg',b64:url.split(',')[1],url:t.toDataURL('image/jpeg',.7),pk:uuid().replace(/[^A-Za-z0-9]/g,'').slice(0,20)})}catch(e){URL.revokeObjectURL(u);rej(e)}};
- im.onerror=function(){URL.revokeObjectURL(u);rej()};im.src=u})}
+ if(['image/jpeg','image/png','image/webp'].indexOf(file.type)<0||file.size>15e6)return rej();
+ var im=new Image(),u=URL.createObjectURL(file);im.onload=function(){var s=Math.min(1,1280/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);var url=c.toDataURL('image/jpeg',.8);res({mime:'image/jpeg',b64:url.split(',')[1],url:url})};im.onerror=rej;im.src=u})}
 
-/* unggah foto bertahap untuk laporan yang sudah ada; mengembalikan jumlah foto yang gagal.
-   fl (opsional) diisi foto yang perlu dicoba ulang. Tiap foto membawa kunci unik 'pk' sehingga percobaan ulang tidak membuat foto ganda. */
-function upPh(id,phs,prog,fl){var failed=0,sent=0;if(!phs.length)return Promise.resolve(0);
+/* unggah foto bertahap untuk laporan yang sudah ada; mengembalikan jumlah foto yang gagal */
+function upPh(id,phs,prog){var failed=0,sent=0;if(!phs.length)return Promise.resolve(0);
  var chunks=[],i;for(i=0;i<phs.length;i+=PHBATCH)chunks.push(phs.slice(i,i+PHBATCH));
- function bad(ch,n){failed+=n;if(fl)ch.forEach(function(p){fl.push(p)})}
- function send(ch,n){return api('photo_save',{id:id,photos:ch.map(function(p){return {mime:p.mime,b64:p.b64,kind:p.kind,pk:p.pk}})}).then(function(x){if(x.failed)bad(ch,x.failed)},function(e){if(n<2)return send(ch,n+1);bad(ch,ch.length)})}
+ function send(ch,n){return api('photo_save',{id:id,photos:ch.map(function(p){return {mime:p.mime,b64:p.b64,kind:p.kind}})}).then(function(x){failed+=x.failed},function(e){if(n<2)return send(ch,n+1);failed+=ch.length})}
  return chunks.reduce(function(p,ch){return p.then(function(){return send(ch,0).then(function(){sent+=ch.length;if(prog)prog(sent)})})},Promise.resolve())
   .then(function(){return api('photo_done',{id:id}).catch(function(){})}).then(function(){return failed})}
-/* dialog percobaan ulang untuk foto yang belum terkonfirmasi server (laporannya sudah tersimpan) */
-function retryPh(id,fl,done){
- modal('<h3>Sebagian foto belum terunggah</h3><p>Laporan <b>'+esc(id)+'</b> sudah tersimpan, tetapi <b id="rtn">'+fl.length+'</b> foto belum dikonfirmasi server. Foto yang sebenarnya sudah masuk tidak akan terkirim ganda.</p><div class="merr" id="rte"></div><div class="fact"><button class="btn" id="rtb">Coba unggah lagi</button><button type="button" class="btn sec" id="rtc">Tutup</button></div>');
- $('rtc').onclick=function(){closeM();done()};
- $('rtb').onclick=function(){var b=this,n=fl.splice(0);b.disabled=true;BUSY=true;b.textContent='Mengunggah foto 0/'+n.length+'...';
-  upPh(id,n,function(k){b.textContent='Mengunggah foto '+k+'/'+n.length+'...'},fl).then(function(f){BUSY=false;
-   if(!fl.length){closeM();toast('Semua foto berhasil diunggah.');done();return}
-   $('rtn').textContent=fl.length;$('rte').textContent='Masih ada foto yang gagal. Periksa koneksi internet lalu coba lagi.';b.disabled=false;b.textContent='Coba unggah lagi'})}}
 /* ---- meteran: detail, akumulasi, grafik ---- */
 var NF=new Intl.NumberFormat('id-ID',{maximumFractionDigits:2}),NF3=new Intl.NumberFormat('id-ID',{maximumFractionDigits:3}),MON=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],CC={listrik:'#c9a24d',lwbp:'#c9a24d',wbp:'#2fa476',genset:'#9a6fcf',air:'#2e9bd6'};
 /* listrik = LWBP + WBP digabung; pemakaian harian = selisih total (LWBP+WBP) hari ini dengan sebelumnya */
@@ -246,15 +227,10 @@ function jkd(o){return new Date(now()+7*36e5+o*864e5).toISOString().slice(0,10)}
 function nice(v){var p=Math.pow(10,Math.floor(Math.log(v)/Math.LN10)),f=v/p;return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p}
 function bl(k,g){return g==='month'?MON[+k.slice(5,7)-1]+' '+k.slice(2,4):k.slice(8,10)+'/'+k.slice(5,7)}
 function tl(k,g){return g==='month'?MON[+k.slice(5,7)-1]+' '+k.slice(0,4):dd(k)}
-function mNote(d,rows){var st=d.mst||{},a=[].concat(Object.keys(st.e||{}).map(function(k){return st.e[k]}),st.w?[st.w]:[]),h='';
- if(a.indexOf('reset')>=0)h+='<small class="mnote neg">Ada angka yang lebih kecil dari pencatatan sebelumnya (meteran diganti/direset). Selisihnya tidak dihitung dan tidak masuk akumulasi; angka ini menjadi acuan berikutnya.</small>';
- if(a.indexOf('dup')>=0)h+='<small class="mnote">Pencatatan dengan tanggal, jam, dan angka yang sama sudah ada (kemungkinan laporan ganda); pemakaian tidak dihitung dua kali.</small>';
- if(!h&&rows.length&&rows.every(function(r){return r[3]==null}))h='<small class="mnote">Belum ada pencatatan sebelumnya di lokasi ini, jadi pemakaian belum bisa dihitung.</small>';
- return h}
 function meterDetail(d){var rows=[],x=d.diffs||{},p=d.prevs||{};
  if(d.kind!=='Air'){if(d.lwbp!=null)[['LWBP','lwbp'],['WBP','wbp'],['Genset','genset']].forEach(function(m){rows.push([m[0]+' (kWh)',d[m[1]],p[m[1]],x[m[1]]])});else if(d.reading!=null)rows.push(['Listrik (data lama, kWh)',d.reading,null,null])}
  if(d.kind==='Air'||d.kind==='Gabungan')rows.push(['Air (m³)',d.reading,d.prev,d.diff]);
- return '<div class="mh">Pembacaan meteran</div><div class="scroll"><table class="mt"><tr><th>Meter</th><th>Angka</th><th>Sebelumnya</th><th>Pemakaian</th></tr>'+rows.map(function(r){return '<tr><td>'+r[0]+'</td><td>'+mfmt(r[1])+'</td><td>'+mfmt(r[2])+'</td><td>'+(r[3]!=null?'<b>+'+mfmt(r[3])+'</b>':'-')+'</td></tr>'}).join('')+'</table></div>'+mNote(d,rows)+'<div id="mcum"></div>'}
+ return '<div class="mh">Pembacaan meteran</div><div class="scroll"><table class="mt"><tr><th>Meter</th><th>Angka</th><th>Sebelumnya</th><th>Pemakaian</th></tr>'+rows.map(function(r){return '<tr><td>'+r[0]+'</td><td>'+mfmt(r[1])+'</td><td>'+mfmt(r[2])+'</td><td>'+(r[3]!=null?'<b>+'+mfmt(r[3])+'</b>':'-')+'</td></tr>'}).join('')+'</table></div>'+(rows.every(function(r){return r[3]==null})?'<small class="mnote">Belum ada pencatatan sebelumnya di lokasi ini, atau angka lebih kecil dari sebelumnya.</small>':'')+'<div id="mcum"></div>'}
 function meterCum(d){api('meter_prev',{location:d.location,until:d.date+' '+(d.time||'00:00'),inclusive:1}).then(function(s){var b=$('mcum');if(!b||!s.count)return;addT(s.cum);
  var M=[['listrik','Listrik (LWBP+WBP)','kWh','e'],['genset','Genset','kWh','e'],['air','Air','m³','w']].filter(function(m){return s.has[m[3]]});
  b.innerHTML='<div class="mh">Akumulasi pemakaian di '+esc(d.location)+'</div><div class="macc">'+M.map(function(m){return '<div><small>'+m[1]+'</small><b>'+nf(s.cum[m[0]])+' '+m[2]+'</b></div>'}).join('')+'</div><small class="mnote">Total selisih antar laporan sejak '+dd(s.since)+' sampai laporan ini ('+s.count+' laporan terkirim).</small>'}).catch(function(){})}
@@ -270,64 +246,48 @@ function xt(a,b,n,gr){var o=[],i,t,d;
  return o}
 /* grafik garis gabungan (LWBP, WBP, Genset = kWh di sumbu kiri; Air = m³ di sumbu kanan) dengan zoom & geser.
    Data: seri dari server (seluruh riwayat bila tersedia), tampilan awal = periode yang dipilih. */
-function mData(mode,all){
- if(mode==='read')return {S:(all.readings||[]).slice(),K:['lwbp','wbp','genset','air'],NM:{lwbp:'LWBP',wbp:'WBP',genset:'Genset',air:'Air'},UN:{lwbp:'kWh',wbp:'kWh',genset:'kWh',air:'m\u00B3'}};
- return {S:(all.series||[]).map(addL),K:['listrik','genset','air'],NM:{listrik:'Listrik (LWBP+WBP)',genset:'Genset',air:'Air'},UN:{listrik:'kWh',genset:'kWh',air:'m\u00B3'}}}
-/* mode 'use' = pemakaian (selisih) per hari/bulan; mode 'read' = angka meteran kumulatif (nilai terakhir per hari/bulan) */
-function mChartInit(r,all,mode){mode=mode==='read'?'read':'use';
- var D=mData(mode,all),S=D.S,gr=r.group,
-  on=D.K.filter(function(k){return S.some(function(o){return o[k]!=null&&(mode==='read'||o[k]>0)})}),
-  P=S.map(function(o){return {t:tm(o.k),o:o}});
- if(!P.length){CH=null;return false}
- var pad=gr==='month'?16*DAY:DAY,mn=P[0].t,mx=P[P.length-1].t,f0=r.from?tm(r.from):mn,f1=r.to?tm(r.to):mx;
+function mChartInit(r,all){
+ var S=all.series.map(addL),gr=r.group,K=['listrik','genset','air'],
+  on=K.filter(function(k){return S.some(function(o){return o[k]>0})}),
+  P=S.map(function(o){return {t:tm(o.k),o:o}}),pad=gr==='month'?16*DAY:DAY,mn=P[0].t,mx=P[P.length-1].t,f0=r.from?tm(r.from):mn,f1=r.to?tm(r.to):mx;
  if(gr==='month'){var d0=new Date(f0),d1=new Date(f1);f0=Date.UTC(d0.getUTCFullYear(),d0.getUTCMonth(),1);f1=Date.UTC(d1.getUTCFullYear(),d1.getUTCMonth(),1)}
- CH={r:r,all:all,mode:mode,P:P,on:on,hid:{},sel:-1,gr:gr,i0:f0-pad,i1:f1+pad,F0:Math.min(mn-pad,f0-pad),F1:Math.max(mx+pad,f1+pad),minSp:gr==='month'?50*DAY:4*DAY,NM:D.NM,UN:D.UN,raf:0,anim:1};
- mSet(CH.i0,CH.i1);return true}
+ CH={P:P,on:on,hid:{},sel:-1,gr:gr,i0:f0-pad,i1:f1+pad,F0:Math.min(mn-pad,f0-pad),F1:Math.max(mx+pad,f1+pad),minSp:gr==='month'?50*DAY:4*DAY,NM:{listrik:'Listrik',genset:'Genset',air:'Air'},UN:{listrik:'kWh',genset:'kWh',air:'m³'},raf:0};
+ mSet(CH.i0,CH.i1)}
 function mSet(a,b){var c=CH,sp=Math.min(Math.max(b-a,c.minSp),c.F1-c.F0),ct=(a+b)/2;a=ct-sp/2;
  if(a<c.F0)a=c.F0;if(a+sp>c.F1)a=c.F1-sp;c.a=a;c.b=a+sp}
 function mZoom(f,fr){var c=CH,sp=c.b-c.a,an=c.a+fr*sp,ns=sp*f;mSet(an-fr*ns,an-fr*ns+ns)}
 function mReq(){var c=CH;if(!c||c.raf)return;c.raf=requestAnimationFrame(function(){c.raf=0;mDraw()})}
-/* sumbu: pemakaian selalu mulai dari 0; angka meteran memakai rentang sendiri (tidak dari 0) agar perubahan terlihat */
-function mAx(c,ks){var lo=1e18,hi=-1e18;
- c.P.forEach(function(p){if(p.t>=c.a&&p.t<=c.b)ks.forEach(function(k){var v=p.o[k];if(v==null)return;if(v<lo)lo=v;if(v>hi)hi=v})});
- if(hi<lo){lo=0;hi=1}
- if(c.mode!=='read')return {lo:0,hi:nice((hi||1)/4)*4};
- var st=nice(Math.max(hi-lo,Math.abs(hi)*.002,.4)/3),l=Math.floor(lo/st)*st;
- while(l+4*st<hi){st=nice(st*1.01);l=Math.floor(lo/st)*st}
- return {lo:l,hi:l+4*st}}
 function mDraw(){var c=CH,el=$('mchart');if(!c||!el)return;
- var W=Math.max(280,el.clientWidth||600),H=W<520?210:240,vis=c.on.filter(function(k){return !c.hid[k]}),
+ var W=Math.max(280,el.clientWidth||600),H=W<520?200:230,vis=c.on.filter(function(k){return !c.hid[k]}),
   E=vis.filter(function(k){return k!=='air'}),A=vis.filter(function(k){return k==='air'}),
-  aE=E.length?mAx(c,E):null,aA=A.length?mAx(c,A):null,aL=aE||aA||{lo:0,hi:4},aR=(aE&&aA)?aA:null,uL=aE?'kWh':(aA?'m\u00B3':''),
-  L=Math.max(36,nf(aL.hi).length*6.6+12),R=aR?Math.max(36,nf(aR.hi).length*6.6+12):12,
-  T=22,B=26,pw=W-L-R,ph=H-T-B,g='',i,base=T+ph,
-  X=function(t){return L+(t-c.a)/(c.b-c.a)*pw},Y=function(v,a){return T+ph-(v-a.lo)/(a.hi-a.lo)*ph},AX=function(k){return k==='air'?aA:aE};
+  top=function(ks){var m=0;c.P.forEach(function(p){if(p.t>=c.a&&p.t<=c.b)ks.forEach(function(k){if(p.o[k]>m)m=p.o[k]})});return nice((m||1)/4)*4},
+  ax=[];
+ if(E.length)ax.push({tp:top(E),u:'kWh'});if(A.length)ax.push({tp:top(A),u:'m³'});if(!ax.length)ax.push({tp:4,u:''});
+ var tE=E.length?ax[0].tp:0,tA=A.length?ax[ax.length-1].tp:0,
+  L=Math.max(34,nf(ax[0].tp).length*6.6+12),R=ax.length>1?Math.max(34,nf(ax[1].tp).length*6.6+12):12,
+  T=20,B=24,pw=W-L-R,ph=H-T-B,g='',i,
+  X=function(t){return L+(t-c.a)/(c.b-c.a)*pw},Y=function(v,tp){return T+ph-v/tp*ph};
  c.g={L:L,pw:pw};
- g+='<defs>'+vis.map(function(k){return '<linearGradient id="mg_'+k+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+CC[k]+'" stop-opacity=".30"/><stop offset="1" stop-color="'+CC[k]+'" stop-opacity="0"/></linearGradient>'}).join('')+'<clipPath id="mclip"><rect x="'+(L-5)+'" y="'+(T-5)+'" width="'+(pw+10)+'" height="'+(ph+10)+'"/></clipPath></defs>';
- for(i=0;i<=4;i++){var y=T+ph-i*ph/4;g+='<line class="cgr" x1="'+L+'" x2="'+(W-R)+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+'"/><text class="ctx" x="'+(L-5)+'" y="'+(y+4).toFixed(1)+'" text-anchor="end">'+nf(aL.lo+i*(aL.hi-aL.lo)/4)+'</text>';
-  if(aR)g+='<text class="ctx" x="'+(W-R+5)+'" y="'+(y+4).toFixed(1)+'">'+nf(aR.lo+i*(aR.hi-aR.lo)/4)+'</text>'}
- g+='<text class="ctx" x="4" y="11">'+uL+'</text>'+(aR?'<text class="ctx" x="'+(W-4)+'" y="11" text-anchor="end">m\u00B3</text>':'');
- xt(c.a,c.b,Math.max(2,Math.floor(pw/62)),c.gr).forEach(function(t){var x=X(t).toFixed(1);g+='<line class="cax" x1="'+x+'" x2="'+x+'" y1="'+base+'" y2="'+(base+4)+'"/><text class="ctx" x="'+x+'" y="'+(H-8)+'" text-anchor="middle">'+fx(t,c.gr,c.b-c.a)+'</text>'});
- g+='<line class="cax" x1="'+L+'" x2="'+(W-R)+'" y1="'+base+'" y2="'+base+'"/>';
+ for(i=0;i<=4;i++){var y=T+ph-i*ph/4;g+='<line class="cgr" x1="'+L+'" x2="'+(W-R)+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+'"/><text class="ctx" x="'+(L-5)+'" y="'+(y+4).toFixed(1)+'" text-anchor="end">'+nf(i*ax[0].tp/4)+'</text>';
+  if(ax[1])g+='<text class="ctx" x="'+(W-R+5)+'" y="'+(y+4).toFixed(1)+'">'+nf(i*ax[1].tp/4)+'</text>'}
+ g+='<text class="ctx" x="4" y="11">'+ax[0].u+'</text>'+(ax[1]?'<text class="ctx" x="'+(W-4)+'" y="11" text-anchor="end">'+ax[1].u+'</text>':'');
+ xt(c.a,c.b,Math.max(2,Math.floor(pw/62)),c.gr).forEach(function(t){var x=X(t).toFixed(1);g+='<line class="cax" x1="'+x+'" x2="'+x+'" y1="'+(T+ph)+'" y2="'+(T+ph+4)+'"/><text class="ctx" x="'+x+'" y="'+(H-8)+'" text-anchor="middle">'+fx(t,c.gr,c.b-c.a)+'</text>'});
+ g+='<line class="cax" x1="'+L+'" x2="'+(W-R)+'" y1="'+(T+ph)+'" y2="'+(T+ph)+'"/>';
  var inV=c.P.filter(function(p){return p.t>=c.a&&p.t<=c.b}),dots=inV.length<=80;
- g+='<g clip-path="url(#mclip)">';
- vis.forEach(function(k){var a=AX(k),segs=[],cur=null,ln='',ar='';
-  c.P.forEach(function(p){var v=p.o[k];if(v==null){cur=null;return}if(!cur){cur=[];segs.push(cur)}cur.push([X(p.t),Y(v,a)])});
-  segs.forEach(function(sg){var d=sg.map(function(q,j){return (j?'L':'M')+q[0].toFixed(1)+','+q[1].toFixed(1)}).join('');ln+=d;
-   if(sg.length>1)ar+=d+'L'+sg[sg.length-1][0].toFixed(1)+','+base+'L'+sg[0][0].toFixed(1)+','+base+'Z'});
-  g+=(ar?'<path class="mar'+(c.anim?' an':'')+'" d="'+ar+'" fill="url(#mg_'+k+')"/>':'')+'<path class="mln'+(c.anim?' an':'')+'" pathLength="1" d="'+ln+'" fill="none" stroke="'+CC[k]+'" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>';
-  if(dots)inV.forEach(function(p){var v=p.o[k];if(v==null)return;g+='<circle cx="'+X(p.t).toFixed(1)+'" cy="'+Y(v,a).toFixed(1)+'" r="2.8" fill="'+CC[k]+'" stroke="var(--card)" stroke-width="1"/>'})});
+ g+='<clipPath id="mclip"><rect x="'+(L-5)+'" y="'+(T-5)+'" width="'+(pw+10)+'" height="'+(ph+10)+'"/></clipPath><g clip-path="url(#mclip)">';
+ vis.forEach(function(k){var tp=k==='air'?tA:tE,d=c.P.map(function(p,j){return (j?'L':'M')+X(p.t).toFixed(1)+','+Y(p.o[k],tp).toFixed(1)}).join('');
+  g+='<path d="'+d+'" fill="none" stroke="'+CC[k]+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+  if(dots)inV.forEach(function(p){g+='<circle cx="'+X(p.t).toFixed(1)+'" cy="'+Y(p.o[k],tp).toFixed(1)+'" r="2.8" fill="'+CC[k]+'" stroke="var(--card)" stroke-width="1"/>'})});
  g+='</g>';
- if(!inV.length)g+='<text class="ctx" x="'+(L+pw/2)+'" y="'+(T+ph/2)+'" text-anchor="middle">Tidak ada data pada rentang ini. Geser untuk melihat periode lain.</text>';
+ if(!inV.length)g+='<text class="ctx" x="'+(L+pw/2)+'" y="'+(T+ph/2)+'" text-anchor="middle">Tidak ada pemakaian pada rentang ini. Geser untuk melihat periode lain.</text>';
  var sp=c.sel>=0&&c.P[c.sel];
- if(sp&&sp.t>=c.a&&sp.t<=c.b){var tv=vis.filter(function(k){return sp.o[k]!=null});
-  if(tv.length){var sx=X(sp.t),rows=tv.map(function(k){return {k:k,t:c.NM[k]+': '+(c.mode==='read'?mfmt(sp.o[k]):nf(sp.o[k]))+' '+c.UN[k]}}),ttl=tl(sp.o.k,c.gr),
+ if(sp&&sp.t>=c.a&&sp.t<=c.b&&vis.length){var sx=X(sp.t),rows=vis.map(function(k){return {k:k,t:c.NM[k]+': '+nf(sp.o[k])+' '+c.UN[k]}}),ttl=tl(sp.o.k,c.gr),
    bw=Math.max(ttl.length,rows.reduce(function(m,o){return Math.max(m,o.t.length)},0)+3)*6.3+16,bh=rows.length*15+22,bx=sx+10+bw<W-R+8?sx+10:sx-10-bw;
-   g+='<line class="ctl" x1="'+sx.toFixed(1)+'" x2="'+sx.toFixed(1)+'" y1="'+T+'" y2="'+base+'"/>';
-   tv.forEach(function(k){g+='<circle cx="'+sx.toFixed(1)+'" cy="'+Y(sp.o[k],AX(k)).toFixed(1)+'" r="4.5" fill="'+CC[k]+'" stroke="var(--card)" stroke-width="1.5"/>'});
-   g+='<rect class="ctb" x="'+bx.toFixed(1)+'" y="'+(T+2)+'" width="'+bw.toFixed(1)+'" height="'+bh+'" rx="6"/><text class="ctt" x="'+(bx+8).toFixed(1)+'" y="'+(T+16)+'">'+esc(ttl)+'</text>'+
-    rows.map(function(o,j){var yy=T+31+j*15;return '<circle cx="'+(bx+12).toFixed(1)+'" cy="'+(yy-3.5)+'" r="3.5" fill="'+CC[o.k]+'"/><text class="cts" x="'+(bx+20).toFixed(1)+'" y="'+yy+'">'+esc(o.t)+'</text>'}).join('')}}
- el.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+(c.mode==='read'?'Grafik garis angka meteran kumulatif':'Grafik garis pemakaian listrik dan air')+'">'+g+'</svg>';c.anim=0}
+  g+='<line class="ctl" x1="'+sx.toFixed(1)+'" x2="'+sx.toFixed(1)+'" y1="'+T+'" y2="'+(T+ph)+'"/>';
+  vis.forEach(function(k){g+='<circle cx="'+sx.toFixed(1)+'" cy="'+Y(sp.o[k],k==='air'?tA:tE).toFixed(1)+'" r="4.5" fill="'+CC[k]+'" stroke="var(--card)" stroke-width="1.5"/>'});
+  g+='<rect class="ctb" x="'+bx.toFixed(1)+'" y="'+(T+2)+'" width="'+bw.toFixed(1)+'" height="'+bh+'" rx="6"/><text class="ctt" x="'+(bx+8).toFixed(1)+'" y="'+(T+16)+'">'+esc(ttl)+'</text>'+
+   rows.map(function(o,j){var yy=T+31+j*15;return '<circle cx="'+(bx+12).toFixed(1)+'" cy="'+(yy-3.5)+'" r="3.5" fill="'+CC[o.k]+'"/><text class="cts" x="'+(bx+20).toFixed(1)+'" y="'+yy+'">'+esc(o.t)+'</text>'}).join('')}
+ el.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Grafik garis pemakaian listrik dan air">'+g+'</svg>'}
 function mBind(){var c=CH,el=$('mchart');if(!c||!el)return;
  var ptr={},moved=0,pd=0,xin=function(ev){return ev.clientX-el.getBoundingClientRect().left},
   fr=function(x){return Math.min(1,Math.max(0,(x-c.g.L)/c.g.pw))},
@@ -355,21 +315,13 @@ function mBind(){var c=CH,el=$('mchart');if(!c||!el)return;
   c.sel=-1;mDraw()};
  var lg=$('mlg');
  if(lg)lg.onclick=function(ev){var b=ev.target.closest('[data-k]');if(!b)return;var k=b.dataset.k;c.hid[k]=!c.hid[k];b.classList.toggle('off',!!c.hid[k]);b.setAttribute('aria-pressed',String(!c.hid[k]));c.sel=-1;mDraw()};
- var mm=$('mmode');
- if(mm)mm.onclick=function(ev){var b=ev.target.closest('[data-m]');if(!b||b.dataset.m===c.mode)return;var r=c.r,all=c.all;
-  if(!mChartInit(r,all,b.dataset.m))return;
-  [].forEach.call(mm.children,function(x){var on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-pressed',String(on))});
-  $('mlg').innerHTML=mLegend();$('mtt').innerHTML=mTitle(r);$('mnt').innerHTML=mNoteC();mDraw();mBind()};
  if(!window.__mrz){window.__mrz=1;window.addEventListener('resize',function(){mReq()})}}
-function mLegend(){var c=CH;return c.on.map(function(k){return '<button type="button" class="mlb'+(c.hid[k]?' off':'')+'" data-k="'+k+'" aria-pressed="'+!c.hid[k]+'"><i style="background:'+CC[k]+'"></i>'+c.NM[k]+' ('+c.UN[k]+')</button>'}).join('')}
-function mTitle(r){var c=CH;return c.mode==='read'?'Angka meteran kumulatif'+(r.readingsLoc?' &ndash; '+esc(r.readingsLoc):''):'Pemakaian listrik &amp; air per '+(r.group==='month'?'bulan':'hari')}
-function mNoteC(){return (CH.mode==='read'?'Angka meteran = pembacaan kumulatif pada meteran (bukan pemakaian); nilai terakhir tiap hari/bulan. Sumbu tidak dimulai dari nol agar perubahan terlihat. ':'Pemakaian = selisih antar pencatatan, dicatat pada tanggal laporan yang lebih baru. ')+'Geser dengan mouse atau jari. Zoom: tombol +/&minus;, cubit layar, atau Ctrl+scroll. Arahkan atau ketuk grafik untuk melihat nilai.'}
 function mChartHtml(r,all){
- mChartInit(r,all,'use');
- var hasR=!!(all.readings&&all.readings.length);
- return '<div class="mh" id="mtt">'+mTitle(r)+'</div>'+(hasR?'<div class="seg" id="mmode" role="group" aria-label="Jenis grafik"><button type="button" class="on" data-m="use" aria-pressed="true">Pemakaian</button><button type="button" data-m="read" aria-pressed="false">Angka meteran</button></div>':'')+'<div class="mcc"><div class="mlg" id="mlg">'+mLegend()+'</div>'+
+ var NM={listrik:'Listrik LWBP+WBP (kWh)',genset:'Genset (kWh)',air:'Air (m³)'},gl=r.group==='month'?'bulan':'hari';
+ mChartInit(r,all);
+ return '<div class="mh">Pemakaian listrik &amp; air per '+gl+'</div><div class="mcc"><div class="mlg" id="mlg">'+CH.on.map(function(k){return '<button type="button" class="mlb" data-k="'+k+'" aria-pressed="true"><i style="background:'+CC[k]+'"></i>'+NM[k]+'</button>'}).join('')+'</div>'+
   '<div class="mct" id="mctl"><button type="button" class="btn sec" data-a="pl" aria-label="Geser ke kiri" title="Geser ke kiri">&#9664;</button><button type="button" class="btn sec" data-a="pr" aria-label="Geser ke kanan" title="Geser ke kanan">&#9654;</button><button type="button" class="btn sec" data-a="zi" aria-label="Perbesar" title="Perbesar">+</button><button type="button" class="btn sec" data-a="zo" aria-label="Perkecil" title="Perkecil">&minus;</button><button type="button" class="btn sec" data-a="rs" title="Kembali ke periode yang dipilih">Reset zoom</button></div></div>'+
-  '<div class="mch" id="mchart"></div><small class="mnote" id="mnt">'+mNoteC()+'</small>'}
+  '<div class="mch" id="mchart"></div><small class="mnote">Geser dengan mouse atau jari. Zoom: tombol +/&minus;, cubit layar, atau Ctrl+scroll. Arahkan atau ketuk grafik untuk melihat nilai. Sumbu kiri kWh, sumbu kanan m³.</small>'}
 function mRender(r,all){var U2=[['listrik','Listrik (LWBP+WBP)','kWh'],['genset','Genset','kWh'],['air','Air','m³']];addT(r.cum);addT(r.per);r.series=(r.series||[]).map(addL);
  if(!r.count.total)return '<div class="empty"><b>Belum ada data meteran</b>Akumulasi dan grafik muncul setelah ada laporan meteran.</div>';
  var h='<div class="mlts">'+r.latest.map(function(o){var e=o.elec,w=o.water;return '<div class="mlt"><b>'+esc(o.loc)+'</b><small>Pembacaan terakhir</small><span>'+(e?'LWBP '+mfmt(e.lwbp)+' · WBP '+mfmt(e.wbp)+' · Genset '+mfmt(e.genset)+' kWh ('+dd(e.date)+')':'')+(e&&w?'<br>':'')+(w?'Air '+mfmt(w.reading)+' m³ ('+dd(w.date)+')':'')+'</span></div>'}).join('')+'</div>';
@@ -614,11 +566,14 @@ function repForm(t,rec,after){var c=T[t],d=rec?rec.data:(t==='issue'?{priority:'
    if(c.items)data.items=[].map.call(document.querySelectorAll('.irow'),function(r){return {name:r.querySelector('.in').value,category:r.querySelector('.ic').value,qty:r.querySelector('.iq').value,unit:unitVal(r),price:r.querySelector('.ip').value}});
    if(BUSY)return;
    if(navigator.onLine===false){$('re').textContent='Tidak ada koneksi internet. Isian Anda tidak dihapus; coba lagi saat koneksi kembali.';return}
-   var b=$('rsv'),rc=$('rc'),phs=PH.slice(),FL=[];BUSY=true;b.disabled=true;rc.disabled=true;b.textContent='Menyimpan laporan...';$('re').textContent='';
+   var b=$('rsv'),rc=$('rc'),phs=PH.slice(),sent=0,failed=0;BUSY=true;b.disabled=true;rc.disabled=true;b.textContent='Menyimpan laporan...';$('re').textContent='';
    api('rep_save',{type:t,id:rec&&rec.id,reqId:rid,data:data}).then(function(r){
     if(!phs.length)return r;
-    return upPh(r.id,phs,function(n){b.textContent='Mengunggah foto '+n+'/'+phs.length+'...'},FL).then(function(f){r.photoFailed=f;return r})
-   }).then(function(r){BUSY=false;closeM();toast(r.photoFailed?'Laporan '+r.id+' tersimpan, tetapi '+r.photoFailed+' foto gagal diunggah. Anda dapat mencoba mengunggah ulang sekarang.':'Laporan berhasil disimpan: '+r.id,!!r.photoFailed);if(FL.length){after&&after();retryPh(r.id,FL,function(){after&&after()});return}after&&after()},
+    var chunks=[],i;for(i=0;i<phs.length;i+=PHBATCH)chunks.push(phs.slice(i,i+PHBATCH));
+    function send(ch,n){return api('photo_save',{id:r.id,photos:ch.map(function(p){return {mime:p.mime,b64:p.b64,kind:p.kind}})}).then(function(x){failed+=x.failed},function(e){if(n<2)return send(ch,n+1);failed+=ch.length})}
+    return chunks.reduce(function(p,ch){return p.then(function(){b.textContent='Mengunggah foto '+sent+'/'+phs.length+'...';return send(ch,0).then(function(){sent+=ch.length;b.textContent='Mengunggah foto '+sent+'/'+phs.length+'...'})})},Promise.resolve())
+     .then(function(){b.textContent='Menyelesaikan...';return api('photo_done',{id:r.id}).catch(function(){})}).then(function(){r.photoFailed=failed;return r})
+   }).then(function(r){BUSY=false;closeM();toast(r.photoFailed?'Laporan '+r.id+' tersimpan, tetapi '+r.photoFailed+' foto gagal diunggah. Buka laporan lalu pilih Edit untuk menambah foto lagi.':'Laporan berhasil disimpan: '+r.id,!!r.photoFailed);after&&after()},
    function(x){BUSY=false;$('re').textContent=x.message+' Isian Anda tidak dihapus; silakan coba lagi.';toast('Laporan gagal disimpan: '+x.message,1);b.disabled=false;rc.disabled=false;b.textContent='Simpan laporan'})}};
  if(c.team)api('team').then(function(n){team=n;go2()}).catch(function(x){toast(x.message,1)});else go2()}
 
