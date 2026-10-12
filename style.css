@@ -471,3 +471,7 @@ tr:hover td{background:var(--row2)}
 .crp canvas{width:100%;max-width:260px;aspect-ratio:1;border-radius:12px;touch-action:none;cursor:grab;background:#111;display:block;margin:0 auto}
 .crp input[type=range]{width:100%;max-width:260px;margin:10px auto 2px;display:block}
 .crp small{display:block;color:var(--mut)}
+
+/* v10: ringkasan AC di tabel utama */
+.acsum{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;max-width:520px}
+.acsum small{flex:1 0 100%;line-height:1.35;color:var(--mut);overflow-wrap:anywhere}
