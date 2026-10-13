@@ -96,7 +96,7 @@ function can(m){if(m[2])return U.role==='ADMIN';if(U.role==='REPORTER')return RO
 /* ---- shell ---- */
 function showLogin(){ntStop();U=null;$('app').classList.add('hidden');$('login').classList.remove('hidden');$('lform').reset()}
 function enter(u,page){u=normU(u);U=u;LS.setItem('stc_u',JSON.stringify(u));$('hname').textContent=u.name;$('hrole').textContent=rn(u.role);avSet($('av'));$('login').classList.add('hidden');$('app').classList.remove('hidden');
- if(u.mustChange){pwModal(true)}go(page||'dashboard');ntStart()}
+ if(u.mustChange){pwModal(true)}IDLE_L=0;idleMark();go(page||'dashboard');ntStart()}
 var SOON_MSG='Fitur laporan film akan segera tersedia';
 function soonOf(p){return MENU.filter(function(m){return m[0]===p&&m[3]})[0]}
 function go(p){if(soonOf(p)){toast(SOON_MSG);return}if(!MENU.some(function(m){return m[0]===p&&can(m)}))p='dashboard';CUR=p;LS.setItem('stc_p',p);var oldFab=document.querySelector('body>#ra');if(oldFab)oldFab.remove();var adm=U.role==='ADMIN',h='';
@@ -121,6 +121,10 @@ function applyTheme(t){document.documentElement.setAttribute('data-theme',t);try
  var m=document.querySelector('meta[name=theme-color]');if(m)m.content=t==='dark'?'#0a1511':'#0c3b2b'}
 document.querySelectorAll('[data-thm]').forEach(function(b){b.onclick=function(){applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark')}});
 applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light');
+/* ---- menu samping (hijau): tutup / buka di desktop, pilihan diingat ---- */
+function applySb(off){document.body.classList.toggle('sb-off',off);var b=$('sbtn');if(b){b.title=off?'Tampilkan menu':'Sembunyikan menu';b.setAttribute('aria-label',b.title);b.setAttribute('aria-expanded',off?'false':'true')}try{LS.setItem('stc_sb',off?'1':'0')}catch(e){}}
+$('sbtn').onclick=function(){applySb(!document.body.classList.contains('sb-off'))};
+applySb(LS.getItem('stc_sb')==='1');
 $('logout').onclick=function(){api('logout').catch(function(){});clearSess();showLogin()};
 $('prof').onclick=function(){pwModal(false)};
 setInterval(function(){$('clock').textContent=F2.format(new Date())+' WIB';tickCd()},1000);
@@ -169,7 +173,7 @@ function vDash(){Promise.all([api('dashboard'),api('ats_list')]).then(function(r
  sum=open>0?open+' laporan perbaikan masih terbuka.':'Tidak ada laporan perbaikan yang terbuka.',
  tix=fl.length?fl.slice(0,3).map(function(f){return '<div class="tk"><div class="tl"><span class="pri">'+esc(f.status)+'</span><b>'+esc(f.title)+'</b><small>'+esc([f.genre,f.duration,f.rating].filter(Boolean).join(', ')||'Detail film belum diisi')+'</small><div class="tm"><div><small>Mulai ATS</small><span>'+dt(f.atsAt)+'</span></div><div><small>Mulai tayang</small><span>'+dt(f.showAt)+'</span></div></div></div><div class="tr"><div class="cdl" data-f=\''+esc(JSON.stringify({status:f.status,atsAt:f.atsAt,showAt:f.showAt}))+'\'></div></div></div>'}).join(''):'<div class="empty"><b>Belum ada film ATS</b>Film yang dijadwalkan Admin akan tampil di sini.</div>';
  $('view').innerHTML=
- '<section class="dh"><div class="dh-main">'+heroPic()+'<span class="dh-beam" aria-hidden="true"></span><div class="dh-t"><small>'+new Intl.DateTimeFormat('id-ID',{timeZone:TZ,dateStyle:'full'}).format(new Date())+'</small><h1>'+gr+',<br>'+esc(U.name)+'</h1><p>'+sum+'</p></div></div>'+
+ '<section class="dh"><div class="dh-main">'+heroPic()+'<div class="dh-t"><small>'+new Intl.DateTimeFormat('id-ID',{timeZone:TZ,dateStyle:'full'}).format(new Date())+'</small><h1>'+gr+',<br>'+esc(U.name)+'</h1><p>'+sum+'</p></div></div>'+
  '<aside class="dq"><h2>Catat cepat</h2>'+qa.map(function(x){return '<button class="qrow" data-new="'+x[0]+'"><i>'+IC[x[0]]+'</i><span><b>'+x[1]+'</b><small>'+x[2]+'</small></span><em aria-hidden="true">+</em></button>'}).join('')+'</aside></section>'+
  '<section class="ds"><div class="ds-big"><span class="l">Laporan hari ini</span><div class="n">'+(Number(d.today)||0)+'</div><small>Sejak 00.00 WIB</small></div>'+
  '<div class="ds-list"><h2>Total laporan</h2>'+tot.map(function(x){var v=Number(x[1])||0;return '<button class="dsr" data-go="'+x[2]+'"><span>'+x[0]+'</span><i><b style="width:'+Math.max(v?6:0,Math.round(v/mx*100))+'%"></b></i><strong>'+v+'</strong></button>'}).join('')+'</div>'+
@@ -191,7 +195,7 @@ function dChart(){mAll('','day').then(function(r){var el=$('dchart');if(!el)retu
  ln='M'+pt.map(function(p){return p[0].toFixed(1)+' '+p[1].toFixed(1)}).join(' L'),ar=ln+' L'+pt[pt.length-1][0].toFixed(1)+' '+H+' L'+pt[0][0].toFixed(1)+' '+H+' Z',lp=pt[pt.length-1];
  el.querySelector('.dc-b').innerHTML='<div class="dc-k"><b>'+nf(tot)+' kWh</b><small>total '+s.length+' hari terakhir ('+tl(s[0].k,'day')+' - '+tl(s[s.length-1].k,'day')+'), puncak '+nf(mx)+' kWh/hari</small></div>'+
  '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="Grafik pemakaian listrik harian"><defs><linearGradient id="dcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b8913f" stop-opacity=".38"/><stop offset="1" stop-color="#b8913f" stop-opacity="0"/></linearGradient></defs><path d="'+ar+'" fill="url(#dcg)"/><path class="ln" pathLength="1" d="'+ln+'"/></svg>'}).catch(function(){var e=$('dchart');if(e)e.remove()})}
-function heroPic(){return '<picture class="dh-img" aria-hidden="true"><img src="'+CUT.christie+'" alt="" width="640" height="497" decoding="async"></picture>'}
+function heroPic(){return '<div class="dh-img" aria-hidden="true"><img src="'+CUT.christie+'" alt="" width="640" height="497" decoding="async"><span class="lens-glow"></span><span class="lens-flare"></span></div>'}
 function annCard(a){return '<div class="card ann ann-'+esc(a.priority)+'" style="margin-bottom:10px"><b>'+esc(a.title)+'</b> <span class="pri '+esc(a.priority)+'">'+esc(a.priority)+'</span>'+(a.status!=='Aktif'?' <span class="pri">Diarsipkan</span>':'')+'<div style="white-space:pre-wrap;margin:6px 0">'+esc(a.body)+'</div><small>'+dt(a.publishedAt)+' · '+esc(a.createdBy)+'</small></div>'}
 
 /* ---- pengumuman ---- */
@@ -678,7 +682,36 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&NT.open)ntC
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&NT.t)ntPoll()});
 window.addEventListener('online',function(){if(NT.t)ntPoll()});
 
+
+/* ---- logout otomatis: 10 menit tanpa aktivitas (peringatan 60 detik sebelumnya) ---- */
+var IDLE_MS=10*60*1000,IDLE_WARN=60*1000,IDLE_TXT='Anda keluar otomatis karena tidak ada aktivitas selama 10 menit. Silakan masuk lagi.',IDLE_W=false,IDLE_L=0;
+function idleGet(){return Number(LS.getItem('stc_act'))||0}
+function idleMark(){var n=Date.now();if(n-IDLE_L<1000)return;IDLE_L=n;try{LS.setItem('stc_act',String(n))}catch(e){}}
+function idleStale(){var l=idleGet();return !!l&&Date.now()-l>IDLE_MS}
+function idleWarnHide(){IDLE_W=false;var w=$('idle');if(w)w.remove()}
+function idleWarnShow(s){var w=$('idle');
+ if(!w){w=document.createElement('div');w.id='idle';w.setAttribute('role','alertdialog');w.setAttribute('aria-live','assertive');
+  w.innerHTML='<div class="idle-b"><b>Sesi akan berakhir</b><p>Tidak ada aktivitas. Anda akan keluar otomatis dalam <strong id="idles"></strong> detik.</p><div class="idle-a"><button type="button" class="btn" id="idlek">Tetap masuk</button><button type="button" class="btn sec" id="idlex">Keluar sekarang</button></div></div>';
+  document.body.appendChild(w);
+  $('idlek').onclick=function(){idleWarnHide();IDLE_L=0;idleMark()};
+  $('idlex').onclick=function(){idleOut(true)};
+  try{$('idlek').focus()}catch(e){}}
+ IDLE_W=true;$('idles').textContent=s}
+function idleOut(manual){idleWarnHide();if(BUSY)return;
+ api('logout').catch(function(){});clearSess();try{LS.removeItem('stc_act')}catch(e){}
+ $('modal').classList.add('hidden');ntClose();showLogin();$('lerr').textContent=manual?'':IDLE_TXT}
+function idleTick(){
+ if(!TOKEN||!U){if(IDLE_W)idleWarnHide();return}
+ if(BUSY){IDLE_L=0;idleMark();if(IDLE_W)idleWarnHide();return}
+ if(!idleGet()){IDLE_L=0;idleMark()}
+ var left=IDLE_MS-(Date.now()-idleGet());
+ if(left<=0)idleOut();else if(left<=IDLE_WARN)idleWarnShow(Math.ceil(left/1000));else if(IDLE_W)idleWarnHide()}
+['pointerdown','keydown','wheel','touchstart','scroll','mousemove'].forEach(function(ev){document.addEventListener(ev,function(){if(!IDLE_W&&TOKEN&&U)idleMark()},{passive:true,capture:true})});
+document.addEventListener('visibilitychange',function(){if(!document.hidden)idleTick()});
+setInterval(idleTick,1000);
+
 /* ---- mulai ---- */
+if(TOKEN&&idleStale()){clearSess();try{LS.removeItem('stc_act')}catch(e){}$('lerr').textContent=IDLE_TXT}
 if(TOKEN){var cu=null,pg=LS.getItem('stc_p')||'dashboard';try{cu=JSON.parse(LS.getItem('stc_u')||'null')}catch(e){}
  if(cu&&cu.role)enter(cu,pg);
  api('me').then(function(r){var u=normU(r);if(r&&r.token)TOKEN=r.token;LS.setItem('stc_u',JSON.stringify(u));LS.setItem('stc_t',TOKEN);
