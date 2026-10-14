@@ -409,13 +409,25 @@ function xt(a,b,n,gr){var o=[],i,t,d;
  return o}
 /* grafik garis gabungan (LWBP, WBP, Genset = kWh di sumbu kiri; Air = m³ di sumbu kanan) dengan zoom & geser.
    Data: seri dari server (seluruh riwayat bila tersedia), tampilan awal = periode yang dipilih. */
+var MMODE='listrik',MNM={listrik:'Listrik LWBP+WBP (kWh)',genset:'Genset (kWh)',air:'Air (m\u00b3)'};
+/* seri yang ditampilkan menurut pilihan grafik: Listrik (LWBP+WBP + Genset) atau Air */
+function mKeys(m,P){var K=m==='air'?['air']:['listrik','genset'],on=K.filter(function(k){return P.some(function(p){return p.o[k]>0})});return on.length?on:[K[0]]}
+function mTitle(gr){return (MMODE==='air'?'Pemakaian air per ':'Pemakaian listrik per ')+(gr==='month'?'bulan':'hari')}
+function mNote(){return 'Geser dengan mouse atau jari. Zoom: tombol +/&minus;, cubit layar, atau Ctrl+scroll. Nilai tampil di setiap titik'+(MMODE==='air'?': biru = air (m\u00b3).':': kuning = listrik LWBP+WBP (kWh), ungu = genset (kWh).')}
+function mLegend(){return CH.on.map(function(k){return '<button type="button" class="mlb" data-k="'+k+'" aria-pressed="'+(CH.hid[k]?'false':'true')+'"><i style="background:'+CC[k]+'"></i>'+MNM[k]+'</button>'}).join('')}
+function mModeSet(m){var c=CH;if(!c||m===MMODE)return;MMODE=m;c.on=mKeys(m,c.P);c.hid={};c.sel=-1;c.anim=1;
+ var q=function(id){return $(id)};
+ if(q('mlg'))q('mlg').innerHTML=mLegend();if(q('mctitle'))q('mctitle').textContent=mTitle(c.gr);if(q('mnote'))q('mnote').innerHTML=mNote();
+ var b=document.querySelectorAll('#mmode [data-m]');for(var i=0;i<b.length;i++){var on=b[i].dataset.m===m;b[i].classList.toggle('on',on);b[i].setAttribute('aria-pressed',String(on))}
+ var ch=$('mchart');if(ch)ch.setAttribute('aria-label','Grafik pemakaian '+(m==='air'?'air':'listrik'));
+ mDraw()}
 function mChartInit(r,all){
  all=all||r; var gr=r.group,S=mFill(all.series||[],gr,all.since||r.since,r).map(addL),K=['listrik','genset','air'],
   on=K.filter(function(k){return S.some(function(o){return o[k]>0})}),
   P=S.map(function(o){return {t:tm(o.k),o:o}}),pad=gr==='month'?16*DAY:DAY,mn=P[0].t,mx=P[P.length-1].t,f0=r.from?tm(r.from):mn,f1=r.to?tm(r.to):mx;
  if(gr==='month'){var d0=new Date(f0),d1=new Date(f1);f0=Date.UTC(d0.getUTCFullYear(),d0.getUTCMonth(),1);f1=Date.UTC(d1.getUTCFullYear(),d1.getUTCMonth(),1)}
  CH={P:P,on:on,hid:{},sel:-1,gr:gr,i0:f0-pad,i1:f1+pad,F0:Math.min(mn-pad,f0-pad),F1:Math.max(mx+pad,f1+pad),minSp:gr==='month'?50*DAY:4*DAY,NM:{listrik:'Listrik',genset:'Genset',air:'Air'},UN:{listrik:'kWh',genset:'kWh',air:'m³'},raf:0};
- mSet(CH.i0,CH.i1)}
+ CH.on=mKeys(MMODE,P);mSet(CH.i0,CH.i1)}
 function mSet(a,b){var c=CH,sp=Math.min(Math.max(b-a,c.minSp),c.F1-c.F0),ct=(a+b)/2;a=ct-sp/2;
  if(a<c.F0)a=c.F0;if(a+sp>c.F1)a=c.F1-sp;c.a=a;c.b=a+sp}
 function mZoom(f,fr){var c=CH,sp=c.b-c.a,an=c.a+fr*sp,ns=sp*f;mSet(an-fr*ns,an-fr*ns+ns)}
@@ -451,7 +463,7 @@ function mDraw(){var c=CH,el=$('mchart');if(!c||!el)return;
   vis.forEach(function(k){g+='<circle cx="'+sx.toFixed(1)+'" cy="'+Y(sp.o[k],k==='air'?tA:tE).toFixed(1)+'" r="4.5" fill="'+CC[k]+'" stroke="var(--card)" stroke-width="1.5"/>'});
   g+='<rect class="ctb" x="'+bx.toFixed(1)+'" y="'+(T+2)+'" width="'+bw.toFixed(1)+'" height="'+bh+'" rx="6"/><text class="ctt" x="'+(bx+8).toFixed(1)+'" y="'+(T+16)+'">'+esc(ttl)+'</text>'+
    rows.map(function(o,j){var yy=T+31+j*15;return '<circle cx="'+(bx+12).toFixed(1)+'" cy="'+(yy-3.5)+'" r="3.5" fill="'+CC[o.k]+'"/><text class="cts" x="'+(bx+20).toFixed(1)+'" y="'+yy+'">'+esc(o.t)+'</text>'}).join('')}
- el.innerHTML='<svg'+(c.anim?' class="anim"':'')+' viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Grafik garis pemakaian listrik dan air">'+g+'</svg>';c.anim=0}
+ el.innerHTML='<svg'+(c.anim?' class="anim"':'')+' viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Grafik garis pemakaian '+(MMODE==='air'?'air':'listrik')+'">'+g+'</svg>';c.anim=0}
 function mBind(){var c=CH,el=$('mchart');if(!c||!el)return;
  var ptr={},moved=0,pd=0,xin=function(ev){return ev.clientX-el.getBoundingClientRect().left},
   fr=function(x){return Math.min(1,Math.max(0,(x-c.g.L)/c.g.pw))},
@@ -477,15 +489,19 @@ function mBind(){var c=CH,el=$('mchart');if(!c||!el)return;
  if(ct)ct.onclick=function(ev){var b=ev.target.closest('[data-a]');if(!b)return;var a=b.dataset.a,sp=c.b-c.a;
   if(a==='zi')mZoom(.6,.5);else if(a==='zo')mZoom(1/.6,.5);else if(a==='pl')mSet(c.a-sp*.3,c.b-sp*.3);else if(a==='pr')mSet(c.a+sp*.3,c.b+sp*.3);else mSet(c.i0,c.i1);
   c.sel=-1;mDraw()};
+ var md=$('mmode');
+ if(md)md.onclick=function(ev){var b=ev.target.closest('[data-m]');if(b)mModeSet(b.dataset.m)};
  var lg=$('mlg');
  if(lg)lg.onclick=function(ev){var b=ev.target.closest('[data-k]');if(!b)return;var k=b.dataset.k;c.hid[k]=!c.hid[k];b.classList.toggle('off',!!c.hid[k]);b.setAttribute('aria-pressed',String(!c.hid[k]));c.sel=-1;mDraw()};
  if(!window.__mrz){window.__mrz=1;window.addEventListener('resize',function(){mReq()})}}
 function mChartHtml(r,all){
- var NM={listrik:'Listrik LWBP+WBP (kWh)',genset:'Genset (kWh)',air:'Air (m³)'},gl=r.group==='month'?'bulan':'hari';
  mChartInit(r,all);CH.anim=1;
- return '<div class="mh">Pemakaian listrik &amp; air per '+gl+'</div><div class="mcc"><div class="mlg" id="mlg">'+CH.on.map(function(k){return '<button type="button" class="mlb" data-k="'+k+'" aria-pressed="true"><i style="background:'+CC[k]+'"></i>'+NM[k]+'</button>'}).join('')+'</div>'+
+ var MB=[['listrik','Grafik Listrik'],['air','Grafik Air']];
+ return '<div class="mh" id="mctitle">'+mTitle(r.group)+'</div>'+
+  '<div class="mmode" id="mmode" role="group" aria-label="Pilih grafik yang ditampilkan">'+MB.map(function(m){var on=m[0]===MMODE;return '<button type="button" class="mmb'+(on?' on':'')+'" data-m="'+m[0]+'" aria-pressed="'+on+'">'+m[1]+'</button>'}).join('')+'</div>'+
+  '<div class="mcc"><div class="mlg" id="mlg">'+mLegend()+'</div>'+
   '<div class="mct" id="mctl"><button type="button" class="btn sec" data-a="pl" aria-label="Geser ke kiri" title="Geser ke kiri">&#9664;</button><button type="button" class="btn sec" data-a="pr" aria-label="Geser ke kanan" title="Geser ke kanan">&#9654;</button><button type="button" class="btn sec" data-a="zi" aria-label="Perbesar" title="Perbesar">+</button><button type="button" class="btn sec" data-a="zo" aria-label="Perkecil" title="Perkecil">&minus;</button><button type="button" class="btn sec" data-a="rs" title="Kembali ke periode yang dipilih">Reset zoom</button></div></div>'+
-  '<div class="mch" id="mchart"></div><small class="mnote">Geser dengan mouse atau jari. Zoom: tombol +/&minus;, cubit layar, atau Ctrl+scroll. Nilai tampil di setiap titik: kuning = listrik (kWh), biru = air (m³).</small>'}
+  '<div class="mch" id="mchart"></div><small class="mnote" id="mnote">'+mNote()+'</small>'}
 function mRender(r,all){var U2=[['listrik','Listrik (LWBP+WBP)','kWh'],['genset','Genset','kWh'],['air','Air','m³']];addT(r.cum);addT(r.per);r.series=(r.series||[]).map(addL);
  if(!r.count.total&&!(all&&all.series&&all.series.length))return '<div class="empty"><b>Belum ada data meteran</b>Data meteran belum diterima backend untuk lokasi/periode ini. Periksa koneksi API dan data spreadsheet.</div>';
  if(!r.latest)r.latest=[]; if(!r.cum)r.cum={listrik:0,genset:0,air:0}; if(!r.per)r.per={listrik:0,genset:0,air:0}; if(!r.count)r.count={total:0,period:0};

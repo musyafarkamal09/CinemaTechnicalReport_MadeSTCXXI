@@ -396,6 +396,10 @@ td[data-l="No. laporan"]{font-weight:700;color:var(--gt);white-space:nowrap}
 .mcc{display:flex;gap:8px 14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:6px 0}
 .mct{display:flex;gap:6px;flex-wrap:wrap}.mct .btn{min-height:34px;min-width:36px;padding:0 10px;font-size:14px;line-height:1;white-space:nowrap}
 .mlb{background:none;border:1px solid var(--bd2);border-radius:999px;padding:4px 11px;color:var(--txt);cursor:pointer;font:inherit;font-size:12.5px;display:inline-flex;align-items:center;min-height:30px}
+.mmode{display:inline-flex;gap:4px;padding:4px;margin:2px 0 8px;border:1px solid var(--bd2);border-radius:999px;background:var(--card)}
+.mmb{background:none;border:0;border-radius:999px;padding:7px 18px;min-height:36px;color:var(--mut);cursor:pointer;font:inherit;font-size:13.5px;font-weight:600;transition:background .16s,color .16s}
+.mmb.on{background:var(--g100);color:var(--gt)}
+.mmb:focus-visible{outline:2px solid var(--gt);outline-offset:2px}
 .mlb.off{opacity:.45;text-decoration:line-through}.mlb i{margin-right:6px}
 #mchart{touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none;overflow:hidden;border:1px solid var(--bd);border-radius:16px;background:var(--card);padding:6px 4px 0}
 #mchart:active{cursor:grabbing}#mchart svg{width:100%;height:auto;max-height:240px}
@@ -537,6 +541,7 @@ td[data-l="No. laporan"]{font-weight:700;color:var(--gt);white-space:nowrap}
  #tabs a i{display:flex;padding:4px 18px;border-radius:99px;transition:background .16s}
  #tabs a.on{color:var(--gt)}
  #tabs a.on i{background:var(--g100)}
+ .mmode{display:flex}.mmb{flex:1 1 0;padding:7px 8px}
  .mct{width:100%}.mct .btn{flex:1 1 0;padding:0 6px}.mct [data-a=rs]{flex:2.2 1 0}
  .zipbar .btn{flex:1 1 100%}
 }
