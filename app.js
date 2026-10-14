@@ -607,8 +607,8 @@ function exportXls(t,fmt){
     function(x){var d=x.data;return [x.id,d.date,d.time,d.title,d.category,d.location,d.status,(d.team||[]).join(', '),d.desc,d.note,x.reporter,dt(x.createdAt),dt(x.updatedAt)]},
     [22,12,8,32,22,24,16,28,45,30,16,20,20],1);
   }else if(t==='meter'){
-   var L=it.filter(function(x){return x.data.kind==='Listrik'}),A=it.filter(function(x){return x.data.kind==='Air'}),G=it.filter(function(x){return x.data.kind==='Gabungan'});
-   if(G.length)add('Listrik & Air',['No. Laporan','Tanggal','Jam','Lokasi','LWBP (kWh)','WBP (kWh)','Genset (kWh)','Selisih LWBP','Selisih WBP','Selisih Genset','Meteran Air (m³)','Air Sebelumnya','Selisih Air (m³)','Catatan','Pelapor','Dibuat'],G,
+   var L=it.filter(function(x){return x.data.kind==='Listrik'}),A=it.filter(function(x){return x.data.kind==='Air'}),GB=it.filter(function(x){return x.data.kind==='Gabungan'});
+   if(GB.length)add('Listrik & Air',['No. Laporan','Tanggal','Jam','Lokasi','LWBP (kWh)','WBP (kWh)','Genset (kWh)','Selisih LWBP','Selisih WBP','Selisih Genset','Meteran Air (m³)','Air Sebelumnya','Selisih Air (m³)','Catatan','Pelapor','Dibuat'],GB,
     function(x){var d=x.data,f=d.diffs||{};return [x.id,d.date,d.time,d.location,n(d.lwbp),n(d.wbp),n(d.genset),n(f.lwbp),n(f.wbp),n(f.genset),n(d.reading),n(d.prev),n(d.diff),n(d.note),x.reporter,dt(x.createdAt)]},
     [22,12,8,26,13,13,14,13,13,15,16,15,15,30,16,20],1);
    if(L.length)add('Listrik',['No. Laporan','Tanggal','Jam','Lokasi','LWBP (kWh)','WBP (kWh)','Genset (kWh)','Selisih LWBP','Selisih WBP','Selisih Genset','Catatan','Pelapor','Dibuat'],L,
