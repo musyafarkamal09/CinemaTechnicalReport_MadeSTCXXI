@@ -605,3 +605,9 @@ td[data-l="No. laporan"]{font-weight:700;color:var(--gt);white-space:nowrap}
 
 /* Import film preview */
 .film-import-summary{margin:14px 0;padding:12px 14px;border:1px solid var(--line,#d9e2dc);border-radius:12px;background:var(--surface2,#f6f8f6)}.film-import-summary p{margin:5px 0}.checkline{display:flex;align-items:center;gap:9px;margin:14px 0;font-weight:600}.checkline input{width:auto}.film-import-summary+.scroll{max-height:300px;overflow:auto}
+
+/* V6: tabel pemakaian meteran selalu terlihat dan dapat digulir pada layar kecil */
+.meter-data-table{margin-top:8px;border:1px solid var(--bd);border-radius:12px;max-width:100%;overflow:auto}
+.meter-data-table table{min-width:620px;width:100%}
+.meter-data-table th,.meter-data-table td{white-space:nowrap}
+#meter-refresh-time{display:inline-block;font-size:11px;font-weight:500;margin-left:8px}
