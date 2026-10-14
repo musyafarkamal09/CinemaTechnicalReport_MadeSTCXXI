@@ -599,3 +599,6 @@ td[data-l="No. laporan"]{font-weight:700;color:var(--gt);white-space:nowrap}
  .film-actions .btn{flex:1}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+
+/* V3: laporan film otomatis dikelompokkan menurut status */
+.film-groups{display:grid;gap:16px}.film-group{min-width:0;border:1px solid var(--bd);border-radius:16px;overflow:hidden;background:var(--card)}.film-group-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-bottom:1px solid var(--bd);background:var(--soft,rgba(120,130,120,.06))}.film-group-head>b{font-size:12px;color:var(--mut)}.film-group .scroll{border:0;border-radius:0}.film-group .film-table{margin:0}.fg-sedang .film-group-head{border-left:4px solid #16834b}.fg-sudah .film-group-head{border-left:4px solid #c33a35}.fg-belum .film-group-head{border-left:4px solid #737b76}
