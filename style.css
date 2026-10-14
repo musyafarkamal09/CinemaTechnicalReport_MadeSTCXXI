@@ -611,3 +611,27 @@ td[data-l="No. laporan"]{font-weight:700;color:var(--gt);white-space:nowrap}
 .meter-data-table table{min-width:620px;width:100%}
 .meter-data-table th,.meter-data-table td{white-space:nowrap}
 #meter-refresh-time{display:inline-block;font-size:11px;font-weight:500;margin-left:8px}
+
+/* ===== Tabel Laporan Film: garis hitam tegas, teks gelap, rata tengah (tidak mengubah tema lain) ===== */
+.film-table{border-collapse:collapse;border-spacing:0;width:100%;background:#fff;color:#000}
+.film-table th,.film-table td{border:1.5px solid #000;color:#000;text-align:center;vertical-align:middle;padding:9px 10px;background:#fff;font-size:13.5px;line-height:1.35}
+.film-table th{background:#e4e4e4;font-weight:800;letter-spacing:.2px;white-space:nowrap}
+.film-table td b{font-weight:800}
+.film-table tbody tr:hover td{background:#f3f3f3}
+.film-table .film-status{background:none;border-radius:0;padding:0;font-size:13px;font-weight:800;justify-content:center}
+.film-table .fs-sedang-tayang{color:#0b6b2e}.film-table .fs-sudah-tayang{color:#b00000}.film-table .fs-belum-tayang{color:#000}
+.film-table td.act{white-space:nowrap}
+.film-group .scroll{background:#fff}
+@media (max-width:820px){
+ .film-table tr{background:#fff;border:1.5px solid #000;color:#000}
+ .film-table td{border:0;color:#000;text-align:center;justify-content:space-between;background:none}
+ .film-table td::before{color:#000;font-weight:700}
+ .film-table td.sm{text-align:center;border-bottom:1.5px solid #000}
+}
+
+/* ===== Grafik batang harian meteran + pemeriksaan data ===== */
+.mdaily{margin:0 0 14px}.mbcs{display:grid;gap:12px;grid-template-columns:1fr}
+.mbc{border:1px solid var(--bd);border-radius:16px;background:var(--card);padding:8px 10px 4px}
+.mbc .mh{margin:2px 0 4px;font-size:14px}.mbc svg{width:100%;height:auto;display:block}
+.mdiag{margin-top:12px}.mdiag p{margin:6px 0 0;font-size:13.5px}.mdiag .mwarn{color:#b45309}.mdiag .mok{color:#0b6b2e;font-weight:600}
+@media (min-width:1000px){.mbcs{grid-template-columns:1fr 1fr}}

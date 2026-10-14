@@ -254,29 +254,35 @@ function filmExport(l,kind,outlet,date){
   var ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:6},{wch:32},{wch:27},{wch:14},{wch:36}];ws['!pageSetup']={orientation:'portrait',paperSize:9,fitToWidth:1,fitToHeight:1};ws['!margins']={left:.35,right:.35,top:.35,bottom:.35,header:.15,footer:.15};
   var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Laporan Film');XLSX.writeFile(wb,'Laporan_Film_STCXXI_'+repDate.replace(/\s+/g,'_')+'.xlsx');return
  }
- var doc=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
- doc.setFont('courier','normal');doc.setTextColor(0,0,0);
- doc.setFontSize(11);doc.text('Format Laporan Data Film di Server',14,15);
- doc.setFontSize(9);doc.text('Nama Outlet            : '+out,14,23);doc.text('Periode                : '+repDate,14,29);
- doc.setFontSize(7.1);
- doc.text('No',14,41);doc.text('Judul Film',28,41);doc.text('Keterangan',93,38);doc.text('(Belum/Sedang/Sudah)',87,42);doc.text('Format Film',139,38);doc.text('2D/3D-ATMOS',137,42);doc.text('KDM (ada/tidak)',163,41);
- var y=49,lineH=7,cols=[14,24,87,135,158,196];
- function drawHead(){doc.setDrawColor(110,110,110);doc.setLineWidth(.25);doc.setFillColor(238,241,239);doc.rect(12,y-5,184,8,'FD');doc.setTextColor(0,0,0);doc.setFontSize(7);doc.text('No.',14,y);doc.text('Judul Film',25,y);doc.text('Keterangan',88,y);doc.text('Format Film',136,y);doc.text('KDM',160,y);y+=3;doc.line(12,y,196,y);}
+var doc=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+ var BLK=[0,0,0],GRN=[0,110,40],RED=[190,0,0],X0=12,CW=[12,68,40,20,46],CX=[X0],PB=272,LH=3.8,PADY=2.2,HL=[['No.'],['Judul Film'],['Keterangan','(Belum/Sedang/Sudah)'],['Format Film','2D/3D-ATMOS'],['KDM','(ada/tidak)']];
+ CW.forEach(function(w,i){CX.push(CX[i]+w)});var TW=CX[5]-X0;
+ function cell(i,top,h){doc.setDrawColor(0,0,0);doc.setLineWidth(.35);doc.rect(CX[i],top,CW[i],h)}
+ function ctext(lines,i,top,h){var n=lines.length,y0=top+(h-n*LH)/2+LH*.78;lines.forEach(function(t,k){doc.text(String(t),CX[i]+CW[i]/2,y0+k*LH,{align:'center'})})}
+ doc.setTextColor(0,0,0);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.text('Format Laporan Data Film di Server',X0,16);
+ doc.setFontSize(9.5);doc.text('Nama Outlet',X0,24);doc.text(': '+out,X0+28,24);doc.text('Periode',X0,30);doc.text(': '+repDate,X0+28,30);
+ var y=36;
+ function drawHead(){var h=11;doc.setFillColor(222,222,222);doc.rect(X0,y,TW,h,'F');doc.setTextColor(0,0,0);doc.setFont('helvetica','bold');doc.setFontSize(8);HL.forEach(function(t,i){cell(i,y,h);ctext(t,i,y,h)});y+=h}
  drawHead();
+ doc.setFontSize(8);
  l.forEach(function(f,i){
-  var status=filmStatusNorm(f.status),color=status==='SEDANG TAYANG'?[0,110,55]:status==='SUDAH TAYANG'?[190,25,25]:[0,0,0];
-  var title=String(f.title||'').toUpperCase(),titleLines=doc.splitTextToSize(title,59),kdm=String(f.kdm||'TIDAK ADA').toUpperCase(),kdmLines=doc.splitTextToSize(kdm,35),rh=Math.max(lineH,titleLines.length*3.2,kdmLines.length*3.2);
-  if(y+rh>245){doc.addPage('a4','portrait');y=18;drawHead()}
-  doc.setDrawColor(170,170,170);doc.rect(12,y-4,184,rh);[24,87,135,158].forEach(function(x){doc.line(x,y-4,x,y-4+rh)});
-  doc.setTextColor(color[0],color[1],color[2]);doc.text(String(i+1),14,y);doc.text(titleLines,25,y);doc.text(status,88,y);doc.text(String(f.format||'2D').toUpperCase(),136,y);doc.text(kdmLines,160,y);y+=rh;
+  var status=filmStatusNorm(f.status),color=status==='SEDANG TAYANG'?GRN:status==='SUDAH TAYANG'?RED:BLK;
+  doc.setFont('helvetica','bold');doc.setFontSize(8);
+  var tl=doc.splitTextToSize(String(f.title||'').toUpperCase(),CW[1]-5),kl=doc.splitTextToSize(String(f.kdm||'TIDAK ADA').toUpperCase(),CW[4]-5),
+   sl=doc.splitTextToSize(status,CW[2]-4),fl=[String(f.format||'2D').toUpperCase()],
+   rh=Math.max(tl.length,kl.length,sl.length)*LH+PADY*2;
+  if(y+rh>PB){doc.addPage('a4','portrait');y=16;drawHead();doc.setFont('helvetica','bold');doc.setFontSize(8)}
+  doc.setTextColor(color[0],color[1],color[2]);
+  [[String(i+1)],tl,sl,fl,kl].forEach(function(t,k){cell(k,y,rh);ctext(t,k,y,rh)});
+  y+=rh;
  });
- doc.setTextColor(0,0,0);
+ doc.setTextColor(0,0,0);doc.setFont('helvetica','normal');
  y+=8;if(y>228){doc.addPage('a4','portrait');y=18}
- doc.setFont('courier','normal');doc.setFontSize(8);doc.setTextColor(0,0,0);doc.text('NOTE :',112,y);doc.text('SISA KAPASITAS PENYIMPANAN SERVER',112,y+5);
+ doc.setFontSize(8.5);doc.setFont('helvetica','bold');doc.text('NOTE :',112,y);doc.text('SISA KAPASITAS PENYIMPANAN SERVER',112,y+5);doc.setFont('helvetica','normal');
  if(cap){var capLines=doc.splitTextToSize(cap,83);doc.text(capLines,112,y+10);y+=Math.max(16,10+capLines.length*4)}
  y+=8;if(y>245){doc.addPage('a4','portrait');y=18}
- doc.setFontSize(8);doc.text('Yang Membuat,',20,y);doc.text('Mengetahui,',145,y);doc.setFontSize(9);doc.text('MUSYAFAR KAMAL',20,y+25);doc.text('FERRY FERNANDO',145,y+25);doc.setFontSize(8);doc.text('TECHNICAL',20,y+30);doc.text('CINEMA MANAGER',145,y+30);
- y+=43;if(y>278){doc.addPage('a4','portrait');y=18}doc.setFontSize(8);doc.setTextColor(0,0,0);doc.text('KETERANGAN :',112,y);doc.setTextColor(0,0,0);doc.text('FONT HITAM ( FILM BELUM TAYANG )',112,y+5);doc.setTextColor(0,110,55);doc.text('FONT HIJAU ( FILM SEDANG TAYANG)',112,y+10);doc.setTextColor(190,25,25);doc.text('FONT MERAH ( FILM SUDAH TAYANG)',112,y+15);
+ doc.setFontSize(8.5);doc.text('Yang Membuat,',20,y);doc.text('Mengetahui,',145,y);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text('MUSYAFAR KAMAL',20,y+25);doc.text('FERRY FERNANDO',145,y+25);doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.text('TECHNICAL',20,y+30);doc.text('CINEMA MANAGER',145,y+30);
+ y+=43;if(y>278){doc.addPage('a4','portrait');y=18}doc.setFontSize(8.5);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);doc.text('KETERANGAN :',112,y);doc.text('FONT HITAM ( FILM BELUM TAYANG )',112,y+5);doc.setTextColor(GRN[0],GRN[1],GRN[2]);doc.text('FONT HIJAU ( FILM SEDANG TAYANG )',112,y+10);doc.setTextColor(RED[0],RED[1],RED[2]);doc.text('FONT MERAH ( FILM SUDAH TAYANG )',112,y+15);
  doc.save('Laporan_Film_STCXXI_'+repDate.replace(/\s+/g,'_')+'.pdf')
 }
 
@@ -491,25 +497,75 @@ function mRender(r,all){var U2=[['listrik','Listrik (LWBP+WBP)','kWh'],['genset'
  h+=mChartHtml(r,src);
  h+='<div class="mh">Tabel pemakaian '+(gr==='month'?'bulanan':'harian')+'</div><div class="scroll meter-data-table"><table class="mt"><thead><tr><th>'+(gr==='month'?'Bulan':'Tanggal')+'</th>'+NM.map(function(m){return '<th>'+m[1]+' (kWh)</th>'}).join('')+'<th>Air (m³)</th></tr></thead><tbody>'+(r.series.length?r.series.map(function(o){return '<tr><td>'+tl(o.k,gr)+'</td>'+NM.map(function(m){return '<td>'+nf(o[m[0]])+'</td>'}).join('')+'<td>'+nf(o.air)+'</td></tr>'}).join(''):'<tr><td colspan="4">Belum ada pemakaian yang dapat dihitung pada periode ini. Dibutuhkan minimal dua pencatatan berurutan di lokasi yang sama.</td></tr>')+'</tbody></table></div>';
  return h}
-var MS={loc:'',pre:'30',from:'',to:'',group:'day'},MALL={};
+var MS={loc:'',pre:'o',from:'',to:'',group:'day'},MALL={};
 function mAll(loc,gr){var k=loc+'|'+gr;return api('meter_stats',{location:loc,from:'',to:'',group:gr,quiet:1}).then(function(r){MALL[k]=r;return r},function(){return MALL[k]||null})}
+var M_START='2026-10-01';
 function mPre(v){var s=MS,t=jkd(0),y=+t.slice(0,4),m=+t.slice(5,7)-1,iso=function(x){return x.toISOString().slice(0,10)};
  s.pre=v;if(v==='c')return;s.to=t;
- if(v==='m0')s.from=t.slice(0,8)+'01';
+ if(v==='o')s.from=M_START;
+ else if(v==='m0')s.from=t.slice(0,8)+'01';
  else if(v==='m1'){s.from=iso(new Date(Date.UTC(y,m-1,1)));s.to=iso(new Date(Date.UTC(y,m,0)))}
  else if(v==='y')s.from=y+'-01-01';
  else s.from=jkd(1-Number(v))}
-function meterPanel(){var b=$('mstat');if(!b)return;var s=MS;if(!s.from)mPre('30');
- var PR=[['7','7 hari terakhir'],['30','30 hari terakhir'],['90','90 hari terakhir'],['m0','Bulan ini'],['m1','Bulan lalu'],['y','Tahun ini'],['c','Kustom']];
+function meterPanel(){var b=$('mstat');if(!b)return;var s=MS;if(!s.from)mPre(s.pre||'o');
+ var PR=[['o','Sejak 1 Oktober 2026'],['7','7 hari terakhir'],['30','30 hari terakhir'],['90','90 hari terakhir'],['m0','Bulan ini'],['m1','Bulan lalu'],['y','Tahun ini'],['c','Kustom']];
  b.innerHTML='<div class="card mp"><h3>Akumulasi &amp; grafik pemakaian <small id="meter-refresh-time" class="mnote">Memuat data…</small></h3><div class="bar mbar"><label class="fl">Lokasi<select id="ml"><option value="">Semua lokasi</option>'+(s.loc?'<option selected>'+esc(s.loc)+'</option>':'')+'</select></label><label class="fl">Periode<select id="mpr">'+PR.map(function(p){return '<option value="'+p[0]+'"'+(p[0]===s.pre?' selected':'')+'>'+p[1]+'</option>'}).join('')+'</select></label><label class="fl">Dari tanggal<input type="date" id="mf" value="'+s.from+'"></label><label class="fl">Sampai tanggal<input type="date" id="mto" value="'+s.to+'"></label><label class="fl">Tampilan<select id="mg"><option value="day"'+(s.group==='day'?' selected':'')+'>Harian</option><option value="month"'+(s.group==='month'?' selected':'')+'>Bulanan</option></select></label></div><div id="mres"><div class="sk" style="height:160px"></div></div></div>';
- var meterLoading=false;var run=function(silent){if(meterLoading||CUR!=='meter'||!$('mres'))return;meterLoading=true;s.loc=$('ml').value;s.from=$('mf').value;s.to=$('mto').value;s.group=$('mg').value;
+ var meterLoading=false;var run=function(silent){if(meterLoading||CUR!=='meter'||!$('mres'))return;meterLoading=true;if(s.pre&&s.pre!=='c'){mPre(s.pre);$('mf').value=s.from;$('mto').value=s.to}s.loc=$('ml').value;s.from=$('mf').value;s.to=$('mto').value;s.group=$('mg').value;
   Promise.all([api('meter_stats',{location:s.loc,from:s.from,to:s.to,group:s.group,quiet:!!silent}),mAll(s.loc,s.group)]).then(function(ar){var r=ar[0];if(!$('mres')||CUR!=='meter')return;
    $('ml').innerHTML='<option value="">Semua lokasi</option>'+r.locations.map(function(n){return '<option'+(n===s.loc?' selected':'')+'>'+esc(n)+'</option>'}).join('');
-   $('mres').innerHTML=mRender(r,ar[1]);mDraw();mBind();var stamp=$('meter-refresh-time');if(stamp)stamp.textContent='Diperbarui '+new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}).catch(function(x){if($('mres'))$('mres').innerHTML='<div class="empty">'+esc(x.message)+'</div>'}).finally(function(){meterLoading=false})};
+   $('mres').innerHTML=mRender(r,ar[1]);mDraw();mBind();mDaily(r);if(silent&&window.__mdg){var rr=$('mres');rr.insertAdjacentHTML('beforeend',window.__mdg);rr.lastChild.id='mdiag'}else mDiag(s.loc);var stamp=$('meter-refresh-time');if(stamp)stamp.textContent='Diperbarui '+new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}).catch(function(x){if($('mres'))$('mres').innerHTML='<div class="empty">'+esc(x.message)+'</div>'}).finally(function(){meterLoading=false})};
  $('ml').onchange=run;$('mg').onchange=run;
  $('mpr').onchange=function(){mPre(this.value);$('mf').value=s.from;$('mto').value=s.to;run()};
  $('mf').onchange=$('mto').onchange=function(){s.pre='c';$('mpr').value='c';run()};
  if(window.__stcMeterRefresh)clearInterval(window.__stcMeterRefresh);run();window.__stcMeterRefresh=setInterval(function(){if(CUR==='meter'&&document.visibilityState==='visible')run(true)},30000)}
+
+
+/* ---- grafik batang per hari (listrik & air) dari 1 Oktober; hari tanpa pemakaian tampil nol ---- */
+function mKeys(r){var gr=r.group==='month'?'month':'day',out=[],S=r.series||[],a=r.from||(S[0]&&S[0].k)||M_START,b=r.to||jkd(0);
+ if(gr==='month'){var y=+a.slice(0,4),m=+a.slice(5,7)-1,y2=+b.slice(0,4),m2=+b.slice(5,7)-1;while((y<y2||(y===y2&&m<=m2))&&out.length<120){out.push(y+'-'+('0'+(m+1)).slice(-2));m++;if(m>11){m=0;y++}}}
+ else{var t=Date.parse(a+'T00:00:00Z'),e=Date.parse(b+'T00:00:00Z');for(;t<=e&&out.length<400;t+=864e5)out.push(new Date(t).toISOString().slice(0,10))}
+ return out}
+function mBars(title,unit,keys,vals,col,gr){
+ var W=720,H=230,L=46,R=10,T=26,B=34,pw=W-L-R,ph=H-T-B,n=keys.length,mx=Math.max.apply(null,vals.concat([0])),tp=nice((mx||1)/4)*4,bw=pw/Math.max(n,1),g='',i,
+  Y=function(v){return T+ph-v/tp*ph},step=Math.max(1,Math.ceil(n/Math.floor(pw/38)));
+ for(i=0;i<=4;i++){var y=Y(i*tp/4);g+='<line class="cgr" x1="'+L+'" x2="'+(W-R)+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+'"/><text class="ctx" x="'+(L-6)+'" y="'+(y+4).toFixed(1)+'" text-anchor="end">'+nf(i*tp/4)+'</text>'}
+ g+='<text class="ctx" x="4" y="14">'+unit+'</text>';
+ keys.forEach(function(k,j){var v=vals[j]||0,x=L+j*bw,h=ph-(Y(v)-T),w=Math.max(2,bw*.7);
+  g+='<g><title>'+esc(tl(k,gr))+': '+nf(v)+' '+unit+'</title>'+(v>0?'<rect x="'+(x+(bw-w)/2).toFixed(1)+'" y="'+Y(v).toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="2" fill="'+col+'"/>':'<rect x="'+(x+(bw-w)/2).toFixed(1)+'" y="'+(T+ph-1.5)+'" width="'+w.toFixed(1)+'" height="1.5" fill="'+col+'" opacity=".35"/>')+
+  '<rect x="'+x.toFixed(1)+'" y="'+T+'" width="'+bw.toFixed(1)+'" height="'+ph+'" fill="transparent"/></g>';
+  if(v>0&&n<=16)g+='<text class="ctx" x="'+(x+bw/2).toFixed(1)+'" y="'+(Y(v)-4).toFixed(1)+'" text-anchor="middle">'+nf(v)+'</text>';
+  if(j%step===0)g+='<text class="ctx" x="'+(x+bw/2).toFixed(1)+'" y="'+(H-12)+'" text-anchor="middle">'+bl(k,gr)+'</text>'});
+ g+='<line class="cax" x1="'+L+'" x2="'+(W-R)+'" y1="'+(T+ph)+'" y2="'+(T+ph)+'"/>';
+ return '<div class="mbc"><div class="mh">'+title+'</div><svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(title)+'">'+g+'</svg></div>'}
+function mDaily(r){var host=$('mres');if(!host)return;var gr=r.group==='month'?'month':'day',keys=mKeys(r),by={};
+ (r.series||[]).forEach(function(o){by[o.k]=o});
+ var E=keys.map(function(k){var o=by[k];return o?Math.round(((+o.lwbp||0)+(+o.wbp||0))*1000)/1000:0}),
+  G=keys.map(function(k){var o=by[k];return o?(+o.genset||0):0}),
+  A=keys.map(function(k){var o=by[k];return o?(+o.air||0):0}),
+  has=function(a){return a.some(function(v){return v>0})},
+  per=gr==='month'?'bulan':'hari',h='<div class="mdaily"><div class="mh">Grafik pemakaian per '+per+' <small>('+dd(keys[0])+' – '+dd(keys[keys.length-1])+(gr==='day'?', '+keys.length+' hari':'')+')</small></div>'+
+  '<div class="mbcs">'+mBars('Listrik LWBP + WBP (kWh)','kWh',keys,E,CC.listrik,gr)+(has(G)?mBars('Genset (kWh)','kWh',keys,G,CC.genset,gr):'')+mBars('Air (m³)','m³',keys,A,CC.air,gr)+'</div>'+
+  (has(E)||has(A)||has(G)?'':'<small class="mnote">Belum ada pemakaian yang terhitung pada periode ini. Pemakaian = selisih dua pencatatan berurutan di lokasi yang sama; pencatatan pertama hanya menjadi angka awal.</small>')+'</div>';
+ var old=$('mdaily');if(old)old.remove();host.insertAdjacentHTML('afterbegin',h);host.firstChild.id='mdaily'}
+/* ---- pemeriksaan data meteran: berapa laporan yang terbaca & mana yang bermasalah ---- */
+function mDiag(loc){var host=$('mres');if(!host)return;
+ api('rep_export',{type:'meter',q:'',from:'',to:'',status:'',quiet:1}).then(function(x){if(!$('mres'))return;
+  var items=(x&&x.items)||[],bad=[],ok=[],num=function(v){return v!=null&&v!==''&&isFinite(Number(v))};
+  items.forEach(function(it){var d=it.data||{},lc=String(d.location||'').trim(),why='';
+   if(!lc)why='lokasi kosong';else if(!/^\d{4}-\d{2}-\d{2}$/.test(String(d.date||'')))why='tanggal tidak valid';
+   else{var e=d.kind!=='Air'&&num(d.lwbp)&&num(d.wbp)&&num(d.genset),w=d.kind!=='Listrik'&&num(d.reading);if(!e&&!w)why='angka meteran kosong/tidak valid'}
+   if(why)bad.push({id:it.id,why:why});else ok.push({id:it.id,date:d.date,time:d.time||'00:00',lk:String(d.location).trim().toLowerCase(),loc:String(d.location).trim(),d:d})});
+  ok.sort(function(a,b){var p=a.date+' '+a.time,q=b.date+' '+b.time;return p<q?-1:p>q?1:a.id<b.id?-1:1});
+  var last={},rst=[];
+  ok.forEach(function(o){[['lwbp','LWBP'],['wbp','WBP'],['genset','Genset'],['reading','Air']].forEach(function(m){var v=o.d[m[0]];if(!num(v)||(m[0]!=='reading'&&o.d.kind==='Air')||(m[0]==='reading'&&o.d.kind==='Listrik'))return;v=Number(v);var k=o.lk+'|'+m[0];
+   if(last[k]!==undefined&&v<last[k].v)rst.push({id:o.id,loc:o.loc,m:m[1],date:o.date,from:last[k].v,to:v});last[k]={v:v}})});
+  var locs={};ok.forEach(function(o){locs[o.lk]=o.loc});var dates=ok.map(function(o){return o.date}).sort(),
+   h='<div class="card mdiag"><b>Pemeriksaan data meteran</b><p>'+ok.length+' dari '+items.length+' laporan meteran terbaca'+(ok.length?' · '+Object.keys(locs).length+' lokasi · '+dd(dates[0])+' – '+dd(dates[dates.length-1]):'')+'.</p>'+
+   (items.length?'':'<p class="mwarn">Backend tidak mengembalikan laporan meteran. Periksa URL API di config.js dan pastikan Code.gs terbaru sudah di-deploy ulang (Deploy &gt; Kelola deployment &gt; Edit &gt; Versi baru).</p>')+
+   (bad.length?'<p class="mwarn">Tidak terbaca ('+bad.length+'): '+bad.slice(0,8).map(function(b){return esc(b.id)+' ('+b.why+')'}).join(', ')+(bad.length>8?' …':'')+'</p>':'')+
+   (rst.length?'<p class="mwarn">Angka lebih kecil dari pencatatan sebelumnya (tidak dihitung sebagai pemakaian; periksa salah ketik atau meteran diganti): '+rst.slice(0,6).map(function(c){return esc(c.id)+' '+esc(c.loc)+' '+c.m+' '+mfmt(c.from)+' → '+mfmt(c.to)}).join('; ')+(rst.length>6?' …':'')+'</p>':'')+
+   (ok.length&&!bad.length&&!rst.length?'<p class="mok">Semua laporan meteran terbaca dengan benar.</p>':'')+'</div>';
+  window.__mdg=h;var o=$('mdiag');if(o)o.remove();var res=$('mres');res.insertAdjacentHTML('beforeend',h);res.lastChild.id='mdiag'}).catch(function(){})}
 
 /* ---- laporan: daftar ---- */
 function kl(d){return d.kind==='Gabungan'?'Listrik & Air':d.kind}
