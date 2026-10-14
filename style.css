@@ -545,3 +545,13 @@ td[data-l="No. laporan"]{font-weight:700;color:var(--gt);white-space:nowrap}
  *,*::before,*::after{animation:none!important;transition:none!important}
  #mchart svg.anim path[pathLength]{stroke-dasharray:none!important;stroke-dashoffset:0!important}
 }
+
+/* STC XXI focused refinements */
+.dh-main{min-width:0}.dh-t{position:relative;z-index:3}.dh-img{pointer-events:none}.lens-glow,.lens-flare{left:76.4%;top:62.1%}
+.ds-big .l{position:relative;z-index:2;display:block;max-width:100%;overflow-wrap:anywhere}.ds-big{isolation:isolate}.ds-big::before{pointer-events:none}
+.tk-poster{width:76px;height:112px;object-fit:cover;border-radius:9px;flex:none;box-shadow:0 5px 16px #0002}.tk{align-items:stretch}.tk .tl{min-width:0;flex:1}.tk .tr{flex:none}
+.filmbar{display:grid;grid-template-columns:minmax(240px,2fr) minmax(150px,1fr) minmax(220px,1.5fr) auto auto;align-items:end;gap:10px}.filmbar>*{min-width:0}.film-status{display:inline-flex;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:800;white-space:nowrap}.fs-belum-tayang{background:#e8ece9;color:#17251d}.fs-sedang-tayang{background:#d9f3e3;color:#12663b}.fs-sudah-tayang{background:#fde3e1;color:#a2211b}.film-capacity{margin-top:16px;padding:14px 16px;border:1px solid var(--bd);border-radius:14px;background:var(--card)}.film-capacity p{margin:4px 0 0;color:var(--mut)}.film-table td{vertical-align:middle}.muted{color:var(--mut);margin:4px 0 0;font-size:13px}
+@media(min-width:1200px){#view{max-width:none;padding:24px 30px 32px}.dh{grid-template-columns:minmax(0,1.45fr) minmax(300px,.8fr)}.dm{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr)}.ds{grid-template-columns:minmax(180px,.8fr) minmax(260px,1.1fr) minmax(180px,.8fr)}}
+@media(max-width:760px){.filmbar{grid-template-columns:1fr 1fr}.filmbar #filmq,.filmbar #froutlet{grid-column:1/-1}.filmbar button{width:100%;padding:9px 10px}.tk-poster{width:68px;height:100px}.ds-big .l{font-size:12px;line-height:1.35;overflow-wrap:anywhere;white-space:normal}.ds-big{overflow:hidden}.film-capacity{font-size:13px}}
+
+.role-tag{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:800;white-space:nowrap}.role-admin{background:#e8dfc5;color:#604512}.role-user{background:#d9f3e3;color:#12663b}.role-reporter{background:#e3edfa;color:#194b8a}
