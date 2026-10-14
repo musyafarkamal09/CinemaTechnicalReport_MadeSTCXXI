@@ -410,7 +410,7 @@ function xt(a,b,n,gr){var o=[],i,t,d;
 /* grafik garis gabungan (LWBP, WBP, Genset = kWh di sumbu kiri; Air = m³ di sumbu kanan) dengan zoom & geser.
    Data: seri dari server (seluruh riwayat bila tersedia), tampilan awal = periode yang dipilih. */
 function mChartInit(r,all){
- all=all||r; var S=(all.series||[]).map(addL),gr=r.group,K=['listrik','genset','air'],
+ all=all||r; var gr=r.group,S=mFill((all.series||[]).map(addL),gr,all.since||r.since,r),K=['listrik','genset','air'],
   on=K.filter(function(k){return S.some(function(o){return o[k]>0})}),
   P=S.map(function(o){return {t:tm(o.k),o:o}}),pad=gr==='month'?16*DAY:DAY,mn=P[0].t,mx=P[P.length-1].t,f0=r.from?tm(r.from):mn,f1=r.to?tm(r.to):mx;
  if(gr==='month'){var d0=new Date(f0),d1=new Date(f1);f0=Date.UTC(d0.getUTCFullYear(),d0.getUTCMonth(),1);f1=Date.UTC(d1.getUTCFullYear(),d1.getUTCMonth(),1)}
@@ -513,7 +513,7 @@ function meterPanel(){var b=$('mstat');if(!b)return;var s=MS;if(!s.from)mPre(s.p
  var meterLoading=false;var run=function(silent){if(meterLoading||CUR!=='meter'||!$('mres'))return;meterLoading=true;if(s.pre&&s.pre!=='c'){mPre(s.pre);$('mf').value=s.from;$('mto').value=s.to}s.loc=$('ml').value;s.from=$('mf').value;s.to=$('mto').value;s.group=$('mg').value;
   Promise.all([api('meter_stats',{location:s.loc,from:s.from,to:s.to,group:s.group,quiet:!!silent}),mAll(s.loc,s.group)]).then(function(ar){var r=ar[0];if(!$('mres')||CUR!=='meter')return;
    $('ml').innerHTML='<option value="">Semua lokasi</option>'+r.locations.map(function(n){return '<option'+(n===s.loc?' selected':'')+'>'+esc(n)+'</option>'}).join('');
-   $('mres').innerHTML=mRender(r,ar[1]);mDraw();mBind();mDaily(r);if(silent&&window.__mdg){var rr=$('mres');rr.insertAdjacentHTML('beforeend',window.__mdg);rr.lastChild.id='mdiag'}else mDiag(s.loc);var stamp=$('meter-refresh-time');if(stamp)stamp.textContent='Diperbarui '+new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}).catch(function(x){if($('mres'))$('mres').innerHTML='<div class="empty">'+esc(x.message)+'</div>'}).finally(function(){meterLoading=false})};
+   $('mres').innerHTML=mRender(r,ar[1]);mDraw();mBind();if(silent&&window.__mdg){var rr=$('mres');rr.insertAdjacentHTML('beforeend',window.__mdg);rr.lastChild.id='mdiag'}else mDiag(s.loc);var stamp=$('meter-refresh-time');if(stamp)stamp.textContent='Diperbarui '+new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}).catch(function(x){if($('mres'))$('mres').innerHTML='<div class="empty">'+esc(x.message)+'</div>'}).finally(function(){meterLoading=false})};
  $('ml').onchange=run;$('mg').onchange=run;
  $('mpr').onchange=function(){mPre(this.value);$('mf').value=s.from;$('mto').value=s.to;run()};
  $('mf').onchange=$('mto').onchange=function(){s.pre='c';$('mpr').value='c';run()};
@@ -525,28 +525,12 @@ function mKeys(r){var gr=r.group==='month'?'month':'day',out=[],S=r.series||[],a
  if(gr==='month'){var y=+a.slice(0,4),m=+a.slice(5,7)-1,y2=+b.slice(0,4),m2=+b.slice(5,7)-1;while((y<y2||(y===y2&&m<=m2))&&out.length<120){out.push(y+'-'+('0'+(m+1)).slice(-2));m++;if(m>11){m=0;y++}}}
  else{var t=Date.parse(a+'T00:00:00Z'),e=Date.parse(b+'T00:00:00Z');for(;t<=e&&out.length<400;t+=864e5)out.push(new Date(t).toISOString().slice(0,10))}
  return out}
-function mBars(title,unit,keys,vals,col,gr){
- var W=720,H=230,L=46,R=10,T=26,B=34,pw=W-L-R,ph=H-T-B,n=keys.length,mx=Math.max.apply(null,vals.concat([0])),tp=nice((mx||1)/4)*4,bw=pw/Math.max(n,1),g='',i,
-  Y=function(v){return T+ph-v/tp*ph},step=Math.max(1,Math.ceil(n/Math.floor(pw/38)));
- for(i=0;i<=4;i++){var y=Y(i*tp/4);g+='<line class="cgr" x1="'+L+'" x2="'+(W-R)+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+'"/><text class="ctx" x="'+(L-6)+'" y="'+(y+4).toFixed(1)+'" text-anchor="end">'+nf(i*tp/4)+'</text>'}
- g+='<text class="ctx" x="4" y="14">'+unit+'</text>';
- keys.forEach(function(k,j){var v=vals[j]||0,x=L+j*bw,h=ph-(Y(v)-T),w=Math.max(2,bw*.7);
-  g+='<g><title>'+esc(tl(k,gr))+': '+nf(v)+' '+unit+'</title>'+(v>0?'<rect x="'+(x+(bw-w)/2).toFixed(1)+'" y="'+Y(v).toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="2" fill="'+col+'"/>':'<rect x="'+(x+(bw-w)/2).toFixed(1)+'" y="'+(T+ph-1.5)+'" width="'+w.toFixed(1)+'" height="1.5" fill="'+col+'" opacity=".35"/>')+
-  '<rect x="'+x.toFixed(1)+'" y="'+T+'" width="'+bw.toFixed(1)+'" height="'+ph+'" fill="transparent"/></g>';
-  if(v>0&&n<=16)g+='<text class="ctx" x="'+(x+bw/2).toFixed(1)+'" y="'+(Y(v)-4).toFixed(1)+'" text-anchor="middle">'+nf(v)+'</text>';
-  if(j%step===0)g+='<text class="ctx" x="'+(x+bw/2).toFixed(1)+'" y="'+(H-12)+'" text-anchor="middle">'+bl(k,gr)+'</text>'});
- g+='<line class="cax" x1="'+L+'" x2="'+(W-R)+'" y1="'+(T+ph)+'" y2="'+(T+ph)+'"/>';
- return '<div class="mbc"><div class="mh">'+title+'</div><svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(title)+'">'+g+'</svg></div>'}
-function mDaily(r){var host=$('mres');if(!host)return;var gr=r.group==='month'?'month':'day',keys=mKeys(r),by={};
- (r.series||[]).forEach(function(o){by[o.k]=o});
- var E=keys.map(function(k){var o=by[k];return o?Math.round(((+o.lwbp||0)+(+o.wbp||0))*1000)/1000:0}),
-  G=keys.map(function(k){var o=by[k];return o?(+o.genset||0):0}),
-  A=keys.map(function(k){var o=by[k];return o?(+o.air||0):0}),
-  has=function(a){return a.some(function(v){return v>0})},
-  per=gr==='month'?'bulan':'hari',h='<div class="mdaily"><div class="mh">Grafik pemakaian per '+per+' <small>('+dd(keys[0])+' – '+dd(keys[keys.length-1])+(gr==='day'?', '+keys.length+' hari':'')+')</small></div>'+
-  '<div class="mbcs">'+mBars('Listrik LWBP + WBP (kWh)','kWh',keys,E,CC.listrik,gr)+(has(G)?mBars('Genset (kWh)','kWh',keys,G,CC.genset,gr):'')+mBars('Air (m³)','m³',keys,A,CC.air,gr)+'</div>'+
-  (has(E)||has(A)||has(G)?'':'<small class="mnote">Belum ada pemakaian yang terhitung pada periode ini. Pemakaian = selisih dua pencatatan berurutan di lokasi yang sama; pencatatan pertama hanya menjadi angka awal.</small>')+'</div>';
- var old=$('mdaily');if(old)old.remove();host.insertAdjacentHTML('afterbegin',h);host.firstChild.id='mdaily'}
+/* isi hari/bulan tanpa pemakaian dengan nol, mulai dari tanggal pencatatan pertama (angka awal) sampai hari ini,
+   agar garis grafik terbentuk per hari dan pencatatan pertama (mis. 12 Okt) ikut tampil */
+function mFill(S,gr,since,r){if(!S.length)return S;var by={};S.forEach(function(o){by[o.k]=o});
+ var cut=gr==='month'?7:10,a=since?String(since).slice(0,cut):S[0].k,first=S[0].k<a?S[0].k:a,last=S[S.length-1].k,td=jkd(0).slice(0,cut);if(td>last)last=td;
+ var keys=mKeys({group:gr,from:first.length===7?first+'-01':first,to:last.length===7?last+'-01':last}),out=[];
+ keys.forEach(function(k){out.push(by[k]||{k:k,lwbp:0,wbp:0,genset:0,air:0})});return out.length?out:S}
 /* ---- pemeriksaan data meteran: berapa laporan yang terbaca & mana yang bermasalah ---- */
 function mDiag(loc){var host=$('mres');if(!host)return;
  api('rep_export',{type:'meter',q:'',from:'',to:'',status:'',quiet:1}).then(function(x){if(!$('mres'))return;

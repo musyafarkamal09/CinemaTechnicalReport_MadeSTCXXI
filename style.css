@@ -629,9 +629,5 @@ td[data-l="No. laporan"]{font-weight:700;color:var(--gt);white-space:nowrap}
  .film-table td.sm{text-align:center;border-bottom:1.5px solid #000}
 }
 
-/* ===== Grafik batang harian meteran + pemeriksaan data ===== */
-.mdaily{margin:0 0 14px}.mbcs{display:grid;gap:12px;grid-template-columns:1fr}
-.mbc{border:1px solid var(--bd);border-radius:16px;background:var(--card);padding:8px 10px 4px}
-.mbc .mh{margin:2px 0 4px;font-size:14px}.mbc svg{width:100%;height:auto;display:block}
+/* ===== Pemeriksaan data meteran ===== */
 .mdiag{margin-top:12px}.mdiag p{margin:6px 0 0;font-size:13.5px}.mdiag .mwarn{color:#b45309}.mdiag .mok{color:#0b6b2e;font-weight:600}
-@media (min-width:1000px){.mbcs{grid-template-columns:1fr 1fr}}
