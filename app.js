@@ -681,7 +681,7 @@ function detail(id,after){modal('<div class="empty">Memuat...</div>');api('rep_g
  }
  var left=r.remainMs,t0=Date.now();
  if(U.role!=='ADMIN'&&r.own)h+=r.editable?'<div class="info">Anda dapat mengedit laporan ini selama 30 menit setelah laporan berhasil disimpan. Sisa: <b id="lf"></b></div>':'<div class="info">Batas waktu edit telah berakhir. Hubungi Admin jika diperlukan koreksi.</div>';
- h+='<div class="macts fact">'+(r.editable?'<button class="btn" id="de">Edit</button> ':'')+(U.role==='ADMIN'?'<button class="btn sec" id="dx">Arsipkan</button> ':'')+'<button class="btn sec" id="dc">Tutup</button></div>';
+ h+='<div class="zipbar"><span>Bukti laporan + foto dokumentasi</span><button type="button" class="btn sec" id="dpdf">Unduh PDF</button><button type="button" class="btn sec" id="dxl">Unduh Excel</button></div><div class="macts fact">'+(r.editable?'<button class="btn" id="de">Edit</button> ':'')+(U.role==='ADMIN'?'<button class="btn sec" id="dx">Arsipkan</button> ':'')+'<button class="btn sec" id="dc">Tutup</button></div>';
  modal(h);$('dc').onclick=closeM;if(t==='meter')meterCum(d);
 if($('rpf'))$('rpf').onsubmit=function(e){e.preventDefault();var b=$('rpb'),fs=[].slice.call($('rpp').files),phs=[],bad=0;b.disabled=true;b.textContent='Mengirim...';$('rpe').textContent='';
   fs.reduce(function(p,f){return p.then(function(){return comp(f).then(function(x){x.kind='Penyelesaian';phs.push(x)},function(){bad++})})},Promise.resolve())
@@ -689,12 +689,78 @@ if($('rpf'))$('rpf').onsubmit=function(e){e.preventDefault();var b=$('rpb'),fs=[
   .then(function(){return upPh(r.id,phs,function(n){upTxt(b,n,phs.length)})})
   .then(function(f){toast(f?'Tanggapan tersimpan, tetapi '+f+' foto gagal diunggah.':(bad?'Tanggapan tersimpan; '+bad+' file foto ditolak.':'Tanggapan tersimpan.'),!!(f||bad));detail(r.id,after);if(after)after()})
   .catch(function(x){$('rpe').textContent=x.message;upOff(b);b.disabled=false;b.textContent='Kirim tanggapan'})};
+ if($('dpdf'))$('dpdf').onclick=function(){repDoc(r,'pdf')};if($('dxl'))$('dxl').onclick=function(){repDoc(r,'xlsx')};
  if($('dz'))$('dz').onclick=function(){var bz=this;bz.disabled=true;bz.textContent='Menyiapkan ZIP...';api('rep_zip',{id:r.id}).then(function(z){toast('ZIP siap diunduh ('+z.count+' foto).');location.href=z.url}).catch(function(x){toast(x.message,1)}).then(function(){bz.disabled=false;bz.textContent='Unduh semua foto (ZIP)'})};
  document.querySelectorAll('#gal img').forEach(function(i){fillImg(i,'photo');i.onclick=function(){if(i.dataset.ok)lightbox(i.src)}});
  if($('lf')){var iv=setInterval(function(){var m=left-(Date.now()-t0);if(!$('lf')||m<=0){clearInterval(iv);if($('de')&&U.role!=='ADMIN')$('de').disabled=true;if($('lf'))$('lf').textContent='habis';return}$('lf').textContent=p2(Math.floor(m/60000))+':'+p2(Math.floor(m/1000)%60)},1000)}
  if($('de'))$('de').onclick=function(){repForm(t,r,after)};
  if($('dx'))$('dx').onclick=function(){var why=prompt('Arsipkan '+r.id+' ('+T[t].label+')? Alasan:');if(why===null)return;api('rep_del',{id:r.id,reason:why}).then(function(){closeM();toast('Laporan diarsipkan.');after&&after()}).catch(function(x){toast(x.message,1)})}
  }).catch(function(x){closeM();toast(x.message,1)})}
+
+/* ---- unduh satu laporan + foto dokumentasi (PDF / Excel), sebagai bukti ---- */
+function dlBlob(b,n){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},4000)}
+function imgNorm(src){return new Promise(function(ok,no){var im=new Image();im.onload=function(){var s=Math.min(1,1100/Math.max(im.width,im.height)),c=document.createElement('canvas'),x;c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);ok({data:c.toDataURL('image/jpeg',.85),w:c.width,h:c.height})};im.onerror=function(){no(new Error('Foto tidak dapat dibaca'))};im.src=src})}
+function repPhotos(r,prog){var RK={Sebelum:0,Sesudah:1,Masalah:0,Penyelesaian:1},
+ ps=(r.photos||[]).map(function(p,i){return {p:p,i:i}}).sort(function(a,b){var x=RK[a.p.kind],y=RK[b.p.kind];x=x==null?5:x;y=y==null?5:y;return x-y||a.i-b.i}).map(function(o){return o.p});
+ function one(p){var k='photo:'+p.id;return (IMGC[k]?Promise.resolve(IMGC[k]):api('img',{kind:'photo',id:p.id,quiet:1}).then(function(u){var s=imgSrc(u);if(!s)throw new Error('kosong');IMGC[k]=s;return s})).then(imgNorm).then(function(x){x.p=p;return x},function(){return null})}
+ return new Promise(function(res){var out=[],nx=0,run=0,dn=0;function pump(){while(run<3&&nx<ps.length){(function(n){run++;one(ps[n]).then(function(x){out[n]=x;run--;dn++;if(prog)prog(dn,ps.length);pump()})})(nx++)}if(!run&&nx>=ps.length)res(out.filter(Boolean))}pump()})}
+function repDocData(r){var t=r.type,d=r.data,P=[],TB=[],x=d.diffs||{},pv=d.prevs||{};
+ P.push(['No. Laporan',r.id],['Jenis laporan',T[t].label]);
+ T[t].f.forEach(function(f){if(t==='meter'&&f[5])return;var v=d[f[0]];if(v!==''&&v!=null)P.push([f[1],String(v)])});
+ if(t==='work')P.push(['Anggota tim',(d.team||[]).join(', ')||'-']);
+ if(t==='issue')P.push(['Status perbaikan',d.status||'-']);
+ if(t==='meter'){var mr=[];
+  if(d.kind!=='Air'&&d.lwbp!=null)[['LWBP (kWh)','lwbp'],['WBP (kWh)','wbp'],['Genset (kWh)','genset']].forEach(function(m){mr.push([m[0],d[m[1]],pv[m[1]]==null?'-':pv[m[1]],x[m[1]]==null?'-':x[m[1]]])});
+  if(d.kind!=='Listrik')mr.push(['Air (m\u00B3)',d.reading,d.prev==null?'-':d.prev,d.diff==null?'-':d.diff]);
+  TB.push({title:'Pembacaan meteran',head:['Meter','Angka','Sebelumnya','Pemakaian'],rows:mr})}
+ if(t==='ac'){P.push(['Status suhu laporan',acTxt(d)||'-']);if(d.tempStd)P.push(['Standar suhu',d.tempStd.min+' - '+d.tempStd.max+' \u00B0C']);
+  TB.push({title:'Rincian area',head:['Area','Merk AC','Suhu (\u00B0C)','Status','Catatan'],rows:acRowsOf(d).map(function(a){return [a.location,a.unit,a.roomTemp,tsl(acSt(a,d))||'-',a.note||'-']})})}
+ if(t==='purchase')TB.push({title:'Rincian barang',head:['Barang','Kategori','Jumlah','Harga satuan','Total'],rows:(d.items||[]).map(function(i){return [i.name,i.category||'-',i.qty+' '+(i.unit||''),RP.format(i.price),RP.format(i.total)]}).concat([['Total transaksi','','','',RP.format(d.total)]])});
+ if(t==='issue'&&(d.responses||[]).length)TB.push({title:'Tanggapan dan penyelesaian',head:['Waktu','Oleh','Status','Tanggapan'],rows:d.responses.map(function(z){return [dt(z.at),z.by,z.status,z.text]})});
+ P.push(['Pelapor',r.reporter],['Dibuat',dt(r.createdAt)],['Diubah',dt(r.updatedAt)]);
+ return {P:P,TB:TB}}
+function repPdf(r,imgs){var J=window.jspdf.jsPDF,doc=new J({unit:'mm',format:'a4'}),W=210,H=297,M=14,D=repDocData(r),y=16,cw=88,gap=6,mh=66,ry,k,pc;
+ doc.setFont('helvetica','bold');doc.setFontSize(14);doc.text(T[r.type].label+' - STC XXI Technical Report',M,y);
+ doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('Diekspor: '+exTs()+'  |  Oleh: '+U.name+'  |  Foto dokumentasi: '+imgs.length,M,y+6);
+ doc.autoTable({startY:y+10,body:D.P,theme:'grid',margin:{left:M,right:M,top:14,bottom:14},styles:{fontSize:9,cellPadding:2,overflow:'linebreak',valign:'top'},columnStyles:{0:{cellWidth:46,fontStyle:'bold',fillColor:[238,243,240]}}});
+ D.TB.forEach(function(t){y=doc.lastAutoTable.finalY+7;if(y>H-40){doc.addPage();y=16}doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(0);doc.text(t.title,M,y);
+  doc.autoTable({startY:y+3,head:[t.head],body:t.rows,theme:'grid',margin:{left:M,right:M,top:14,bottom:14},styles:{fontSize:8.5,cellPadding:1.8,overflow:'linebreak',valign:'top'},headStyles:{fillColor:[12,59,43],textColor:255}})});
+ y=doc.lastAutoTable.finalY+8;if(y>H-100){doc.addPage();y=16}
+ doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(0);doc.text('Foto dokumentasi ('+imgs.length+')',M,y);
+ if(!imgs.length){doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('Laporan ini tidak memiliki foto dokumentasi.',M,y+6)}
+ ry=y+4;
+ imgs.forEach(function(g,i){var c=i%2,w=cw,h=w*g.h/g.w,x,cap;if(h>mh){h=mh;w=h*g.w/g.h}
+  if(c===0){if(i>0)ry+=mh+13;if(ry+mh+10>H-14){doc.addPage();ry=16}}
+  x=M+c*(cw+gap);doc.addImage(g.data,'JPEG',x,ry,w,h);doc.setDrawColor(190);doc.setLineWidth(.2);doc.rect(x,ry,w,h);
+  cap='Foto '+(i+1)+' - '+(g.p.kind||'Foto')+(g.p.at?' - '+dt(g.p.at):'');doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(0);doc.text(cap,x,ry+h+4,{maxWidth:cw})});
+ pc=doc.getNumberOfPages();for(k=1;k<=pc;k++){doc.setPage(k);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(90);doc.text('No. Laporan '+r.id+'  |  Halaman '+k+' / '+pc,W-M,H-6,{align:'right'});doc.text('STC XXI Technical Report',M,H-6)}
+ doc.save('Laporan_'+r.id+'_dengan_foto.pdf')}
+function repXlsx(r,imgs){if(!window.ExcelJS)return Promise.reject(new Error('Library Excel belum termuat. Periksa koneksi internet lalu muat ulang halaman.'));
+ var wb=new ExcelJS.Workbook(),ws=wb.addWorksheet('Laporan'),D=repDocData(r),bd={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}},row,hd,wp,BL=17;
+ wb.creator=U.name;wb.created=new Date();
+ ws.columns=[{width:26},{width:30},{width:18},{width:22},{width:44}];
+ ws.addRow([T[r.type].label+' - STC XXI Technical Report']).font={bold:true,size:14};
+ ws.addRow(['Diekspor: '+exTs()+' | Oleh: '+U.name+' | Foto dokumentasi: '+imgs.length]);ws.addRow([]);
+ D.P.forEach(function(p){row=ws.addRow([p[0],String(p[1])]);ws.mergeCells(row.number,2,row.number,5);row.getCell(1).font={bold:true};row.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEEF3F0'}};
+  row.eachCell({includeEmpty:true},function(c){c.border=bd;c.alignment={vertical:'top',wrapText:true}});row.height=Math.max(15,Math.ceil(String(p[1]).length/100)*15)});
+ D.TB.forEach(function(t){ws.addRow([]);ws.addRow([t.title]).font={bold:true,size:11};hd=ws.addRow(t.head);
+  hd.eachCell(function(c){c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0C3B2B'}};c.border=bd});
+  t.rows.forEach(function(a){var rw=ws.addRow(a.map(function(v){return v==null?'':v}));rw.eachCell(function(c){c.border=bd;c.alignment={vertical:'top',wrapText:true}})})});
+ wp=wb.addWorksheet('Foto Dokumentasi');wp.columns=[{width:34},{width:62}];
+ wp.addRow(['Foto dokumentasi - '+r.id+' ('+imgs.length+' foto)']).font={bold:true,size:13};
+ if(!imgs.length)wp.addRow(['Laporan ini tidak memiliki foto dokumentasi.']);
+ imgs.forEach(function(g,i){var s=3+i*BL,k=Math.min(1,440/g.w,320/g.h),w=Math.round(g.w*k),h=Math.round(g.h*k),c=wp.getCell(s,1),id;
+  c.value='Foto '+(i+1)+' - '+(g.p.kind||'Foto')+(g.p.at?'\n'+dt(g.p.at):'');c.font={bold:true};c.alignment={vertical:'top',wrapText:true};
+  id=wb.addImage({base64:g.data.split(',')[1],extension:'jpeg'});wp.addImage(id,{tl:{col:1,row:s-1},ext:{width:w,height:h}})});
+ return wb.xlsx.writeBuffer().then(function(buf){return new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})})}
+function repDoc(r,fmt){if(BUSY)return;var pdf=fmt==='pdf',bp=$('dpdf'),bx=$('dxl'),b=pdf?bp:bx,b0=b.textContent,np=(r.photos||[]).length,nm='Laporan_'+r.id+'_dengan_foto.xlsx';
+ if(pdf?!(window.jspdf&&window.jspdf.jsPDF):!window.ExcelJS){toast('Library '+(pdf?'PDF':'Excel')+' belum termuat. Periksa koneksi internet lalu muat ulang halaman.',1);return}
+ BUSY=true;bp.disabled=true;bx.disabled=true;b.textContent='Memuat foto...';
+ repPhotos(r,function(n,t){b.textContent='Memuat foto '+n+'/'+t+'...'}).then(function(imgs){var lost=np-imgs.length;b.textContent='Membuat file...';
+  return Promise.resolve(pdf?repPdf(r,imgs):repXlsx(r,imgs).then(function(bl){dlBlob(bl,nm)})).then(function(){return lost})})
+ .then(function(lost){toast(lost?'File dibuat, tetapi '+lost+' foto gagal dimuat dan tidak tercantum. Coba unduh ulang.':(np?'File berhasil dibuat beserta '+np+' foto dokumentasi.':'File berhasil dibuat (laporan ini tidak memiliki foto).'),!!lost)})
+ .catch(function(x){toast('Gagal membuat file: '+x.message,1)})
+ .then(function(){BUSY=false;bp.disabled=false;bx.disabled=false;b.textContent=b0})}
 
 /* ---- laporan: form ---- */
 function fld(f,v){var k=f[0],q=f[3]?' required':'',h='<label>'+f[1]+(f[3]?' *':'')+'</label>',v2=v==null?'':v;
