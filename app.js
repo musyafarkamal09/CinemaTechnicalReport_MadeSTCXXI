@@ -410,7 +410,7 @@ function xt(a,b,n,gr){var o=[],i,t,d;
 /* grafik garis gabungan (LWBP, WBP, Genset = kWh di sumbu kiri; Air = m³ di sumbu kanan) dengan zoom & geser.
    Data: seri dari server (seluruh riwayat bila tersedia), tampilan awal = periode yang dipilih. */
 function mChartInit(r,all){
- all=all||r; var gr=r.group,S=mFill((all.series||[]).map(addL),gr,all.since||r.since,r),K=['listrik','genset','air'],
+ all=all||r; var gr=r.group,S=mFill(all.series||[],gr,all.since||r.since,r).map(addL),K=['listrik','genset','air'],
   on=K.filter(function(k){return S.some(function(o){return o[k]>0})}),
   P=S.map(function(o){return {t:tm(o.k),o:o}}),pad=gr==='month'?16*DAY:DAY,mn=P[0].t,mx=P[P.length-1].t,f0=r.from?tm(r.from):mn,f1=r.to?tm(r.to):mx;
  if(gr==='month'){var d0=new Date(f0),d1=new Date(f1);f0=Date.UTC(d0.getUTCFullYear(),d0.getUTCMonth(),1);f1=Date.UTC(d1.getUTCFullYear(),d1.getUTCMonth(),1)}
@@ -427,13 +427,11 @@ function mDraw(){var c=CH,el=$('mchart');if(!c||!el)return;
   ax=[];
  if(E.length)ax.push({tp:top(E),u:'kWh'});if(A.length)ax.push({tp:top(A),u:'m³'});if(!ax.length)ax.push({tp:4,u:''});
  var tE=E.length?ax[0].tp:0,tA=A.length?ax[ax.length-1].tp:0,
-  L=Math.max(34,nf(ax[0].tp).length*6.6+12),R=ax.length>1?Math.max(34,nf(ax[1].tp).length*6.6+12):12,
-  T=20,B=24,pw=W-L-R,ph=H-T-B,g='',i,
+  L=16,R=16,
+  T=34,B=24,pw=W-L-R,ph=H-T-B,g='',i,
   X=function(t){return L+(t-c.a)/(c.b-c.a)*pw},Y=function(v,tp){return T+ph-v/tp*ph};
  c.g={L:L,pw:pw};
- for(i=0;i<=4;i++){var y=T+ph-i*ph/4;g+='<line class="cgr" x1="'+L+'" x2="'+(W-R)+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+'"/><text class="ctx" x="'+(L-5)+'" y="'+(y+4).toFixed(1)+'" text-anchor="end">'+nf(i*ax[0].tp/4)+'</text>';
-  if(ax[1])g+='<text class="ctx" x="'+(W-R+5)+'" y="'+(y+4).toFixed(1)+'">'+nf(i*ax[1].tp/4)+'</text>'}
- g+='<text class="ctx" x="4" y="11">'+ax[0].u+'</text>'+(ax[1]?'<text class="ctx" x="'+(W-4)+'" y="11" text-anchor="end">'+ax[1].u+'</text>':'');
+ for(i=0;i<=4;i++){var y=T+ph-i*ph/4;g+='<line class="cgr" x1="'+L+'" x2="'+(W-R)+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+'"/>'}
  xt(c.a,c.b,Math.max(2,Math.floor(pw/62)),c.gr).forEach(function(t){var x=X(t).toFixed(1);g+='<line class="cax" x1="'+x+'" x2="'+x+'" y1="'+(T+ph)+'" y2="'+(T+ph+4)+'"/><text class="ctx" x="'+x+'" y="'+(H-8)+'" text-anchor="middle">'+fx(t,c.gr,c.b-c.a)+'</text>'});
  g+='<line class="cax" x1="'+L+'" x2="'+(W-R)+'" y1="'+(T+ph)+'" y2="'+(T+ph)+'"/>';
  var inV=c.P.filter(function(p){return p.t>=c.a&&p.t<=c.b}),dots=inV.length<=80;
@@ -442,6 +440,9 @@ function mDraw(){var c=CH,el=$('mchart');if(!c||!el)return;
   g+='<path pathLength="1" d="'+d+'" fill="none" stroke="'+CC[k]+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
   if(dots)inV.forEach(function(p){g+='<circle cx="'+X(p.t).toFixed(1)+'" cy="'+Y(p.o[k],tp).toFixed(1)+'" r="2.8" fill="'+CC[k]+'" stroke="var(--card)" stroke-width="1"/>'})});
  g+='</g>';
+ if(inV.length<=31)inV.forEach(function(p){var it=vis.map(function(k){return {k:k,y:Y(p.o[k],k==='air'?tA:tE),v:p.o[k]}}).sort(function(a,b){return b.y-a.y}),last=1e9;
+  it.forEach(function(o){var ty=o.y-8;if(ty>last-12)ty=last-12;last=ty;if(ty<11)ty=11;
+   g+='<text x="'+X(p.t).toFixed(1)+'" y="'+ty.toFixed(1)+'" text-anchor="middle" font-size="11.5" font-weight="700" fill="'+CC[o.k]+'" stroke="var(--card)" stroke-width="3" paint-order="stroke">'+nf(o.v)+'</text>'})});
  if(!inV.length)g+='<text class="ctx" x="'+(L+pw/2)+'" y="'+(T+ph/2)+'" text-anchor="middle">Tidak ada pemakaian pada rentang ini. Geser untuk melihat periode lain.</text>';else if(inV.length===1)g+='<text class="ctx" x="'+(L+pw/2)+'" y="'+(T+ph-8)+'" text-anchor="middle">1 titik data — garis tren muncul setelah ada data pada tanggal/periode lain.</text>';
  var sp=c.sel>=0&&c.P[c.sel];
  if(sp&&sp.t>=c.a&&sp.t<=c.b&&vis.length){var sx=X(sp.t),rows=vis.map(function(k){return {k:k,t:c.NM[k]+': '+nf(sp.o[k])+' '+c.UN[k]}}),ttl=tl(sp.o.k,c.gr),
@@ -484,7 +485,7 @@ function mChartHtml(r,all){
  mChartInit(r,all);CH.anim=1;
  return '<div class="mh">Pemakaian listrik &amp; air per '+gl+'</div><div class="mcc"><div class="mlg" id="mlg">'+CH.on.map(function(k){return '<button type="button" class="mlb" data-k="'+k+'" aria-pressed="true"><i style="background:'+CC[k]+'"></i>'+NM[k]+'</button>'}).join('')+'</div>'+
   '<div class="mct" id="mctl"><button type="button" class="btn sec" data-a="pl" aria-label="Geser ke kiri" title="Geser ke kiri">&#9664;</button><button type="button" class="btn sec" data-a="pr" aria-label="Geser ke kanan" title="Geser ke kanan">&#9654;</button><button type="button" class="btn sec" data-a="zi" aria-label="Perbesar" title="Perbesar">+</button><button type="button" class="btn sec" data-a="zo" aria-label="Perkecil" title="Perkecil">&minus;</button><button type="button" class="btn sec" data-a="rs" title="Kembali ke periode yang dipilih">Reset zoom</button></div></div>'+
-  '<div class="mch" id="mchart"></div><small class="mnote">Geser dengan mouse atau jari. Zoom: tombol +/&minus;, cubit layar, atau Ctrl+scroll. Arahkan atau ketuk grafik untuk melihat nilai. Sumbu kiri kWh, sumbu kanan m³.</small>'}
+  '<div class="mch" id="mchart"></div><small class="mnote">Geser dengan mouse atau jari. Zoom: tombol +/&minus;, cubit layar, atau Ctrl+scroll. Nilai tampil di setiap titik: kuning = listrik (kWh), biru = air (m³).</small>'}
 function mRender(r,all){var U2=[['listrik','Listrik (LWBP+WBP)','kWh'],['genset','Genset','kWh'],['air','Air','m³']];addT(r.cum);addT(r.per);r.series=(r.series||[]).map(addL);
  if(!r.count.total&&!(all&&all.series&&all.series.length))return '<div class="empty"><b>Belum ada data meteran</b>Data meteran belum diterima backend untuk lokasi/periode ini. Periksa koneksi API dan data spreadsheet.</div>';
  if(!r.latest)r.latest=[]; if(!r.cum)r.cum={listrik:0,genset:0,air:0}; if(!r.per)r.per={listrik:0,genset:0,air:0}; if(!r.count)r.count={total:0,period:0};
