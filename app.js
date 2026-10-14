@@ -255,23 +255,23 @@ function filmExport(l,kind,outlet,date){
   var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Laporan Film');XLSX.writeFile(wb,'Laporan_Film_STCXXI_'+repDate.replace(/\s+/g,'_')+'.xlsx');return
  }
 var doc=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
- var BLK=[0,0,0],GRN=[0,110,40],RED=[190,0,0],X0=12,CW=[12,68,40,20,46],CX=[X0],PB=272,LH=3.8,PADY=2.2,HL=[['No.'],['Judul Film'],['Keterangan','(Belum/Sedang/Sudah)'],['Format Film','2D/3D-ATMOS'],['KDM','(ada/tidak)']];
+ var BLK=[0,0,0],GRN=[0,176,80],RED=[255,0,0],ORG=[255,153,0],X0=14,CW=[10,66,40,24,42],CX=[X0],PB=272,LH=3.5,PADY=1.5,HL=[['No'],['Judul Film'],['Keterangan','( Belum/Sedang/Sudah )'],['Format Film','2D/3D-ATMOS'],['KDM ( ada/tidak)']];
  CW.forEach(function(w,i){CX.push(CX[i]+w)});var TW=CX[5]-X0;
- function cell(i,top,h){doc.setDrawColor(0,0,0);doc.setLineWidth(.35);doc.rect(CX[i],top,CW[i],h)}
+ function cell(i,top,h){doc.setDrawColor(0,0,0);doc.setLineWidth(.3);doc.rect(CX[i],top,CW[i],h)}
  function ctext(lines,i,top,h){var n=lines.length,y0=top+(h-n*LH)/2+LH*.78;lines.forEach(function(t,k){doc.text(String(t),CX[i]+CW[i]/2,y0+k*LH,{align:'center'})})}
- doc.setTextColor(0,0,0);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.text('Format Laporan Data Film di Server',X0,16);
- doc.setFontSize(9.5);doc.text('Nama Outlet',X0,24);doc.text(': '+out,X0+28,24);doc.text('Periode',X0,30);doc.text(': '+repDate,X0+28,30);
- var y=36;
- function drawHead(){var h=11;doc.setFillColor(222,222,222);doc.rect(X0,y,TW,h,'F');doc.setTextColor(0,0,0);doc.setFont('helvetica','bold');doc.setFontSize(8);HL.forEach(function(t,i){cell(i,y,h);ctext(t,i,y,h)});y+=h}
+ doc.setTextColor(0,0,0);doc.setFont('helvetica','bold');doc.setFontSize(11);doc.text('Format Laporan Data Film di Server',X0,16);
+ doc.text('Nama Outlet',X0,22);doc.text(': '+out,X0+36,22);doc.text('Periode',X0,28);doc.text(': '+repDate,X0+36,28);
+ var y=34;
+ function drawHead(){var h=10;doc.setFillColor(ORG[0],ORG[1],ORG[2]);doc.rect(X0,y,TW,h,'F');doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(8);HL.forEach(function(t,i){cell(i,y,h);ctext(t,i,y,h)});y+=h}
  drawHead();
  doc.setFontSize(8);
  l.forEach(function(f,i){
   var status=filmStatusNorm(f.status),color=status==='SEDANG TAYANG'?GRN:status==='SUDAH TAYANG'?RED:BLK;
-  doc.setFont('helvetica','bold');doc.setFontSize(8);
+  doc.setFont('helvetica','normal');doc.setFontSize(7.5);
   var tl=doc.splitTextToSize(String(f.title||'').toUpperCase(),CW[1]-5),kl=doc.splitTextToSize(String(f.kdm||'TIDAK ADA').toUpperCase(),CW[4]-5),
    sl=doc.splitTextToSize(status,CW[2]-4),fl=[String(f.format||'2D').toUpperCase()],
    rh=Math.max(tl.length,kl.length,sl.length)*LH+PADY*2;
-  if(y+rh>PB){doc.addPage('a4','portrait');y=16;drawHead();doc.setFont('helvetica','bold');doc.setFontSize(8)}
+  if(y+rh>PB){doc.addPage('a4','portrait');y=16;drawHead();doc.setFont('helvetica','normal');doc.setFontSize(7.5)}
   doc.setTextColor(color[0],color[1],color[2]);
   [[String(i+1)],tl,sl,fl,kl].forEach(function(t,k){cell(k,y,rh);ctext(t,k,y,rh)});
   y+=rh;
