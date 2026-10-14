@@ -595,7 +595,8 @@ function exportXls(t,fmt){
  var b=$(pdf?'rpdf':'rx'),b0=b.textContent,FT=fltTxt();b.disabled=true;b.textContent='Menyiapkan...';
  api('rep_export',{type:t,q:$('rq').value,from:$('rf').value,to:$('rt').value,status:$('rs')?$('rs').value:''}).then(function(r){
   if(!r.items.length){toast('Tidak ada data untuk diunduh.',1);return}
-  if(pdf)return pdfOut(t,r.items.slice().reverse(),FT);
+  return gatherPhotos(r.items.slice().reverse(),function(n,tt){b.textContent='Memuat foto '+n+'/'+tt+'...'}).then(function(G){b.textContent='Membuat file...';return (function(){
+  if(pdf)return pdfOut(t,r.items.slice().reverse(),FT,G.g,G.lost);
   var it=r.items.slice().reverse(),wb=XLSX.utils.book_new(),n=function(v){return v==null?'':v},W=t==='work';
   var lk=function(u,l){return u?{t:'s',v:l,l:{Target:u}}:''};
   var pH=W?['Jumlah Foto','Foto Before','Foto After','Folder Foto','ZIP Foto']:['Jumlah Foto','Foto Pertama','Folder Foto','ZIP Foto'],pW=W?[11,13,13,16,14]:[11,13,16,14];
@@ -634,14 +635,14 @@ function exportXls(t,fmt){
    add('Rincian Barang',['No. Laporan','Tanggal','Toko / Pemasok','Nama Barang','Kategori','Jumlah','Satuan','Harga Satuan (Rp)','Total (Rp)'],rows,function(a){return a},[22,12,28,34,20,10,10,18,14],0);
   }
   var nm={work:'Pekerjaan',meter:'Meteran',ac:'Monitoring_AC',purchase:'Pembelian',issue:'Perbaikan'}[t];
-  XLSX.writeFile(wb,'Laporan_'+nm+'_'+new Date(now()+7*36e5).toISOString().slice(0,10)+'.xlsx');
-  toast('File Excel berhasil dibuat ('+it.length+' laporan).');
+  return xlsFinish(wb,it,G,'Laporan_'+nm+'_'+new Date(now()+7*36e5).toISOString().slice(0,10)+'.xlsx').then(function(){toast('File Excel berhasil dibuat ('+it.length+' laporan'+(G.n?', '+G.n+' foto':'')+').'+(G.lost?' '+G.lost+' foto gagal dimuat.':''),!!G.lost)});
+ })()});
  }).catch(function(x){toast(x.message,1)}).then(function(){b.disabled=false;b.textContent=b0})}
 
 /* ---- ekspor: ringkasan filter, PDF ---- */
 function exTs(){return F1.format(new Date())+' WIB'}
 function fltTxt(){var a=[],q=$('rq').value.trim(),f=$('rf').value,to=$('rt').value,s=$('rs')?$('rs').value:'';if(f||to)a.push('Periode: '+(f?dd(f):'awal')+' s.d. '+(to?dd(to):'sekarang'));if(s)a.push('Status: '+s);if(q)a.push('Pencarian: '+q);return a.join(' | ')}
-function pdfOut(t,it,FT){
+function pdfOut(t,it,FT,G,L){
  var J=window.jspdf.jsPDF,doc=new J({orientation:'landscape',unit:'mm',format:'a4'}),n=function(v){return v==null?'':v},H,R,sub='';
  if(t==='work'){H=['No. Laporan','Tanggal','Jam','Judul Pekerjaan','Kategori','Lokasi','Status','Tim','Pelapor'];R=it.map(function(x){var d=x.data;return [x.id,d.date,n(d.time),d.title,d.category,d.location,d.status,(d.team||[]).join(', '),x.reporter]})}
  else if(t==='meter'){H=['No. Laporan','Tanggal','Jam','Lokasi','LWBP (kWh)','WBP (kWh)','Genset (kWh)','Air (m\u00B3)','Pelapor'];R=it.map(function(x){var d=x.data;return [x.id,d.date,n(d.time),d.location,mfmt(d.lwbp),mfmt(d.wbp),mfmt(d.genset),d.kind==='Listrik'?'-':mfmt(d.reading),x.reporter]})}
@@ -656,10 +657,20 @@ function pdfOut(t,it,FT){
  if(FT){y+=5;doc.text('Filter: '+FT,10,y)}
  if(sub){y+=5;doc.text(sub,10,y)}
  doc.autoTable({head:[H],body:R,startY:y+4,margin:{top:14,right:10,bottom:14,left:10},theme:'grid',styles:{fontSize:8,cellPadding:1.8,overflow:'linebreak',valign:'top'},headStyles:{fillColor:[12,59,43],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[245,248,246]},showHead:'everyPage',rowPageBreak:'avoid',didParseCell:function(h){if(t==='ac'&&h.section==='body'&&h.column.index===6){var v=String(h.cell.raw);h.cell.styles.fontStyle='bold';h.cell.styles.textColor=/WARM/.test(v)?[176,30,30]:/COLD/.test(v)?[122,91,0]:/APPROVED/.test(v)?[15,110,60]:[90,90,90]}}});
- var pc=doc.getNumberOfPages(),i;for(i=1;i<=pc;i++){doc.setPage(i);doc.setFontSize(8);doc.text('Halaman '+i+' / '+pc,W-10,Hh-6,{align:'right'});doc.text('STC XXI Technical Report',10,Hh-6)}
+ var g=G||{},gids=it.filter(function(x){return g[x.id]&&g[x.id].length}),nph=gids.reduce(function(s,x){return s+g[x.id].length},0);
+ if(gids.length){doc.addPage();var yy=14,GM=10,gcw=88,ggp=6,gmh=62;doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(0);doc.text('Lampiran Foto Dokumentasi',GM,yy);yy+=8;
+  gids.forEach(function(x){var im=g[x.id];
+   if(yy+gmh+22>Hh-14){doc.addPage();yy=14}
+   doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(0);doc.text(x.id+' - '+String(x.title||'').slice(0,90)+' ('+im.length+' foto)',GM,yy);yy+=4;
+   im.forEach(function(q,k){var c=k%3,w=gcw,h=w*q.h/q.w,xx;if(h>gmh){h=gmh;w=h*q.w/q.h}
+    if(c===0&&k>0)yy+=gmh+10;
+    if(c===0&&yy+gmh+8>Hh-14){doc.addPage();yy=14}
+    xx=GM+c*(gcw+ggp);doc.addImage(q.data,'JPEG',xx,yy,w,h);doc.setDrawColor(190);doc.setLineWidth(.2);doc.rect(xx,yy,w,h);doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(0);doc.text('Foto '+(k+1)+' - '+(q.p.kind||'Foto'),xx,yy+h+3.5,{maxWidth:gcw})});
+   yy+=gmh+14})}
+ var pc=doc.getNumberOfPages(),i;for(i=1;i<=pc;i++){doc.setPage(i);doc.setFontSize(8);doc.setTextColor(0);doc.text('Halaman '+i+' / '+pc,W-10,Hh-6,{align:'right'});doc.text('STC XXI Technical Report',10,Hh-6)}
  var nm={work:'Pekerjaan',meter:'Meteran',ac:'Monitoring_AC',purchase:'Pembelian',issue:'Perbaikan'}[t];
  doc.save('Laporan_'+nm+'_'+new Date(now()+7*36e5).toISOString().slice(0,10)+'.pdf');
- toast('File PDF berhasil dibuat ('+it.length+' laporan).')}
+ toast('File PDF berhasil dibuat ('+it.length+' laporan'+(nph?', '+nph+' foto':'')+').'+(L?' '+L+' foto gagal dimuat.':''),!!L)}
 
 /* ---- laporan: detail ---- */
 function detail(id,after){modal('<div class="empty">Memuat...</div>');api('rep_get',{id:id}).then(function(r){var t=r.type,d=r.data,h='<h3>'+T[t].label+'<span class="mid">'+esc(r.id)+'</span></h3><table>';
@@ -704,6 +715,18 @@ function repPhotos(r,prog){var RK={Sebelum:0,Sesudah:1,Masalah:0,Penyelesaian:1}
  ps=(r.photos||[]).map(function(p,i){return {p:p,i:i}}).sort(function(a,b){var x=RK[a.p.kind],y=RK[b.p.kind];x=x==null?5:x;y=y==null?5:y;return x-y||a.i-b.i}).map(function(o){return o.p});
  function one(p){var k='photo:'+p.id;return (IMGC[k]?Promise.resolve(IMGC[k]):api('img',{kind:'photo',id:p.id,quiet:1}).then(function(u){var s=imgSrc(u);if(!s)throw new Error('kosong');IMGC[k]=s;return s})).then(imgNorm).then(function(x){x.p=p;return x},function(){return null})}
  return new Promise(function(res){var out=[],nx=0,run=0,dn=0;function pump(){while(run<3&&nx<ps.length){(function(n){run++;one(ps[n]).then(function(x){out[n]=x;run--;dn++;if(prog)prog(dn,ps.length);pump()})})(nx++)}if(!run&&nx>=ps.length)res(out.filter(Boolean))}pump()})}
+function gatherPhotos(items,prog){var jobs=items.filter(function(x){return x.ph&&x.ph.n>0}),total=jobs.reduce(function(s,x){return s+x.ph.n},0),G={g:{},lost:0,n:0},base=0;
+ if(!total)return Promise.resolve(G);
+ if(total>120&&!confirm('Ada '+total+' foto dari '+jobs.length+' laporan. Mengunduh dengan foto butuh beberapa menit dan file akan besar.\n\nOK = unduh dengan foto, Batal = unduh tanpa foto.'))return Promise.resolve(G);
+ return jobs.reduce(function(p,x){return p.then(function(){return api('rep_get',{id:x.id,quiet:1}).then(function(r){return repPhotos(r,function(n){prog(base+n,total)}).then(function(imgs){G.g[x.id]=imgs;G.n+=imgs.length;G.lost+=Math.max(0,(r.photos||[]).length-imgs.length)})},function(){G.lost+=x.ph.n}).then(function(){base+=x.ph.n})})},Promise.resolve()).then(function(){return G})}
+function xlsFinish(wb,it,G,fn){var ids=it.filter(function(x){return G.g[x.id]&&G.g[x.id].length});
+ if(!ids.length||!window.ExcelJS){XLSX.writeFile(wb,fn);return Promise.resolve()}
+ var buf=XLSX.write(wb,{bookType:'xlsx',type:'array'}),e=new ExcelJS.Workbook();
+ return e.xlsx.load(buf).then(function(){var ws=e.addWorksheet('Foto Dokumentasi'),row=1,BL=17;ws.columns=[{width:36},{width:62}];
+  ids.forEach(function(x){var im=G.g[x.id];ws.getCell(row,1).value=x.id+' - '+String(x.title||'')+' ('+im.length+' foto)';ws.getCell(row,1).font={bold:true,size:12};row++;
+   im.forEach(function(g,i){var k=Math.min(1,440/g.w,320/g.h),c=ws.getCell(row,1),id;c.value='Foto '+(i+1)+' - '+(g.p.kind||'Foto');c.font={bold:true};c.alignment={vertical:'top',wrapText:true};
+    id=e.addImage({base64:g.data.split(',')[1],extension:'jpeg'});ws.addImage(id,{tl:{col:1,row:row-1},ext:{width:Math.round(g.w*k),height:Math.round(g.h*k)}});row+=BL});row++});
+  return e.xlsx.writeBuffer()}).then(function(b2){dlBlob(new Blob([b2],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),fn)})}
 function repDocData(r){var t=r.type,d=r.data,P=[],TB=[],x=d.diffs||{},pv=d.prevs||{};
  P.push(['No. Laporan',r.id],['Jenis laporan',T[t].label]);
  T[t].f.forEach(function(f){if(t==='meter'&&f[5])return;var v=d[f[0]];if(v!==''&&v!=null)P.push([f[1],String(v)])});
