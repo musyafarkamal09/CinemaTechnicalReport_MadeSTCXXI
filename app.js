@@ -185,12 +185,15 @@ function vDash(){Promise.all([api('dashboard'),api('ats_list')]).then(function(r
  atsSec='<section class="dx-sec"><div class="sh"><h2>Advanced Ticket Sales</h2><button class="lnk" data-go="ats">Lihat semua</button></div>'+tix+'</section>',
  annSec='<section class="dx-sec dx-ann"><div class="sh"><h2>Pengumuman terbaru</h2><button class="lnk" data-go="pengumuman">Lihat semua</button></div>'+(d.announcements.length?d.announcements.slice(0,3).map(annCard).join(''):'<div class="empty"><b>Belum ada pengumuman</b>Informasi dari Admin akan tampil di sini.</div>')+'</section>';
  $('view').innerHTML=SEAT_SPRITE+'<div class="dx">'+
- '<section class="dx-hero">'+dxPic()+'<div class="dx-hi"><small>'+new Intl.DateTimeFormat('id-ID',{timeZone:TZ,dateStyle:'full'}).format(new Date())+'</small><h1>'+gr+', '+esc(U.name)+'</h1><p class="dx-sum '+(open>0?'warn':'good')+'"><i aria-hidden="true"></i>'+sum+'</p></div></section>'+
+ '<div class="dx-top"><div><small>'+new Intl.DateTimeFormat('id-ID',{timeZone:TZ,dateStyle:'full'}).format(new Date())+'</small><h1>'+gr+', '+esc(U.name)+'</h1></div><p class="dx-sum '+(open>0?'warn':'good')+'"><i aria-hidden="true"></i>'+sum+'</p></div>'+
+ dSlider(d,fl)+
  dSearch()+
  '<section class="dx-qa" aria-label="Catat cepat"><div class="dx-lb">Catat cepat</div><div class="dx-qg">'+qa.map(function(x){return '<button type="button" class="dx-q" data-new="'+x[0]+'"><i>'+IC[x[0]]+'</i><span><b>'+x[1]+'</b><small>'+x[2]+'</small></span></button>'}).join('')+'</div></section>'+
  '<section class="dx-kpi" aria-label="Ringkasan"><div class="dx-k day"><i class="dx-ki">'+CAL+'</i><span class="l">Laporan hari ini</span><strong class="n">'+(Number(d.today)||0)+'</strong><small>Sejak 00.00 WIB</small></div>'+kpOpen+kpTot+'</section>'+
- '<div class="dx-cols"><div class="dx-main">'+acSec+actSec+atsSec+'</div><div class="dx-side">'+chSec+annSec+dStudios()+'</div></div>'+
- dSlider(d,fl)+'</div>';
+ acSec+
+ '<div class="dx-cols"><div class="dx-col">'+atsSec+'</div><div class="dx-col">'+annSec+'</div></div>'+
+ '<div class="dx-cols"><div class="dx-col">'+dStudios()+'</div><div class="dx-col">'+chSec+'</div></div>'+
+ (U.role==='ADMIN'?actSec:'')+'</div>';
  document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){go(b.dataset.go)}});
  document.querySelectorAll('[data-new]').forEach(function(b){b.onclick=function(){repForm(b.dataset.new,null,function(){go('dashboard')})}});
  document.querySelectorAll('[data-d]').forEach(function(b){b.onclick=function(){detail(b.dataset.d,function(){go('dashboard')})}});

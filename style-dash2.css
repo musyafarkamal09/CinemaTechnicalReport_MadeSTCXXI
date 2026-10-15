@@ -122,3 +122,33 @@ button.dx-k:hover{border-color:var(--gold);transform:translateY(-1px)}
 }
 @media(max-width:380px){.dx-hi h1{font-size:24px}.dx-sum{font-size:12.5px}}
 @media(prefers-reduced-motion:reduce){.dx-hero,.dstu-r i b{animation:none}}
+
+/* ===== revisi: urutan berdasarkan prioritas, sapaan ramping, kartu AC lega ===== */
+.dx{gap:26px}
+.dx-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px 20px;flex-wrap:wrap}
+.dx-top small{display:block;color:var(--mut);font-size:13px;font-weight:600;margin-bottom:2px}
+.dx-top h1{margin:0;font-size:clamp(22px,2.6vw,30px);font-weight:700;line-height:1.2;color:var(--ink);letter-spacing:-.01em}
+.dx-top .dx-sum{margin:0;background:var(--card);border:1px solid var(--bd);color:var(--txt);box-shadow:var(--sh0)}
+.dx-cols{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.dx-col{display:flex;flex-direction:column;gap:24px;min-width:0}
+.dx-sec.dsl-w .sh{display:none}
+.dsl-s{min-height:230px}
+/* monitoring AC */
+.dx .dac-b{padding:22px 24px 24px}
+.dx .dac-s{margin:0 0 20px;font-size:14px}
+.dx .dac-g{grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:14px}
+.dx .dac-c{gap:4px;min-height:124px;padding:18px 20px;border-radius:14px;box-shadow:none;border:1px solid var(--bd);position:relative}
+.dx .dac-c::before{content:"";position:absolute;top:18px;right:18px;width:9px;height:9px;border-radius:50%;background:var(--ph)}
+.dx .dac-c.ok::before{background:var(--ok-hi)}
+.dx .dac-c.bad::before{background:var(--red)}
+.dx .dac-c.cold::before{background:#d9a400}
+.dx .dac-c b{font-size:12.5px;letter-spacing:.08em}
+.dx .dac-c .dac-t{margin-top:6px;font-size:28px;font-weight:700}
+.dx .dac-c small{margin-top:10px;padding:3px 10px;border-radius:99px;background:var(--g100);font-size:11.5px;letter-spacing:.02em}
+.dx .dac-c.ok small{background:var(--ok-bg)}
+.dx .dac-c.bad small{background:var(--red-bg)}
+.dx .dac-c.cold small{background:var(--warn-bg)}
+.dx .dac-c.na span{margin-top:10px}
+.dx .dac-c.ok,.dx .dac-c.bad,.dx .dac-c.cold,.dx .dac-c.na2{box-shadow:none}
+@media(max-width:900px){.dx-cols{grid-template-columns:1fr}}
+@media(max-width:620px){.dx .dac-b{padding:16px}.dx .dac-g{grid-template-columns:1fr 1fr;gap:12px}.dx .dac-c{padding:14px 16px;min-height:112px}.dx .dac-c .dac-t{font-size:24px}.dsl-s{min-height:200px}}
