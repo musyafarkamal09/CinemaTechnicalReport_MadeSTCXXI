@@ -133,3 +133,30 @@ input[type=checkbox]{accent-color:var(--gold)}
 #gl .card.gl .macts button{min-height:32px;padding:4px 14px;font-size:12.5px}
 #gl .card.gl .macts [data-x]{color:var(--red);border-color:transparent;background:transparent}
 #gl .card.gl .macts [data-x]:hover{background:var(--red-bg);border-color:var(--red)}
+
+/* ---------- 9. INDIKATOR & BADGE STATUS: hijau terang, terbaca di terang & gelap ---------- */
+:root{--ok:#15803d;--ok-bg:#dcf5e5;--ok-hi:#22c55e}
+:root[data-theme=dark]{--ok:#4ade80;--ok-bg:#0f3a24;--ok-hi:#4ade80}
+
+/* badge: spesifisitas dinaikkan agar mengalahkan <style> di index.html */
+.st{box-shadow:none}
+:root[data-theme=dark] .st{box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+td.sm .st{margin-left:6px;vertical-align:middle}
+
+/* hijau: Selesai / Completed / Normal / APPROVED */
+.st.st-Selesai,.st.st-Completed,.st.st-Normal,.st.ts-ok{background:var(--ok-bg);color:var(--ok)}
+.st.st-Selesai::before,.st.st-Completed::before,.st.st-Normal::before,.st.ts-ok::before{background:var(--ok-hi);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok-hi) 28%,transparent)}
+:root[data-theme=dark] .st.st-Selesai,:root[data-theme=dark] .st.st-Completed,:root[data-theme=dark] .st.st-Normal,:root[data-theme=dark] .st.ts-ok{background:var(--ok-bg);color:var(--ok);box-shadow:inset 0 0 0 1px rgba(74,222,128,.35)}
+
+/* status lain di mode gelap (sebelumnya teks terlalu pudar) */
+:root[data-theme=dark] .st.st-Menunggu,:root[data-theme=dark] .st.st-In-Progress,:root[data-theme=dark] .st.st-Perlu-Perhatian{background:#3a2a06;color:#fbbf24}
+:root[data-theme=dark] .st.st-Ditanggapi,:root[data-theme=dark] .st.st-Open{background:#10284a;color:#7db6ff}
+:root[data-theme=dark] .st.st-Sedang-Dikerjakan{background:#2a1f4d;color:#c4b0ff}
+:root[data-theme=dark] .st.st-Need-Follow-up,:root[data-theme=dark] .st.st-Rusak,:root[data-theme=dark] .st.ts-warm{background:#3d1512;color:#ff8a80}
+
+/* indikator hijau lain */
+#conn::before{background:var(--ok-hi);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok-hi) 28%,transparent)}
+#conn.bad::before{background:currentColor;box-shadow:none}
+.dac-c.ok{box-shadow:inset 4px 0 0 var(--ok-hi)}
+.ds-st.good .n,.ds-st.good .l{color:#fff}
+:root[data-theme=dark] .film-table .fs-sedang-tayang,:root[data-theme=dark] .mdiag .mok{color:var(--ok)}
