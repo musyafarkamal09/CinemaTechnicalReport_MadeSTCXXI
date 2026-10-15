@@ -1,55 +1,24 @@
 /* =====================================================================
-   STC XXI Technical Report - POLISH v1
-   Dimuat SETELAH style.css. Tidak perlu mengubah app.js / style.css.
-   Tujuan: identitas XXI (charcoal + emas), hirarki lebih jelas, lebih rapi.
+   STC XXI Technical Report - POLISH v3  (hijau lumut dipertahankan)
+   Dimuat SETELAH style.css. Tidak mengganti style.css.
+   Isi: dashboard rapi, banner proyektor presisi, ATS, Glossarium.
    Hapus file ini + 1 baris <link> di index.html untuk kembali ke tampilan lama.
    ===================================================================== */
 
-/* ---------- 1. TOKEN WARNA: hijau -> charcoal hangat + emas ---------- */
+/* ---------- 1. TOKEN: hanya radius & bayangan (warna tetap hijau asli) ---------- */
 :root{
- --moss-950:#0a0907;--moss-900:#100e0a;--moss-800:#171510;--moss-700:#1f1c15;--moss-600:#2b271d;--moss-500:#3a352a;
- --gold:#c9a24b;--gold-hi:#e6cf8e;--gold-lo:#7d5f1c;--gold-50:#faf5e6;--gold-100:#ecdcae;
- --bg:#f5f4f0;--card:#fff;--card2:#faf9f6;--bd:#e7e3d9;--bd2:#d4cebe;
- --ink:#14130f;--txt:#2a2822;--mut:#6b675c;--ph:#a39e90;--lbl:#3a372e;
- --g50:#f5f3ed;--g100:#ebe7dc;--g200:#d9d3c2;--row2:#faf9f6;--dis:#f0eee8;
- --gt:#17150f;--gt2:#8a6a22;
- --ok:#1f7a4d;--ok-bg:#e2f3ea;--red:#b3261e;--red-bg:#fdeceb;
  --r-s:8px;--r-m:12px;--r-l:16px;
- --sh0:0 1px 2px rgba(20,19,15,.04),0 4px 14px rgba(20,19,15,.045);
- --sh1:0 1px 2px rgba(20,19,15,.08);--sh2:0 18px 40px rgba(20,19,15,.16);
+ --sh0:0 1px 2px rgba(8,36,24,.05),0 4px 14px rgba(8,36,24,.05);
 }
-:root[data-theme=dark]{
- --bg:#0b0a08;--card:#14120e;--card2:#191611;--bd:#26231b;--bd2:#38342a;
- --ink:#f5f1e6;--txt:#d8d3c4;--mut:#9a9484;--ph:#6c675a;--lbl:#bdb7a4;
- --g50:#1a1812;--g100:#211e16;--g200:#3a3526;--row2:#171510;--dis:#1a1812;
- --gt:#e6cf8e;--gt2:#d4b05a;
- --gold-50:#221d0d;--gold-100:#5e4b1b;--gold-lo:#e6cf8e;
- --ok:#5fcf9a;--ok-bg:#10291c;--red:#ff8a80;--red-bg:#361512;
- --sh0:0 0 0 0 transparent;--sh1:0 1px 2px #000a;--sh2:0 18px 40px #000b;
-}
-:root[data-theme=dark] body{background:radial-gradient(1100px 480px at 85% -10%,#2a2110 0,transparent 60%),var(--bg);background-attachment:fixed}
+:root[data-theme=dark]{--sh0:0 0 0 0 transparent}
+.card,.dq,.ds-big,.ds-list,.dact,.dc-b{box-shadow:var(--sh0)}
+.card:hover{box-shadow:var(--sh0)}
 input[type=checkbox]{accent-color:var(--gold)}
 
-/* ---------- 2. TOMBOL: emas khas XXI ---------- */
-.btn,:root[data-theme=dark] .btn{background:linear-gradient(180deg,#d6b25e,#b8913f);color:#1a1405;font-weight:700;box-shadow:0 1px 0 #ffffff45 inset,0 6px 16px -8px #7d5f1c99}
-.btn:hover,:root[data-theme=dark] .btn:hover{background:linear-gradient(180deg,#e0bf70,#c49c48);box-shadow:0 1px 0 #ffffff50 inset,0 10px 22px -10px #7d5f1ccc}
-.btn.sec,:root[data-theme=dark] .btn.sec{background:var(--card);color:var(--gt);border:1px solid var(--bd2);box-shadow:none}
-.btn.sec:hover,:root[data-theme=dark] .btn.sec:hover{background:var(--g50);border-color:var(--gold)}
-.btn.prog{background:linear-gradient(90deg,#e0bf70 var(--p,0%),#a8843a var(--p,0%))}
-input[type=file]::file-selector-button{background:var(--moss-700);color:var(--gold-hi)}
-.fab{box-shadow:0 10px 26px #7d5f1c80,0 0 0 3px var(--bg)!important}
-#modal{background:#0a090799}
-#shade.open{background:#0a090799}
-
-/* ---------- 3. SIDEBAR & HEADER ---------- */
-#side{background:linear-gradient(180deg,#14120d 0,#0b0a07 55%,#050403 100%);box-shadow:inset -1px 0 0 #c9a24b33}
-.brand small{color:#a39b84}
-#nav a{color:#cdc6b1}
-#nav a.on{background:linear-gradient(90deg,#c9a24b33,#ffffff0a)}
-.ng{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-hi);opacity:.7;margin:22px 12px 6px}
+/* ---------- 2. SIDEBAR & HEADER ---------- */
+.ng{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.75;margin:22px 12px 6px}
 .hs b{font-size:15px;color:var(--ink)}
 .thm{border-radius:10px}
-
 /* ikon bulan/matahari bergaya garis (menggantikan emoji) */
 .thm[data-thm]{font-size:0;color:var(--gt)}
 .thm[data-thm]::before{content:"";width:18px;height:18px;background:currentColor;-webkit-mask:var(--ico) center/contain no-repeat;mask:var(--ico) center/contain no-repeat;
@@ -57,22 +26,20 @@ input[type=file]::file-selector-button{background:var(--moss-700);color:var(--go
 :root[data-theme=dark] .thm[data-thm]::before{
  --ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Cpath d='M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41'/%3E%3C/svg%3E")}
 
-/* ---------- 4. KARTU: bayangan halus, radius seragam ---------- */
-.card,.dq,.ds-big,.ds-list,.dact,.dc-b{box-shadow:var(--sh0)}
-.card:hover{box-shadow:var(--sh0)}
+/* ---------- 3. BANNER HALAMAN: proyektor utuh, rapi, sejajar judul ---------- */
+#phero{min-height:150px;align-items:center}
+.ph-t{align-items:center;padding:26px 30px}
+.ph-t i{margin-bottom:0}
+.ph-img{top:10px;bottom:10px;right:3%;width:30%;display:flex;align-items:center;justify-content:flex-end;overflow:visible;-webkit-mask-image:none;mask-image:none}
+.ph-img::before{content:"";position:absolute;inset:-6% -4%;z-index:-1;background:radial-gradient(closest-side,rgba(225,196,118,.22),transparent 72%)}
+.ph-img img{width:100%;height:100%;object-fit:contain!important;object-position:right center!important;filter:drop-shadow(0 10px 14px rgba(0,0,0,.55))}
+@media(max-width:700px){
+ #phero{min-height:112px}
+ .ph-img{width:38%;right:2%;opacity:.38}
+}
 
-/* ---------- 5. HERO DASHBOARD: ringkas, charcoal + emas ---------- */
+/* ---------- 4. HERO DASHBOARD ringkas + CATAT CEPAT horizontal ---------- */
 .dh{grid-template-columns:1fr;gap:16px}
-.dh-main::before{background:linear-gradient(90deg,#0b0a07 0,#0b0a07cc 32%,#0b0a0745 54%,transparent 72%)}
-.dh-main{background:radial-gradient(90% 150% at 88% 15%,#4d3c18 0,#1b170d 46%,#0a0907 100%)}
-.dh-main::after{background:repeating-linear-gradient(135deg,#ffffff04 0 2px,transparent 2px 24px)}
-.dh-img::after{border:1px solid rgba(230,207,142,.2);background:radial-gradient(circle,rgba(201,162,75,.24) 0,rgba(201,162,75,.08) 42%,transparent 68%)}
-.dh-t p{color:#d3ccb8}
-#phero.ph-a{background:radial-gradient(120% 160% at 100% 0,#4d3c18 0,#1b170d 45%,#0a0907 100%)}
-#phero.ph-b{background:radial-gradient(120% 160% at 0 100%,#4d3c18 0,#1b170d 40%,#0a0907 100%)}
-#phero.ph-g{background:radial-gradient(120% 160% at 100% 100%,#5a4619 0,#1b170d 42%,#0a0907 100%)}
-#phero.ph-w{background:radial-gradient(120% 160% at 100% 0,#6a4a12 0,#1b170d 45%,#0a0907 100%)}
-.ph-t p{color:#cfc8b4}
 @media(min-width:701px){
  .dh-main{min-height:240px;padding:30px 36px}
  .dh-t{max-width:58%}
@@ -80,8 +47,6 @@ input[type=file]::file-selector-button{background:var(--moss-700);color:var(--go
  .dh-t p{margin-top:10px;font-size:14.5px}
  .dh-img{height:90%;right:5%}
 }
-
-/* ---------- 6. CATAT CEPAT: baris ikon horizontal di bawah hero ---------- */
 .dq h2{font-family:var(--font);font-size:15px;font-weight:700;color:var(--ink)}
 .qrow em{font-size:0;font-weight:400}
 .qrow em::after{content:"\2192";font-size:16px;color:var(--ph)}
@@ -98,34 +63,22 @@ input[type=file]::file-selector-button{background:var(--moss-700);color:var(--go
 }
 @media(min-width:1101px){.dq{grid-template-columns:repeat(5,minmax(0,1fr))}}
 
-/* ---------- 7. KARTU STATISTIK: satu gaya, angka lurus ---------- */
+/* ---------- 5. KARTU STATISTIK ---------- */
 .ds{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:820px){.ds{grid-template-columns:1fr 1fr}}
 .ds-big,.ds-list,.ds-st{min-height:168px;padding:20px 22px}
 .ds-big::before{display:none}
-.ds .l,.ds-list h2{font-size:12.5px;font-weight:700;color:var(--mut)}
+.ds .l,.ds-list h2{font-size:12.5px;font-weight:700}
 .ds .n,.dsr strong,.dc-b b{font-family:var(--font);font-variant-numeric:lining-nums tabular-nums;font-weight:700;letter-spacing:-.02em}
 .ds .n{font-size:56px}
 @media(max-width:380px){.ds .n{font-size:46px}}
 .dsr strong{font-size:20px}
-/* daftar total laporan: tanpa bar (bar tidak punya skala jelas).
-   Ingin bar kembali? hapus 2 baris di bawah. */
+/* daftar total laporan tanpa bar (bar tidak punya skala jelas). Mau bar kembali? hapus 2 baris ini. */
 .dsr{grid-template-columns:1fr auto;gap:10px}
 .dsr i{display:none}
-
-/* kartu status: putih + aksen sisi, bukan blok warna */
-.ds-st,.ds-st.good,.ds-st.warn{background:var(--card);color:var(--txt);border:1px solid var(--bd);box-shadow:var(--sh0)}
-.ds-st.good{box-shadow:var(--sh0),inset 4px 0 0 var(--ok)}
-.ds-st.warn{box-shadow:var(--sh0),inset 4px 0 0 var(--red)}
-.ds-st .l,.ds-st small{color:var(--mut)}
-.ds-st.good .n{color:var(--ok)}
-.ds-st.warn .n{color:var(--red)}
-.ds-st:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
-
-/* judul seksi: sans-serif; serif hanya untuk sapaan/hero */
 .sh h2{font-family:var(--font);font-size:17px;font-weight:700;color:var(--ink)}
 
-/* ---------- 7b. MONITORING AC HARI INI (kartu baru di dashboard) ---------- */
+/* ---------- 6. MONITORING AC HARI INI (dashboard) ---------- */
 .dac{margin:0 0 26px}
 .dac-b{background:var(--card);border:1px solid var(--bd);border-radius:var(--r-l);padding:18px 20px;box-shadow:var(--sh0)}
 .dac-s{font-size:13.5px;color:var(--mut);margin:0 0 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -140,12 +93,43 @@ input[type=file]::file-selector-button{background:var(--moss-700);color:var(--go
 .dac-c.ok{box-shadow:inset 4px 0 0 var(--ok)}.dac-c.ok small{color:var(--ok)}
 .dac-c.bad{box-shadow:inset 4px 0 0 var(--red)}.dac-c.bad small,.dac-c.bad .dac-t{color:var(--red)}
 .dac-c.na2{box-shadow:inset 4px 0 0 var(--ph)}
-.dac-c.cold{box-shadow:inset 4px 0 0 #d9a400}.dac-c.cold small{color:#8a6500}.dac-c.cold .dac-t{color:#8a6500}
+.dac-c.cold{box-shadow:inset 4px 0 0 #d9a400}.dac-c.cold small,.dac-c.cold .dac-t{color:#8a6500}
 :root[data-theme=dark] .dac-c.cold small,:root[data-theme=dark] .dac-c.cold .dac-t{color:#f5d76e}
 @media(max-width:1100px){.dac-g{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:520px){.dac-g{grid-template-columns:repeat(2,minmax(0,1fr))}.dac-b{padding:14px}}
 
-/* ---------- 8. LOGIN (selaras dengan tema; hapus blok ini bila tidak cocok) ---------- */
-.lhero{background:radial-gradient(ellipse at 28% 18%,#3d3115 0,#18140b 42%,#070605 100%)}
-.lscene{background:radial-gradient(closest-side at 56% 52%,#a98433 0,#5f4a1e 48%,transparent 100%)}
-.lhero .tag{color:#c2bba5}
+/* ---------- 7. ADVANCED TICKET SALES: kartu film rapi, tidak melebar ---------- */
+.grid:has(>.card.film){grid-template-columns:repeat(auto-fill,minmax(min(100%,440px),1fr))!important;align-items:start;gap:16px}
+#view>.info{margin-bottom:14px}
+.card.film{grid-template-columns:112px minmax(0,1fr);gap:18px;padding:18px;border-radius:var(--r-l)}
+.film img,.film .noimg{width:112px;height:164px;border-radius:10px;box-shadow:var(--sh1)}
+.film>div>br{display:none}
+.film>div>b{display:block;font-family:var(--font);font-size:17px;font-weight:700;line-height:1.3;letter-spacing:0;color:var(--ink)}
+.film>div>small{display:block;margin-top:4px;line-height:1.5}
+.film>div>.pri{display:inline-block;margin:10px 0 4px}
+.film .cdl{margin-top:12px;padding:10px 12px;background:var(--gold-50);border:1px solid var(--gold-100);border-radius:var(--r-m)}
+.film .cdl>small{margin-bottom:8px}
+.film .cd{gap:6px}
+.film .cd span{min-height:46px;border-radius:8px}
+.film .cd b{font-family:var(--font);font-weight:700;font-variant-numeric:lining-nums tabular-nums;font-size:18px}
+.film .macts{display:flex;gap:8px;margin-top:14px}
+.film .macts button{min-height:34px;padding:5px 14px;font-size:13px}
+@media(max-width:560px){.card.film{grid-template-columns:92px minmax(0,1fr);gap:14px;padding:14px}.film img,.film .noimg{width:92px;height:136px}}
+
+/* ---------- 8. GLOSSARIUM: kartu grid, indeks huruf, aksi rapi ---------- */
+#gl{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,500px),1fr));gap:12px;align-items:stretch}
+.gcount{margin:6px 2px 12px;font-size:12.5px;font-weight:600;color:var(--mut)}
+.gl-h{grid-column:1/-1;display:flex;align-items:center;gap:12px;margin:10px 0 0;font-size:13px;font-weight:800;letter-spacing:.12em;color:var(--gt2)}
+.gl-h::after{content:"";flex:1;height:1px;background:var(--bd)}
+.gl-h:first-child{margin-top:0}
+#gl .card.gl{flex-direction:column;align-items:stretch;justify-content:space-between;gap:12px;margin:0;padding:16px 18px;border-radius:var(--r-m);transition:border-color .16s}
+#gl .card.gl:hover{border-color:var(--gold)}
+#gl .card.gl>div:first-child{min-width:0}
+#gl .card.gl b{font-size:16px;font-weight:700;color:var(--ink);margin-right:6px}
+#gl .card.gl .pri{vertical-align:2px}
+#gl .card.gl p{margin:8px 0 6px;line-height:1.6;color:var(--txt)}
+#gl .card.gl small{display:block;color:var(--mut);font-size:12px}
+#gl .card.gl .macts{display:flex;gap:8px;justify-content:flex-end;padding-top:10px;border-top:1px solid var(--bd)}
+#gl .card.gl .macts button{min-height:32px;padding:4px 14px;font-size:12.5px}
+#gl .card.gl .macts [data-x]{color:var(--red);border-color:transparent;background:transparent}
+#gl .card.gl .macts [data-x]:hover{background:var(--red-bg);border-color:var(--red)}
