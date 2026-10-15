@@ -179,10 +179,10 @@ function vDash(){Promise.all([api('dashboard'),api('ats_list')]).then(function(r
  $('view').innerHTML=
  '<section class="dh"><div class="dh-main">'+heroPic()+'<div class="dh-t"><small>'+new Intl.DateTimeFormat('id-ID',{timeZone:TZ,dateStyle:'full'}).format(new Date())+'</small><h1>'+gr+',<br>'+esc(U.name)+'</h1><p>'+sum+'</p></div></div>'+
  '<aside class="dq"><h2>Catat cepat</h2>'+qa.map(function(x){return '<button class="qrow" data-new="'+x[0]+'"><i>'+IC[x[0]]+'</i><span><b>'+x[1]+'</b><small>'+x[2]+'</small></span><em aria-hidden="true">+</em></button>'}).join('')+'</aside></section>'+
- '<section class="ds"><div class="ds-big"><span class="l">Laporan hari ini</span><div class="n">'+(Number(d.today)||0)+'</div><small>Sejak 00.00 WIB</small></div>'+
+ dTop(d,fl)+'<section class="ds"><div class="ds-big"><span class="l">Laporan hari ini</span><div class="n">'+(Number(d.today)||0)+'</div><small>Sejak 00.00 WIB</small></div>'+
  '<div class="ds-list"><h2>Total laporan</h2>'+tot.map(function(x){var v=Number(x[1])||0;return '<button class="dsr" data-go="'+x[2]+'"><span>'+x[0]+'</span><i><b style="width:'+Math.max(v?6:0,Math.round(v/mx*100))+'%"></b></i><strong>'+v+'</strong></button>'}).join('')+'</div>'+
  '<button class="ds-st '+(open>0?'warn':'good')+'" data-go="issue"><span class="l">Perlu diperbaiki</span><div class="n">'+open+'</div><small>'+(open>0?'Buka daftar dan tanggapi':'Semua laporan sudah ditangani')+'</small></button></section>'+
- (rr?'':'<section class="dac" id="dac"><div class="sh"><h2>Monitoring AC hari ini</h2><button class="lnk" data-go="ac">Buka halaman AC</button></div><div class="dac-b"><div class="sk" style="height:84px"></div></div></section>')+
+ dStudios()+(rr?'':'<section class="dac" id="dac"><div class="sh"><h2>Monitoring AC hari ini</h2><button class="lnk" data-go="ac">Buka halaman AC</button></div><div class="dac-b"><div class="sk" style="height:84px"></div></div></section>')+
  (rr?'':'<section class="dchart" id="dchart"><div class="sh"><h2>Pemakaian listrik</h2><button class="lnk" data-go="meter">Lihat meteran</button></div><div class="dc-b"><div class="sk" style="height:150px"></div></div></section>')+
  '<section class="dm"><div><div class="sh"><h2>Advanced Ticket Sales</h2><button class="lnk" data-go="ats">Lihat semua</button></div>'+tix+'</div>'+
  '<div><div class="sh"><h2>Pengumuman terbaru</h2><button class="lnk" data-go="pengumuman">Lihat semua</button></div>'+(d.announcements.length?d.announcements.map(annCard).join(''):'<div class="empty"><b>Belum ada pengumuman</b>Informasi dari Admin akan tampil di sini.</div>')+'</div></section>'+
@@ -190,7 +190,70 @@ function vDash(){Promise.all([api('dashboard'),api('ats_list')]).then(function(r
  document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){go(b.dataset.go)}});
  document.querySelectorAll('[data-new]').forEach(function(b){b.onclick=function(){repForm(b.dataset.new,null,function(){go('dashboard')})}});
  document.querySelectorAll('[data-d]').forEach(function(b){b.onclick=function(){detail(b.dataset.d,function(){go('dashboard')})}});
- if(!rr){dAc();dChart()}tickCd()}).catch(err)}
+ if(!rr){dAc();dChart()}tickCd();dExtra(d,fl)}).catch(err)}
+
+/* ---- TAMBAHAN DASHBOARD: informasi bioskop, slider sorotan, pencarian instan (tidak mengubah fungsi lama) ---- */
+/* Ubah jumlah kursi cukup di sini. Studio 3 dan 4 masing-masing 137 kursi. */
+var STUDIOS=[['Studio 1',214],['Studio 2',154],['Studio 3',137],['Studio 4',137]],DQI=[];
+function nrm(s){return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function dStuTotal(){return STUDIOS.reduce(function(a,s){return a+s[1]},0)}
+function dStuGroups(){var g=[];STUDIOS.forEach(function(s){var l=g[g.length-1];if(l&&l.seat===s[1])l.names.push(s[0]);else g.push({names:[s[0]],seat:s[1]})});return g}
+function dStudios(){var mx=Math.max.apply(null,STUDIOS.map(function(s){return s[1]}).concat([1]));
+ return '<section class="dstu" id="dstu"><div class="sh"><h2>Informasi Bioskop</h2><small class="dstu-n">Sukaramai Trade Center XXI</small></div><div class="dstu-g">'+
+ STUDIOS.map(function(s,i){return '<div class="dstu-c" id="dstu'+i+'"><span class="l">'+esc(s[0])+'</span><div class="n">'+s[1]+'</div><small>kursi</small><i><b style="width:'+Math.round(s[1]/mx*100)+'%"></b></i></div>'}).join('')+
+ '<div class="dstu-c tot"><span class="l">Total kapasitas</span><div class="n">'+dStuTotal()+'</div><small>kursi \u00b7 '+STUDIOS.length+' studio</small></div></div></section>'}
+function dSlides(d,fl){var S=[],mx=Math.max.apply(null,STUDIOS.map(function(s){return s[1]}));
+ S.push({k:'Informasi Bioskop',t:'Sukaramai Trade Center XXI',p:STUDIOS.length+' studio \u00b7 total '+dStuTotal()+' kursi',go:'#dstu',c:'a'});
+ dStuGroups().forEach(function(g,i){S.push({k:'Kapasitas studio',t:g.names.join(' & ')+' \u00b7 '+g.seat+' kursi',p:g.names.length>1?'Masing-masing '+g.seat+' kursi':(g.seat===mx?'Studio berkapasitas terbesar':'Kapasitas '+g.seat+' kursi'),go:'#dstu',c:i%2?'a':'b'})});
+ (fl||[]).slice(0,3).forEach(function(f){S.push({k:'Advanced Ticket Sales',t:f.title||'Film',p:'Mulai ATS '+dt(f.atsAt)+' \u00b7 tayang '+dt(f.showAt),img:f.posterUrl,go:'ats',c:'c'})});
+ ((d&&d.announcements)||[]).slice(0,3).forEach(function(a){var b=String(a.body||'').replace(/\s+/g,' ').trim();S.push({k:'Pengumuman',t:a.title||'Pengumuman',p:b.length>150?b.slice(0,147)+'...':b,go:'pengumuman',c:'d'})});
+ return S}
+function dTop(d,fl){var S=dSlides(d,fl),n=S.length;
+ return '<section class="dsr" role="search"><label class="dsr-l" for="dq">Pencarian</label><div class="dsr-b"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="dq" type="search" autocomplete="off" spellcheck="false" placeholder="Cari halaman, studio, film, pengumuman, laporan..." aria-controls="dqr" aria-expanded="false"><kbd aria-hidden="true">/</kbd></div><div id="dqr" class="dsr-r hidden" role="listbox" aria-label="Hasil pencarian"></div></section>'+
+ '<section class="dsl" id="dsl" aria-roledescription="carousel" aria-label="Sorotan"><div class="dsl-v"><div class="dsl-t" id="dslt">'+
+ S.map(function(s,i){return '<div class="dsl-s sc-'+s.c+'" role="group" aria-roledescription="slide" aria-label="'+(i+1)+' dari '+n+'" data-go="'+esc(s.go)+'" tabindex="0">'+(s.img?'<img class="dsl-im" src="'+esc(s.img)+'" alt="" loading="lazy">':'')+'<div class="dsl-x"><small>'+esc(s.k)+'</small><b>'+esc(s.t)+'</b><span>'+esc(s.p)+'</span></div></div>'}).join('')+
+ '</div></div>'+(n>1?'<button type="button" class="dsl-b p" aria-label="Slide sebelumnya">&#8249;</button><button type="button" class="dsl-b n" aria-label="Slide berikutnya">&#8250;</button><div class="dsl-d">'+S.map(function(s,i){return '<button type="button" aria-label="Ke slide '+(i+1)+'"></button>'}).join('')+'</div>':'')+'</section>'}
+function dGoTo(t){if(String(t).charAt(0)==='#'){var e=document.getElementById(t.slice(1));if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.classList.add('flash');setTimeout(function(){e.classList.remove('flash')},1800)}}else go(t)}
+function dSlideInit(){var el=$('dsl'),tr=$('dslt');if(!el||!tr)return;var sl=tr.children,n=sl.length,i=0,tm=0,hold=false,x0=null,sw=false,dots=el.querySelectorAll('.dsl-d button');
+ function show(k){i=(k+n)%n;tr.style.transform='translateX(-'+i*100+'%)';for(var j=0;j<n;j++){sl[j].setAttribute('aria-hidden',j===i?'false':'true');sl[j].tabIndex=j===i?0:-1;if(dots[j])dots[j].className=j===i?'on':''}}
+ show(0);
+ Array.prototype.forEach.call(sl,function(s){s.onclick=function(){if(sw){sw=false;return}dGoTo(s.dataset.go)};s.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();dGoTo(s.dataset.go)}}});
+ if(n<2)return;
+ el.querySelector('.dsl-b.p').onclick=function(){show(i-1)};el.querySelector('.dsl-b.n').onclick=function(){show(i+1)};
+ Array.prototype.forEach.call(dots,function(b,k){b.onclick=function(){show(k)}});
+ el.addEventListener('mouseenter',function(){hold=true});el.addEventListener('mouseleave',function(){hold=false});
+ el.addEventListener('focusin',function(){hold=true});el.addEventListener('focusout',function(){hold=false});
+ el.addEventListener('pointerdown',function(e){x0=e.clientX;hold=true});
+ el.addEventListener('pointerup',function(e){if(x0!=null){var dx=e.clientX-x0;if(Math.abs(dx)>45){sw=true;show(dx<0?i+1:i-1)}x0=null}hold=false});
+ el.addEventListener('pointercancel',function(){x0=null;hold=false});
+ var rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+ if(!rm)tm=setInterval(function(){if(!document.body.contains(el)){clearInterval(tm);return}if(!hold&&!document.hidden)show(i+1)},6000)}
+function dBuildIndex(d,fl){var q=[];
+ MENU.forEach(function(m){if(!can(m)||m[3]||soonOf(m[0]))return;q.push({g:'Halaman',t:m[1],s:DESC[m[0]]||'',k:'',a:function(){go(m[0])}})});
+ STUDIOS.forEach(function(s,i){q.push({g:'Studio',t:s[0],s:s[1]+' kursi',k:'kursi seat kapasitas bioskop studio',a:function(){dGoTo('#dstu'+i)}})});
+ q.push({g:'Studio',t:'Total kapasitas bioskop',s:dStuTotal()+' kursi \u00b7 '+STUDIOS.length+' studio',k:'jumlah semua kursi studio',a:function(){dGoTo('#dstu')}});
+ (fl||[]).forEach(function(f){q.push({g:'Film ATS',t:f.title||'Film',s:[f.genre,f.duration,f.rating].filter(Boolean).join(', '),k:f.status||'',a:function(){go('ats')}})});
+ ((d&&d.announcements)||[]).forEach(function(a){q.push({g:'Pengumuman',t:a.title||'',s:String(a.body||'').replace(/\s+/g,' ').slice(0,90),k:String(a.body||''),a:function(){go('pengumuman')}})});
+ ((d&&d.recent)||[]).forEach(function(x){q.push({g:'Laporan',t:x.title||'',s:(x.id||'')+' \u00b7 '+(x.reporter||''),k:(T[x.type]?T[x.type].label:'')+' '+(x.id||''),a:function(){detail(x.id,function(){go('dashboard')})}})});
+ q.forEach(function(r){r.n=nrm(r.t);r.h=nrm(r.t+' '+r.s+' '+r.k).replace(/[^a-z0-9]+/g,' ')});return q}
+function dSearchInit(){var inp=$('dq'),box=$('dqr');if(!inp||!box)return;var cur=-1,res=[];
+ function close(){box.classList.add('hidden');inp.setAttribute('aria-expanded','false');cur=-1}
+ function mark(t,qs){var e=esc(t),n=nrm(t);if(n.length!==t.length)return e;var at=-1,L=0;qs.forEach(function(w){var p=n.indexOf(w);if(p>=0&&(at<0||p<at)){at=p;L=w.length}});return at<0?e:esc(t.slice(0,at))+'<mark>'+esc(t.slice(at,at+L))+'</mark>'+esc(t.slice(at+L))}
+ function paint(){var v=nrm(inp.value).trim();if(!v){close();box.innerHTML='';return}
+  var qs=v.split(/\s+/);res=DQI.filter(function(r){return qs.every(function(w){return (' '+r.h).indexOf(' '+w)>=0||r.h.indexOf(w)===0})}).map(function(r){return{r:r,sc:r.n.indexOf(v)===0?0:r.n.indexOf(v)>=0?1:2}}).sort(function(a,b){return a.sc-b.sc}).slice(0,8).map(function(x){return x.r});
+  cur=res.length?0:-1;
+  box.innerHTML=res.length?res.map(function(r,i){return '<div class="dsr-i'+(i===0?' on':'')+'" role="option" data-i="'+i+'"><span class="g">'+esc(r.g)+'</span><div><b>'+mark(r.t,qs)+'</b>'+(r.s?'<small>'+esc(r.s)+'</small>':'')+'</div></div>'}).join(''):'<div class="dsr-e">Tidak ada hasil untuk \u201c'+esc(inp.value.trim())+'\u201d</div>';
+  box.classList.remove('hidden');inp.setAttribute('aria-expanded','true')}
+ function pick(i){var r=res[i];if(!r)return;close();inp.value='';box.innerHTML='';r.a()}
+ function mv(k){var it=box.querySelectorAll('.dsr-i');if(!it.length)return;cur=(cur+k+it.length)%it.length;it.forEach(function(e,i){e.classList.toggle('on',i===cur)});it[cur].scrollIntoView({block:'nearest'})}
+ inp.addEventListener('input',paint);inp.addEventListener('focus',function(){if(inp.value.trim())paint()});
+ inp.addEventListener('keydown',function(e){if(e.key==='ArrowDown'){e.preventDefault();mv(1)}else if(e.key==='ArrowUp'){e.preventDefault();mv(-1)}else if(e.key==='Enter'){e.preventDefault();if(cur>=0)pick(cur)}else if(e.key==='Escape'){inp.value='';close();box.innerHTML=''}});
+ box.addEventListener('mousedown',function(e){e.preventDefault()});
+ box.addEventListener('click',function(e){var it=e.target.closest('.dsr-i');if(it)pick(Number(it.dataset.i))});
+ inp.addEventListener('blur',function(){setTimeout(close,120)})}
+function dExtra(d,fl){try{DQI=dBuildIndex(d,fl);dSlideInit();dSearchInit();
+ if(!window.__dqk){window.__dqk=1;document.addEventListener('keydown',function(e){var t=e.target,tag=t&&t.tagName;if(e.key==='/'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&tag!=='INPUT'&&tag!=='TEXTAREA'&&tag!=='SELECT'&&!(t&&t.isContentEditable)){var q=$('dq');if(q){e.preventDefault();q.focus()}}})}
+ }catch(x){if(window.console)console.warn('Tambahan dashboard gagal:',x)}}
 
 /* ---- status Daily Monitoring AC hari ini di dashboard: per area, sudah/belum diisi + suhu + status ---- */
 function dAc(){var el=$('dac');if(!el)return;var td=jkd(0),box=el.querySelector('.dac-b');
