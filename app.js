@@ -182,6 +182,7 @@ function vDash(){Promise.all([api('dashboard'),api('ats_list')]).then(function(r
  '<section class="ds"><div class="ds-big"><span class="l">Laporan hari ini</span><div class="n">'+(Number(d.today)||0)+'</div><small>Sejak 00.00 WIB</small></div>'+
  '<div class="ds-list"><h2>Total laporan</h2>'+tot.map(function(x){var v=Number(x[1])||0;return '<button class="dsr" data-go="'+x[2]+'"><span>'+x[0]+'</span><i><b style="width:'+Math.max(v?6:0,Math.round(v/mx*100))+'%"></b></i><strong>'+v+'</strong></button>'}).join('')+'</div>'+
  '<button class="ds-st '+(open>0?'warn':'good')+'" data-go="issue"><span class="l">Perlu diperbaiki</span><div class="n">'+open+'</div><small>'+(open>0?'Buka daftar dan tanggapi':'Semua laporan sudah ditangani')+'</small></button></section>'+
+ (rr?'':'<section class="dac" id="dac"><div class="sh"><h2>Monitoring AC hari ini</h2><button class="lnk" data-go="ac">Buka halaman AC</button></div><div class="dac-b"><div class="sk" style="height:84px"></div></div></section>')+
  (rr?'':'<section class="dchart" id="dchart"><div class="sh"><h2>Pemakaian listrik</h2><button class="lnk" data-go="meter">Lihat meteran</button></div><div class="dc-b"><div class="sk" style="height:150px"></div></div></section>')+
  '<section class="dm"><div><div class="sh"><h2>Advanced Ticket Sales</h2><button class="lnk" data-go="ats">Lihat semua</button></div>'+tix+'</div>'+
  '<div><div class="sh"><h2>Pengumuman terbaru</h2><button class="lnk" data-go="pengumuman">Lihat semua</button></div>'+(d.announcements.length?d.announcements.map(annCard).join(''):'<div class="empty"><b>Belum ada pengumuman</b>Informasi dari Admin akan tampil di sini.</div>')+'</div></section>'+
@@ -189,7 +190,22 @@ function vDash(){Promise.all([api('dashboard'),api('ats_list')]).then(function(r
  document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){go(b.dataset.go)}});
  document.querySelectorAll('[data-new]').forEach(function(b){b.onclick=function(){repForm(b.dataset.new,null,function(){go('dashboard')})}});
  document.querySelectorAll('[data-d]').forEach(function(b){b.onclick=function(){detail(b.dataset.d,function(){go('dashboard')})}});
- if(!rr)dChart();tickCd()}).catch(err)}
+ if(!rr){dAc();dChart()}tickCd()}).catch(err)}
+
+/* ---- status Daily Monitoring AC hari ini di dashboard: per area, sudah/belum diisi + suhu + status ---- */
+function dAc(){var el=$('dac');if(!el)return;var td=jkd(0),box=el.querySelector('.dac-b');
+ api('rep_list',{type:'ac',q:'',from:td,to:td,status:'',page:1,quiet:1}).then(function(r){
+  var it=((r&&r.items)||[]).slice().sort(function(a,b){return(+b.createdAt||0)-(+a.createdAt||0)}),got={};
+  it.forEach(function(x){acRowsOf(x.data).forEach(function(a){var k=String(a.location||'').trim().toUpperCase();if(k&&!got[k])got[k]={a:a,d:x.data}})});
+  var n=0,bad=0,chips=ACD.map(function(z){var g=got[z];
+   if(!g)return '<button class="dac-c na" data-go="ac"><b>'+z+'</b><span>Belum diisi</span></button>';
+   var v=acV(g.a),st=acSt(g.a,g.d);if(!isNaN(v))n++;var cls=st==='APPROVED'?'ok':st==='NODATA'?'na2':st==='TOO-COLD'?'cold':'bad';if(st==='TOO-WARM'||st==='TOO-COLD')bad++;
+   return '<button class="dac-c '+cls+'" data-go="ac"><b>'+z+'</b><span class="dac-t">'+(isNaN(v)?'\u2013':String(v).replace('.',',')+'\u00B0C')+'</span><small>'+(tsl(st)||'')+'</small></button>'}).join('');
+  var ms=n===ACD.length?(bad?bad+' area di luar standar suhu.':'Semua area sudah diisi.'):n+' dari '+ACD.length+' area sudah diisi hari ini.';
+  box.innerHTML='<div class="dac-s">'+ms+(n<ACD.length?' <button class="lnk" data-new="ac">Isi sekarang</button>':'')+'</div><div class="dac-g">'+chips+'</div>';
+  box.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){go(b.dataset.go)}});
+  box.querySelectorAll('[data-new]').forEach(function(b){b.onclick=function(){repForm('ac',null,function(){go('dashboard')})}})
+ }).catch(function(){if(el.parentNode)el.remove()})}
 
 /* ---- grafik ringkas listrik di dashboard (data dari meter_stats yang sama dengan halaman Meteran) ---- */
 function dChart(){mAll('','day').then(function(r){var el=$('dchart');if(!el)return;
