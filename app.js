@@ -91,10 +91,6 @@ IC.water='<svg class="ic" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 
 IC.film='<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg>';
 IC.menu='<svg class="ic" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
 var GRP={dashboard:'Utama',work:'Laporan',glosarium:'Referensi',pengguna:'Administrasi'},TB=[['dashboard','Beranda'],['work','Pekerjaan'],['meter','Meteran'],['purchase','Pembelian']],TBR=[['dashboard','Beranda'],['issue','Perbaikan'],['pengumuman','Pengumuman']],RO=['dashboard','pengumuman','ats','issue','glosarium'];
-IC.glosarium='<svg class="ic" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19V5M8 8h7M8 12h5"/></svg>';
-IC.penyimpanan='<svg class="ic" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
-Object.assign(DESC,{glosarium:'Istilah teknis proyektor, suara, dan operasional bioskop',penyimpanan:'Penyimpanan berkas multi-format (dokumen, spreadsheet, gambar, data)'});
-Object.assign(PH,{glosarium:['barco','60% 40%','g'],penyimpanan:['christie','40% 50%','b']});
 function tbFor(){return U&&U.role==='REPORTER'?TBR:TB}
 function can(m){if(m[2])return U.role==='ADMIN';if(U.role==='REPORTER')return RO.indexOf(m[0])>=0;return true}
 /* ---- shell ---- */
@@ -111,6 +107,10 @@ function go(p){if(soonOf(p)){toast(SOON_MSG);return}if(!MENU.some(function(m){re
 
 /* ---- banner halaman: foto proyektor dengan potongan berbeda per halaman (hanya tampilan) ---- */
 var PH={pengumuman:['christie','80% 62%','a'],ats:['christie','24% 58%','b'],work:['barco','30% 52%','a'],issue:['christie','14% 40%','w'],meter:['barco','100% 8%','g'],ac:['christie','50% 4%','a'],purchase:['barco','8% 62%','b'],pengguna:['','','a'],audit:['','','b'],pengaturan:['','','g']};
+IC.glosarium='<svg class="ic" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19V5M8 8h7M8 12h5"/></svg>';
+IC.penyimpanan='<svg class="ic" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+Object.assign(DESC,{glosarium:'Istilah teknis proyektor, suara, dan operasional bioskop',penyimpanan:'Penyimpanan berkas multi-format (dokumen, spreadsheet, gambar, data)'});
+Object.assign(PH,{glosarium:['barco','60% 40%','g'],penyimpanan:['christie','40% 50%','b']});
 function pHero(p){var el=$('phero');if(!el)return;if(p==='dashboard'){el.className='hidden';el.innerHTML='';return}
  var m=MENU.filter(function(x){return x[0]===p})[0]||[0,''],c=PH[p]||['','','a'],img=c[0]?'<picture class="ph-img" aria-hidden="true"><img src="'+CUT[c[0]]+'" alt="" decoding="async" style="object-position:'+c[1]+'"></picture>':'';
  el.className='ph-'+c[2]+(c[0]?'':' noph');el.innerHTML=img+'<div class="ph-t"><i>'+(IC[p]||'')+'</i><div><h1>'+esc(m[1])+'</h1><p>'+esc(DESC[p]||'')+'</p></div></div>';el.style.animation='none';void el.offsetWidth;el.style.animation=''}
