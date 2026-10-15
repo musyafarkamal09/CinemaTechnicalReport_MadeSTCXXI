@@ -192,66 +192,154 @@ function vDash(){Promise.all([api('dashboard'),api('ats_list')]).then(function(r
  document.querySelectorAll('[data-d]').forEach(function(b){b.onclick=function(){detail(b.dataset.d,function(){go('dashboard')})}});
  if(!rr){dAc();dChart()}tickCd();dExtra(d,fl)}).catch(err)}
 
-/* ---- TAMBAHAN DASHBOARD: informasi bioskop, slider sorotan, pencarian instan (tidak mengubah fungsi lama) ---- */
+/* ---- TAMBAHAN DASHBOARD v2: info bioskop + kursi animasi, slider Teori Management XXI, pencarian semua laporan (tidak mengubah fungsi lama) ---- */
 /* Ubah jumlah kursi cukup di sini. Studio 3 dan 4 masing-masing 137 kursi. */
-var STUDIOS=[['Studio 1',214],['Studio 2',154],['Studio 3',137],['Studio 4',137]],DQI=[];
+var STUDIOS=[['Studio 1',214],['Studio 2',154],['Studio 3',137],['Studio 4',137]],DQI=[],DQP=null,RPC={t:0,busy:null,items:[],fail:0};
+/* Materi Teori Management XXI (dari file zip). Format: [judul, sub, [[judul kartu, isi],...]]. Hapus satu baris untuk menghilangkan satu slide. */
+var KB=[
+['Core Values 4P','adalah landasan yang harus kita miliki, untuk berkarir di perusahaan.',[
+['Purpose','Bekerja harus mempunyai tujuan, juga harus punya target dalam mengembangkan karir di Cinema XXI. Harus memiliki VISI yang jelas ingin menjadi apa di Cinema XXI.'],
+['Passion','Bekerja dengan hati dan penuh tanggung jawab. Harus memiliki kebanggaan dalam menjalankan setiap tugas, tanggung jawab dalam bekerja, sehingga akan timbul rasa memiliki terhadap Perusahaan (sense of belonging).'],
+['Professional','Bekerja dengan target yang terperinci, serta data juga angka yang jelas. Data sebagai bahan acuan untuk analisa, serta tolak ukur kemajuan atau perkembangan Cinema XXI atau perkembangan karir seseorang.'],
+['Pray','Selalu berdoa dalam setiap pekerjaan yang baik, serta membahagiakan sesama manusia sebagai makhluk ciptaan Tuhan, tanpa membeda-bedakan Agama, Ras, Warna Kulit, dan juga status sosial. PRAY yang tertinggi adalah selalu bersyukur. Sharing pengetahuan yang kita miliki kepada tim (Develop People to be a Better Person).']]],
+['Core Values 5C','Lima nilai yang harus dimiliki seorang leader.',[
+['Character (karakter)','Personality yang baik, seorang leader itu harus: Mau Capek, Mau Pusing, Mau Ribet.'],
+['Capability (kemampuan)','Adaptif, pintar, punya strategi atau planning, memiliki akhlak, integritas yang baik, serta kemampuan Handling People dan membina dan mengayomi SDM.'],
+['Cooperative (koperatif)','Mampu bekerja sama dan menjalin komunikasi dengan baik, sehingga dapat membentuk Super Team, bukan Superman.'],
+['Clean (bersih)','Peduli dengan kebersihan: area kerja, cara kerja dan kepribadian yang bersih, jujur dan memiliki Integritas Tinggi.'],
+['Care (peduli)','Peduli kepada Perusahaan, Customer dan Team. Mengapa harus peduli? Karena kita berada di bisnis pelayanan.']]],
+['Core Values 3E','Engagement, Entertain, Education.',[
+['Engagement','Membangun hubungan dan interaksi jangka panjang antara Cinema XXI dengan customer dan sesama rekan kerja. Berkomunikasi dan bertemu bisa menjadi kunci untuk membangun hubungan.\nMenumbuhkan rasa percaya, respect di dalam team, sehingga jika ada masalah bisa bercerita dan menjadi solusi untuk team kita.'],
+['Entertain','Menghibur customer yang datang ke tempat kita, memberikan senyuman, mengajak berbicara, agar bisa lebih dekat dengan kita.\nSebagai Leader, ketika target yang diberikan dapat dicapai oleh team kita, maka adanya REWARD yang diberikan. Bisa memberikan solusi kepada team.'],
+['Education','Mengedukasi customer kita seperti menginformasikan dapat membeli tiket melalui m.tix, dan bisa membeli makanan minuman melalui m.tix atau m.food.\nMengedukasi team kita, bisa belajar dari siapapun, mencukupi atau mengisi kebutuhan dan kekurangan team kita.']]],
+['One Team, One Spirit, One Goal, One Knowledge','Empat kesatuan yang menyatukan seluruh tim.',[
+['One Team','yaitu satu team yang mempunyai satu tujuan yang sama.'],
+['One Spirit','yaitu satu semangat di dalam team, dengan saling memberikan dukungan, saling mengisi satu sama lain dengan ilmu atau melakukan transfer knowledge.'],
+['One Goal','yaitu mempunyai GOAL serta menyamakan VISI di dalam satu team, agar dapat tercipta GOAL.'],
+['One Knowledge','yaitu pengetahuan yang sama yang WAJIB dimiliki oleh para leader, mulai dari Sabang sampai Merauke.']]],
+['Love, Care, Share','Tiga sikap dasar dalam bekerja.',[
+['Love','CINTA, kita harus mencintai semua yang ada di sekitar tempat kita bekerja, serta mencintai perusahaan dengan sepenuh hati, agar kita bisa terus maju dan berkembang.'],
+['Care','PEDULI, setelah kita mencintai yang ada di sekeliling kita, maka pasti kita akan peduli dengan pekerjaan, perusahaan kita, tempat kita bekerja demi mencapai kemajuan dan perkembangan perusahaan kita bersama-sama.'],
+['Share','BERBAGI, kita harus bisa berbagi kepada semua yang ada di sekitar kita, agar dapat mengembangkan diri, orang di sekitar kita dan perusahaan sesuai dengan salah satu MISI kita yaitu Developing People to be a Better Person.']]],
+['PCDCA 10 Keys','Plan, Coordination, Do, Check, Action: sepuluh kunci dalam lima tahap.',[
+['Plan','1. Planning Work Ahead (rencana kerja)\n2. Setting Individual Goal & Standard (menetapkan sasaran PIC dan standarnya)'],
+['Coordination','3. Setting Team Goal and Standard (menetapkan goal untuk team / PIC)\n4. Monitoring Team Performance (memonitoring performa kinerja team)'],
+['Do','5. Performing Coordinated Activities (action, roll out dan perform)\n6. Monitoring Individual Performance'],
+['Check','7. Reviewing Individual Performance\n8. Rewarding Individual Performance'],
+['Action','9. Solving Problem\n10. Training Team Member']]],
+['Meritokrasi','Sistem management yang sangat menjunjung tinggi NILAI & PRESTASI.',[
+['Prinsip','Para leader dipilih berdasarkan prestasi dan kemampuannya. Bukan senioritas, suku, agama, gender, maupun nepotisme.'],
+['Promosi jabatan','Pemilihan dan pengangkatan jabatan dipilih pada orang yang memiliki 5C yang terbaik untuk bisa menduduki suatu jabatan, menjadi seorang Leader di tiap posisi.'],
+['Penghargaan','MERITOKRASI juga akan memberikan penghargaan kepada mereka yang berprestasi. Menemukan orang yang memiliki kemampuan unggul, yang management berikan melalui Training, Test Approval dari atasannya dengan objective, tanpa SARA, SENIORITAS dan NEPOTISME.']]],
+['3 Pilar yang Harus Dibahagiakan','Tiga pihak kunci sukses dalam dunia F&B.',[
+['Pimpinan Perusahaan','Tempat kita bekerja dan yang sudah memberikan kita pekerjaan dan kesempatan untuk berkarir mencari rejeki. Setiap staff harus mempunyai VISI untuk bisa menyenangkan Pimpinan & Perusahaannya, sehingga hal ini bisa memotivasi setiap orang untuk melakukan yang terbaik.'],
+['Customer','CUSTOMER yang sudah bersedia datang ke tempat kita dan memberikan INCOME bagi perusahaan. Yang dimaksud dengan membahagiakan customer adalah bagaimana kita memberikan pelayanan yang prima, makanan minuman yang berkualitas, sehingga dapat diterima oleh customer dengan cepat dan tepat.\nKita harus menjalankan 3 pilar kunci sukses dalam Dunia F&B.'],
+['Anggota Team','Orang-orang yang selalu bekerja sama dengan kita di outlet untuk menjalankan operasional dan memberikan pelayanan terbaik kepada setiap customer yang datang ke Cinema XXI. Membuat team kita bangga karena mereka tumbuh, berkembang dan menjadi pintar karena adanya kita, sehingga membuat TEAM menjadi lebih baik dan memiliki kesejahteraan yang lebih baik.']]],
+['Visi & Misi Cinema XXI','PT. Nusantara Sejahtera Raya Tbk',[
+['Visi','Menjadi jejaring bioskop terbaik di dunia, dan menjadi kebanggaan Indonesia.'],
+['Misi: Uncompromised Quality','Menghadirkan kualitas terbaik.'],
+['Misi: Affordable Entertainment','Menghadirkan hiburan yang terjangkau.'],
+['Misi: Forever Better','Selalu lebih baik.']]]
+];
+var DGRP={bioskop:'Bioskop',budaya:'Teori Management XXI',film:'Film ATS',info:'Pengumuman'};
 function nrm(s){return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function nq(s){return nrm(s).replace(/[^a-z0-9]+/g,' ').trim()}
 function dStuTotal(){return STUDIOS.reduce(function(a,s){return a+s[1]},0)}
 function dStuGroups(){var g=[];STUDIOS.forEach(function(s){var l=g[g.length-1];if(l&&l.seat===s[1])l.names.push(s[0]);else g.push({names:[s[0]],seat:s[1]})});return g}
-function dStudios(){var mx=Math.max.apply(null,STUDIOS.map(function(s){return s[1]}).concat([1]));
+var SEAT_SPRITE='<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><symbol id="stc-seat" viewBox="0 0 24 24"><path d="M6 3h12a3 3 0 0 1 3 3v7H3V6a3 3 0 0 1 3-3z"/><rect x="2" y="12" width="20" height="7" rx="3" opacity=".82"/><rect x=".5" y="9" width="3.6" height="10.5" rx="1.8"/><rect x="19.9" y="9" width="3.6" height="10.5" rx="1.8"/><rect x="9" y="19" width="6" height="3" rx="1.2" opacity=".6"/></symbol></defs></svg>';
+/* ilustrasi kursi bioskop beranimasi (gelombang cahaya emas), opsional dengan layar */
+function seatArt(rows,cols,screen){var s=20,g=5,aisle=cols>8?Math.floor(cols/2):0,aw=10,W=cols*(s+g)+(aisle?aw:0),top=screen?28:2,H=top+rows*(s+g)+2,o='',r,c,x,y;
+ for(r=0;r<rows;r++)for(c=0;c<cols;c++){x=c*(s+g)+(aisle&&c>=aisle?aw:0);y=top+r*(s+g);o+='<use class="s" href="#stc-seat" x="'+x+'" y="'+y+'" width="'+s+'" height="'+s+'" style="animation-delay:'+(c*.11+r*.38).toFixed(2)+'s"/>'}
+ return '<svg class="seatart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Ilustrasi kursi bioskop">'+(screen?'<path class="scr" d="M4 22Q'+(W/2)+' 2 '+(W-4)+' 22" fill="none"/>':'')+o+'</svg>'}
+function seatRow(n,sz,delay){var g=3,o='',c;for(c=0;c<n;c++)o+='<use class="s" href="#stc-seat" x="'+c*(sz+g)+'" y="0" width="'+sz+'" height="'+sz+'" style="animation-delay:'+(delay+c*.12).toFixed(2)+'s"/>';return '<svg class="seatrow" viewBox="0 0 '+(n*(sz+g)-g)+' '+sz+'" aria-hidden="true">'+o+'</svg>'}
+function dStudios(){
  return '<section class="dstu" id="dstu"><div class="sh"><h2>Informasi Bioskop</h2><small class="dstu-n">Sukaramai Trade Center XXI</small></div><div class="dstu-g">'+
- STUDIOS.map(function(s,i){return '<div class="dstu-c" id="dstu'+i+'"><span class="l">'+esc(s[0])+'</span><div class="n">'+s[1]+'</div><small>kursi</small><i><b style="width:'+Math.round(s[1]/mx*100)+'%"></b></i></div>'}).join('')+
- '<div class="dstu-c tot"><span class="l">Total kapasitas</span><div class="n">'+dStuTotal()+'</div><small>kursi \u00b7 '+STUDIOS.length+' studio</small></div></div></section>'}
+ STUDIOS.map(function(s,i){return '<div class="dstu-c" id="dstu'+i+'"><span class="l">'+esc(s[0])+'</span><div class="n">'+s[1]+'</div><small>kursi</small>'+seatRow(Math.max(5,Math.round(s[1]/16)),14,i*.3)+'</div>'}).join('')+
+ '<div class="dstu-c tot"><span class="l">Total kapasitas</span><div class="n">'+dStuTotal()+'</div><small>kursi \u00b7 '+STUDIOS.length+' studio</small>'+seatRow(9,14,0)+'</div></div></section>'}
 function dSlides(d,fl){var S=[],mx=Math.max.apply(null,STUDIOS.map(function(s){return s[1]}));
- S.push({k:'Informasi Bioskop',t:'Sukaramai Trade Center XXI',p:STUDIOS.length+' studio \u00b7 total '+dStuTotal()+' kursi',go:'#dstu',c:'a'});
- dStuGroups().forEach(function(g,i){S.push({k:'Kapasitas studio',t:g.names.join(' & ')+' \u00b7 '+g.seat+' kursi',p:g.names.length>1?'Masing-masing '+g.seat+' kursi':(g.seat===mx?'Studio berkapasitas terbesar':'Kapasitas '+g.seat+' kursi'),go:'#dstu',c:i%2?'a':'b'})});
- (fl||[]).slice(0,3).forEach(function(f){S.push({k:'Advanced Ticket Sales',t:f.title||'Film',p:'Mulai ATS '+dt(f.atsAt)+' \u00b7 tayang '+dt(f.showAt),img:f.posterUrl,go:'ats',c:'c'})});
- ((d&&d.announcements)||[]).slice(0,3).forEach(function(a){var b=String(a.body||'').replace(/\s+/g,' ').trim();S.push({k:'Pengumuman',t:a.title||'Pengumuman',p:b.length>150?b.slice(0,147)+'...':b,go:'pengumuman',c:'d'})});
+ S.push({g:'bioskop',k:'Informasi Bioskop',t:'Sukaramai Trade Center XXI',p:STUDIOS.length+' studio \u00b7 total '+dStuTotal()+' kursi',go:'#dstu',c:'a',art:seatArt(4,12,1)});
+ dStuGroups().forEach(function(g,i){S.push({g:'bioskop',k:'Kapasitas studio',t:g.names.join(' & ')+' \u00b7 '+g.seat+' kursi',p:g.names.length>1?'Masing-masing '+g.seat+' kursi':(g.seat===mx?'Studio berkapasitas terbesar':'Kapasitas '+g.seat+' kursi'),go:'#dstu',c:i%2?'a':'b',art:seatArt(g.seat>200?4:3,g.seat>200?12:g.seat>150?10:9,1)})});
+ KB.forEach(function(k,i){S.push({g:'budaya',k:'Teori Management XXI',t:k[0],p:k[1],kb:i,c:i%2?'e':'f',d:12000})});
+ (fl||[]).slice(0,3).forEach(function(f){S.push({g:'film',k:'Advanced Ticket Sales',t:f.title||'Film',p:'Mulai ATS '+dt(f.atsAt)+' \u00b7 tayang '+dt(f.showAt),img:f.posterUrl,go:'ats',c:'c'})});
+ ((d&&d.announcements)||[]).slice(0,3).forEach(function(a){var b=String(a.body||'').replace(/\s+/g,' ').trim();S.push({g:'info',k:'Pengumuman',t:a.title||'Pengumuman',p:b.length>150?b.slice(0,147)+'...':b,go:'pengumuman',c:'d'})});
  return S}
-function dTop(d,fl){var S=dSlides(d,fl),n=S.length;
- return '<section class="dsr" role="search"><label class="dsr-l" for="dq">Pencarian</label><div class="dsr-b"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="dq" type="search" autocomplete="off" spellcheck="false" placeholder="Cari halaman, studio, film, pengumuman, laporan..." aria-controls="dqr" aria-expanded="false"><kbd aria-hidden="true">/</kbd></div><div id="dqr" class="dsr-r hidden" role="listbox" aria-label="Hasil pencarian"></div></section>'+
- '<section class="dsl" id="dsl" aria-roledescription="carousel" aria-label="Sorotan"><div class="dsl-v"><div class="dsl-t" id="dslt">'+
- S.map(function(s,i){return '<div class="dsl-s sc-'+s.c+'" role="group" aria-roledescription="slide" aria-label="'+(i+1)+' dari '+n+'" data-go="'+esc(s.go)+'" tabindex="0">'+(s.img?'<img class="dsl-im" src="'+esc(s.img)+'" alt="" loading="lazy">':'')+'<div class="dsl-x"><small>'+esc(s.k)+'</small><b>'+esc(s.t)+'</b><span>'+esc(s.p)+'</span></div></div>'}).join('')+
- '</div></div>'+(n>1?'<button type="button" class="dsl-b p" aria-label="Slide sebelumnya">&#8249;</button><button type="button" class="dsl-b n" aria-label="Slide berikutnya">&#8250;</button><div class="dsl-d">'+S.map(function(s,i){return '<button type="button" aria-label="Ke slide '+(i+1)+'"></button>'}).join('')+'</div>':'')+'</section>'}
+function dKbOpen(i){var k=KB[i];if(!k)return;modal('<h3>'+esc(k[0])+'<span class="mid">Teori Management XXI</span></h3><p class="kbs">'+esc(k[1])+'</p>'+k[2].map(function(x){return '<div class="kbm"><b>'+esc(x[0])+'</b><p>'+esc(x[1])+'</p></div>'}).join(''))}
+function dTop(d,fl){var S=dSlides(d,fl),n=S.length,gs=[],cnt={};S.forEach(function(s){if(!cnt[s.g]){cnt[s.g]=0;gs.push(s.g)}cnt[s.g]++});
+ return SEAT_SPRITE+'<section class="dsr" role="search"><label class="dsr-lb" for="dq">Pencarian</label><div class="dsr-b"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="dq" type="search" autocomplete="off" spellcheck="false" placeholder="Cari laporan (nama pelapor, nomor, lokasi, nama barang), halaman, studio, materi XXI..." aria-controls="dqr" aria-expanded="false"><button type="button" id="dqc" class="dsr-x hidden" aria-label="Hapus pencarian">&times;</button><kbd aria-hidden="true">/</kbd></div><div id="dqr" class="dsr-r hidden"></div></section>'+
+ '<section class="dsl-w"><div class="dsl" id="dsl" aria-roledescription="carousel" aria-label="Sorotan"><div class="dsl-v"><div class="dsl-t" id="dslt">'+
+ S.map(function(s,i){var kb=s.kb!=null,body=kb?'<div class="kbg">'+KB[s.kb][2].map(function(x){return '<div class="kbc"><em>'+esc(x[0])+'</em><p>'+esc(x[1])+'</p></div>'}).join('')+'</div><small class="kbh">Ketuk untuk membaca selengkapnya</small>':'<span>'+esc(s.p)+'</span>';
+  return '<div class="dsl-s sc-'+s.c+(kb?' kb':'')+'" role="group" aria-roledescription="slide" aria-label="'+(i+1)+' dari '+n+'" data-g="'+s.g+'" data-d="'+(s.d||6500)+'" '+(kb?'data-kb="'+s.kb+'"':'data-go="'+esc(s.go)+'"')+' tabindex="0">'+(s.img?'<img class="dsl-im" src="'+esc(s.img)+'" alt="" loading="lazy">':'')+'<div class="dsl-x"><small>'+esc(s.k)+'</small><b>'+esc(s.t)+'</b>'+(kb?'<span class="kbl">'+esc(s.p)+'</span>':'')+body+'</div>'+(s.art?'<div class="dsl-art">'+s.art+'</div>':'')+'</div>'}).join('')+
+ '</div></div><button type="button" class="dsl-b p" aria-label="Slide sebelumnya">&#8249;</button><button type="button" class="dsl-b n" aria-label="Slide berikutnya">&#8250;</button><div class="dsl-d" id="dsld"></div><i class="dsl-pg" id="dslp"></i></div>'+
+ '<div class="dsl-tabs" id="dslc" role="tablist" aria-label="Kategori sorotan">'+gs.map(function(g){return '<button type="button" role="tab" data-g="'+g+'">'+esc(DGRP[g])+' <em>'+cnt[g]+'</em></button>'}).join('')+'</div></section>'}
 function dGoTo(t){if(String(t).charAt(0)==='#'){var e=document.getElementById(t.slice(1));if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.classList.add('flash');setTimeout(function(){e.classList.remove('flash')},1800)}}else go(t)}
-function dSlideInit(){var el=$('dsl'),tr=$('dslt');if(!el||!tr)return;var sl=tr.children,n=sl.length,i=0,tm=0,hold=false,x0=null,sw=false,dots=el.querySelectorAll('.dsl-d button');
- function show(k){i=(k+n)%n;tr.style.transform='translateX(-'+i*100+'%)';for(var j=0;j<n;j++){sl[j].setAttribute('aria-hidden',j===i?'false':'true');sl[j].tabIndex=j===i?0:-1;if(dots[j])dots[j].className=j===i?'on':''}}
+function dSlideInit(){var el=$('dsl'),tr=$('dslt');if(!el||!tr)return;var sl=tr.children,n=sl.length,i=0,ms=0,hold=false,x0=null,sw=false,lastG='',dbox=$('dsld'),pg=$('dslp'),chips=document.querySelectorAll('#dslc button'),rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+ function dots(g){var h='';for(var j=0;j<n;j++)if(sl[j].dataset.g===g)h+='<button type="button" data-j="'+j+'" aria-label="Ke slide '+(j+1)+'"></button>';dbox.innerHTML=h}
+ function show(k){i=(k+n)%n;ms=0;pg.style.width='0';tr.style.transform='translateX(-'+i*100+'%)';var g=sl[i].dataset.g;for(var j=0;j<n;j++){sl[j].setAttribute('aria-hidden',j===i?'false':'true');sl[j].tabIndex=j===i?0:-1}
+  if(g!==lastG){dots(g);lastG=g}
+  Array.prototype.forEach.call(dbox.children,function(b){b.className=Number(b.dataset.j)===i?'on':''});
+  Array.prototype.forEach.call(chips,function(c){var on=c.dataset.g===g;c.className=on?'on':'';c.setAttribute('aria-selected',on?'true':'false')})}
  show(0);
- Array.prototype.forEach.call(sl,function(s){s.onclick=function(){if(sw){sw=false;return}dGoTo(s.dataset.go)};s.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();dGoTo(s.dataset.go)}}});
+ Array.prototype.forEach.call(sl,function(s){s.onclick=function(){if(sw){sw=false;return}if(s.dataset.kb!=null)dKbOpen(Number(s.dataset.kb));else dGoTo(s.dataset.go)};s.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();s.click()}}});
+ Array.prototype.forEach.call(chips,function(c){c.onclick=function(){for(var j=0;j<n;j++)if(sl[j].dataset.g===c.dataset.g){show(j);break}}});
+ dbox.onclick=function(e){var b=e.target.closest('button');if(b)show(Number(b.dataset.j))};
  if(n<2)return;
  el.querySelector('.dsl-b.p').onclick=function(){show(i-1)};el.querySelector('.dsl-b.n').onclick=function(){show(i+1)};
- Array.prototype.forEach.call(dots,function(b,k){b.onclick=function(){show(k)}});
  el.addEventListener('mouseenter',function(){hold=true});el.addEventListener('mouseleave',function(){hold=false});
  el.addEventListener('focusin',function(){hold=true});el.addEventListener('focusout',function(){hold=false});
  el.addEventListener('pointerdown',function(e){x0=e.clientX;hold=true});
  el.addEventListener('pointerup',function(e){if(x0!=null){var dx=e.clientX-x0;if(Math.abs(dx)>45){sw=true;show(dx<0?i+1:i-1)}x0=null}hold=false});
  el.addEventListener('pointercancel',function(){x0=null;hold=false});
- var rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
- if(!rm)tm=setInterval(function(){if(!document.body.contains(el)){clearInterval(tm);return}if(!hold&&!document.hidden)show(i+1)},6000)}
+ if(!rm){var tm=setInterval(function(){if(!document.body.contains(el)){clearInterval(tm);return}if(hold||document.hidden||!$('modal').classList.contains('hidden'))return;ms+=250;var d=Number(sl[i].dataset.d)||6500;pg.style.width=Math.min(100,ms/d*100)+'%';if(ms>=d)show(i+1)},250)}}
+/* ---- pencarian: halaman, studio, materi XXI + SEMUA laporan (dimuat sekali, dicari di perangkat = instan) ---- */
+function dFlat(o,out){if(o==null)return;var t=typeof o;if(t==='string'||t==='number'){var s=String(o);if(s&&s.length<600)out.push(s);return}if(Array.isArray(o)){o.forEach(function(v){dFlat(v,out)});return}if(t==='object')for(var p in o){if(p==='ph'||p==='photos'||p==='photo'||p==='img'||p==='diffs')continue;dFlat(o[p],out)}}
+function dRepTitle(x){var d=x.data||{};return x.title||d.title||d.location||d.store||x.id}
+function dRepBuild(t,x){var L=[];dFlat(x.data,L);return {t:t,x:x,L:L,n:nq([x.id,x.reporter,x.title,T[t]?T[t].label:t,dt(x.createdAt)].concat(L).join(' '))}}
+function dLoadRep(force){if(RPC.busy)return RPC.busy;if(!force&&RPC.t&&Date.now()-RPC.t<60000)return Promise.resolve();
+ var rp=U.role==='REPORTER',ts=rp?['issue']:['work','issue','meter','ac','purchase'],fail=0;
+ var P=ts.map(function(t){return api(rp?'rep_list':'rep_export',{type:t,q:'',from:'',to:'',status:'',page:1,quiet:1}).then(function(r){return {t:t,items:(r&&r.items)||[]}},function(){fail++;return {t:t,items:[]}})});
+ if(!rp)P.push(api('filmrep_list',{q:'',quiet:1}).then(function(l){return {t:'film',items:l||[]}},function(){fail++;return {t:'film',items:[]}}));
+ RPC.busy=Promise.all(P).then(function(R){var out=[];R.forEach(function(g){g.items.forEach(function(x){if(g.t==='film'){var L=[];dFlat(x,L);out.push({t:'film',x:{id:x.id,title:x.title,reporter:'',createdAt:0,data:x},L:L,n:nq(L.join(' ')+' laporan film')})}else out.push(dRepBuild(g.t,x))})});RPC.items=out;RPC.fail=fail;RPC.t=Date.now();RPC.busy=null;if(DQP)DQP()},function(){RPC.busy=null});
+ return RPC.busy}
 function dBuildIndex(d,fl){var q=[];
  MENU.forEach(function(m){if(!can(m)||m[3]||soonOf(m[0]))return;q.push({g:'Halaman',t:m[1],s:DESC[m[0]]||'',k:'',a:function(){go(m[0])}})});
  STUDIOS.forEach(function(s,i){q.push({g:'Studio',t:s[0],s:s[1]+' kursi',k:'kursi seat kapasitas bioskop studio',a:function(){dGoTo('#dstu'+i)}})});
  q.push({g:'Studio',t:'Total kapasitas bioskop',s:dStuTotal()+' kursi \u00b7 '+STUDIOS.length+' studio',k:'jumlah semua kursi studio',a:function(){dGoTo('#dstu')}});
- (fl||[]).forEach(function(f){q.push({g:'Film ATS',t:f.title||'Film',s:[f.genre,f.duration,f.rating].filter(Boolean).join(', '),k:f.status||'',a:function(){go('ats')}})});
- ((d&&d.announcements)||[]).forEach(function(a){q.push({g:'Pengumuman',t:a.title||'',s:String(a.body||'').replace(/\s+/g,' ').slice(0,90),k:String(a.body||''),a:function(){go('pengumuman')}})});
- ((d&&d.recent)||[]).forEach(function(x){q.push({g:'Laporan',t:x.title||'',s:(x.id||'')+' \u00b7 '+(x.reporter||''),k:(T[x.type]?T[x.type].label:'')+' '+(x.id||''),a:function(){detail(x.id,function(){go('dashboard')})}})});
- q.forEach(function(r){r.n=nrm(r.t);r.h=nrm(r.t+' '+r.s+' '+r.k).replace(/[^a-z0-9]+/g,' ')});return q}
-function dSearchInit(){var inp=$('dq'),box=$('dqr');if(!inp||!box)return;var cur=-1,res=[];
- function close(){box.classList.add('hidden');inp.setAttribute('aria-expanded','false');cur=-1}
- function mark(t,qs){var e=esc(t),n=nrm(t);if(n.length!==t.length)return e;var at=-1,L=0;qs.forEach(function(w){var p=n.indexOf(w);if(p>=0&&(at<0||p<at)){at=p;L=w.length}});return at<0?e:esc(t.slice(0,at))+'<mark>'+esc(t.slice(at,at+L))+'</mark>'+esc(t.slice(at+L))}
- function paint(){var v=nrm(inp.value).trim();if(!v){close();box.innerHTML='';return}
-  var qs=v.split(/\s+/);res=DQI.filter(function(r){return qs.every(function(w){return (' '+r.h).indexOf(' '+w)>=0||r.h.indexOf(w)===0})}).map(function(r){return{r:r,sc:r.n.indexOf(v)===0?0:r.n.indexOf(v)>=0?1:2}}).sort(function(a,b){return a.sc-b.sc}).slice(0,8).map(function(x){return x.r});
-  cur=res.length?0:-1;
-  box.innerHTML=res.length?res.map(function(r,i){return '<div class="dsr-i'+(i===0?' on':'')+'" role="option" data-i="'+i+'"><span class="g">'+esc(r.g)+'</span><div><b>'+mark(r.t,qs)+'</b>'+(r.s?'<small>'+esc(r.s)+'</small>':'')+'</div></div>'}).join(''):'<div class="dsr-e">Tidak ada hasil untuk \u201c'+esc(inp.value.trim())+'\u201d</div>';
-  box.classList.remove('hidden');inp.setAttribute('aria-expanded','true')}
- function pick(i){var r=res[i];if(!r)return;close();inp.value='';box.innerHTML='';r.a()}
- function mv(k){var it=box.querySelectorAll('.dsr-i');if(!it.length)return;cur=(cur+k+it.length)%it.length;it.forEach(function(e,i){e.classList.toggle('on',i===cur)});it[cur].scrollIntoView({block:'nearest'})}
- inp.addEventListener('input',paint);inp.addEventListener('focus',function(){if(inp.value.trim())paint()});
- inp.addEventListener('keydown',function(e){if(e.key==='ArrowDown'){e.preventDefault();mv(1)}else if(e.key==='ArrowUp'){e.preventDefault();mv(-1)}else if(e.key==='Enter'){e.preventDefault();if(cur>=0)pick(cur)}else if(e.key==='Escape'){inp.value='';close();box.innerHTML=''}});
+ KB.forEach(function(k,i){q.push({g:'Info XXI',t:k[0],s:k[2].map(function(x){return x[0]}).join(', '),k:k[1],a:function(){dKbOpen(i)}});k[2].forEach(function(x){q.push({g:'Info XXI',t:x[0],s:k[0]+' \u00b7 '+x[1].replace(/\s+/g,' ').slice(0,80),k:x[1],a:function(){dKbOpen(i)}})})});
+ q.forEach(function(r){r.n=nq(r.t);r.h=nq(r.t+' '+r.s+' '+r.k)});return q}
+function dHit(h,qs){return qs.every(function(w){return w.length<3?(' '+h).indexOf(' '+w)>=0:h.indexOf(w)>=0})}
+function dMark(t,qs){var e=esc(t),n=nrm(t);if(n.length!==t.length)return e;var at=-1,L=0;qs.forEach(function(w){var p=n.indexOf(w);if(p>=0&&(at<0||p<at)){at=p;L=w.length}});return at<0?e:esc(t.slice(0,at))+'<mark>'+esc(t.slice(at,at+L))+'</mark>'+esc(t.slice(at+L))}
+function dExportAll(fmt,list,q,btn){var by={},b0=btn.textContent;list.forEach(function(r){(by[r.t]=by[r.t]||[]).push(r.x)});var ts=Object.keys(by),ch=Promise.resolve();btn.disabled=true;
+ ts.forEach(function(t){by[t].sort(function(a,b){return (b.createdAt||0)-(a.createdAt||0)});ch=ch.then(function(){return exportXls(t,fmt,{items:by[t],FT:'Pencarian: '+q,btn:btn})})});
+ ch.catch(function(e){toast(e.message,1)}).then(function(){btn.disabled=false;btn.textContent=b0})}
+function dSearchInit(){var inp=$('dq'),box=$('dqr'),clr=$('dqc');if(!inp||!box)return;var cat='all',lim=40,rows=[],cur=-1,qs=[],qv='',rpl=[];
+ function close(){box.classList.add('hidden');inp.setAttribute('aria-expanded','false')}
+ function snip(r){var w=qs.filter(function(x){return x.length>1}),meta=nq([r.x.id,r.x.reporter,dRepTitle(r.x)].join(' '));if(!w.length)return '';for(var j=0;j<r.L.length;j++){var a=nq(r.L[j]);if(w.some(function(x){return a.indexOf(x)>=0})&&!w.every(function(x){return meta.indexOf(x)>=0})){var s=r.L[j];return s.length>90?s.slice(0,87)+'...':s}}return ''}
+ function paint(){if(!document.body.contains(inp))return;clr.classList.toggle('hidden',!inp.value);qv=nq(inp.value);qs=qv?qv.split(' '):[];var st=RPC.busy?'Memuat data laporan...':RPC.t?(RPC.items.length+' data laporan siap dicari'+(RPC.fail?' ('+RPC.fail+' kategori gagal dimuat)':'')):'';
+  if(!qs.length){box.innerHTML='<div class="dsr-h"><span class="dsr-s">'+esc(st)+'</span></div><div class="dsr-e">Ketik untuk mencari. Contoh: <b>Syafar</b> (semua laporan oleh pelapor), nomor laporan, lokasi, <b>nama barang</b>, tanggal, atau nama film.<br><small>Hasil laporan bisa langsung diunduh sebagai Excel atau PDF.</small></div>';box.classList.remove('hidden');inp.setAttribute('aria-expanded','true');rows=[];cur=-1;return}
+  var A=[],Rr=[],cn={Laporan:0,Halaman:0,Studio:0,'Info XXI':0};
+  DQI.forEach(function(r){if(dHit(r.h,qs)){A.push({c:r.g,r:r,sc:r.n.indexOf(qv)===0?0:1});cn[r.g]++}});A.sort(function(a,b){return a.sc-b.sc});
+  RPC.items.forEach(function(r){if(dHit(r.n,qs))Rr.push(r)});cn.Laporan=Rr.length;Rr.sort(function(a,b){return (b.x.createdAt||0)-(a.x.createdAt||0)});
+  var ex=U.role!=='REPORTER'?Rr.filter(function(r){return r.t!=='film'}):[];
+  var list=cat==='all'?A.slice(0,6).map(function(a){return {k:'a',r:a.r}}).concat(Rr.map(function(r){return {k:'r',r:r}})):cat==='Laporan'?Rr.map(function(r){return {k:'r',r:r}}):A.filter(function(a){return a.c===cat}).map(function(a){return {k:'a',r:a.r}});
+  var total=list.length;rows=list.slice(0,lim);cur=rows.length?0:-1;
+  var chips=[['all','Semua',A.slice(0,6).length+Rr.length]].concat(['Laporan','Halaman','Studio','Info XXI'].map(function(c){return [c,c,cn[c]]})).filter(function(c){return c[0]==='all'||c[2]>0});
+  var h='<div class="dsr-h"><span class="dsr-s">'+(Rr.length?'<b>'+Rr.length+'</b> laporan cocok \u00b7 ':'')+esc(st)+'</span>'+(ex.length?'<span class="dsr-ex"><button type="button" class="btn sec" data-ex="xlsx">Unduh Excel ('+ex.length+')</button><button type="button" class="btn sec" data-ex="pdf">Unduh PDF ('+ex.length+')</button></span>':'')+'</div>'+
+  '<div class="dsr-tabs">'+chips.map(function(c){return '<button type="button" data-c="'+c[0]+'" class="'+(c[0]===cat?'on':'')+'">'+c[1]+' <em>'+c[2]+'</em></button>'}).join('')+'</div>';
+  h+=rows.length?'<div class="dsr-list" role="listbox">'+rows.map(function(w,i){var r=w.r;if(w.k==='a')return '<div class="dsr-i'+(i===0?' on':'')+'" role="option" data-i="'+i+'"><span class="g">'+esc(r.g)+'</span><div><b>'+dMark(r.t,qs)+'</b>'+(r.s?'<small>'+esc(r.s)+'</small>':'')+'</div></div>';
+   var x=r.x,lb=r.t==='film'?'Laporan Film':(T[r.t]?T[r.t].label.replace(/^Laporan /,''):r.t),sn=snip(r);
+   return '<div class="dsr-i rp'+(i===0?' on':'')+'" role="option" data-i="'+i+'"><span class="g">'+esc(lb)+'</span><div><b>'+dMark(String(dRepTitle(x)),qs)+'</b><small>'+(r.t==='film'?esc([x.data.status,x.data.format,x.data.reportDate].filter(Boolean).join(' \u00b7 ')):esc(x.id)+' \u00b7 '+dMark(String(x.reporter||'-'),qs)+' \u00b7 '+dt(x.createdAt))+'</small>'+(sn?'<small class="mt">Cocok: '+dMark(sn,qs)+'</small>':'')+'</div></div>'}).join('')+'</div>'+(total>lim?'<button type="button" class="dsr-more" data-more="1">Tampilkan '+Math.min(40,total-lim)+' lagi (sisa '+(total-lim)+')</button>':''):'<div class="dsr-e">'+(RPC.busy?'Memuat data laporan...':'Tidak ada hasil untuk \u201c'+esc(inp.value.trim())+'\u201d')+'</div>';
+  box.innerHTML=h;box.classList.remove('hidden');inp.setAttribute('aria-expanded','true');box.dataset.exl=ex.length;box._ex=ex}
+ DQP=paint;
+ function pick(i){var w=rows[i];if(!w)return;var r=w.r;if(w.k==='a'){close();inp.value='';clr.classList.add('hidden');box.innerHTML='';r.a()}else{close();if(r.t==='film')go('film');else detail(r.x.id,function(){go('dashboard')})}}
+ function mv(k){var it=box.querySelectorAll('.dsr-i');if(!it.length)return;cur=(cur+k+it.length)%it.length;it.forEach(function(e,j){e.classList.toggle('on',j===cur)});it[cur].scrollIntoView({block:'nearest'})}
+ inp.addEventListener('input',function(){cat='all';lim=40;paint()});
+ inp.addEventListener('focus',function(){dLoadRep();paint()});
+ inp.addEventListener('keydown',function(e){if(e.key==='ArrowDown'){e.preventDefault();mv(1)}else if(e.key==='ArrowUp'){e.preventDefault();mv(-1)}else if(e.key==='Enter'){e.preventDefault();if(cur>=0)pick(cur)}else if(e.key==='Escape'){if(inp.value){inp.value='';paint()}close()}});
+ clr.addEventListener('click',function(){inp.value='';cat='all';paint();inp.focus()});
  box.addEventListener('mousedown',function(e){e.preventDefault()});
- box.addEventListener('click',function(e){var it=e.target.closest('.dsr-i');if(it)pick(Number(it.dataset.i))});
- inp.addEventListener('blur',function(){setTimeout(close,120)})}
-function dExtra(d,fl){try{DQI=dBuildIndex(d,fl);dSlideInit();dSearchInit();
+ box.addEventListener('click',function(e){var t=e.target,b;if((b=t.closest('[data-ex]'))){dExportAll(b.dataset.ex,box._ex||[],inp.value.trim(),b);return}if((b=t.closest('[data-c]'))){cat=b.dataset.c;lim=40;paint();return}if(t.closest('[data-more]')){lim+=40;paint();return}var it=t.closest('.dsr-i');if(it)pick(Number(it.dataset.i))});
+ document.addEventListener('mousedown',function f(e){if(!document.body.contains(inp)){document.removeEventListener('mousedown',f);return}if(!e.target.closest('.dsr'))close()})}
+function dExtra(d,fl){try{DQI=dBuildIndex(d,fl);dSlideInit();dSearchInit();dLoadRep();
  if(!window.__dqk){window.__dqk=1;document.addEventListener('keydown',function(e){var t=e.target,tag=t&&t.tagName;if(e.key==='/'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&tag!=='INPUT'&&tag!=='TEXTAREA'&&tag!=='SELECT'&&!(t&&t.isContentEditable)){var q=$('dq');if(q){e.preventDefault();q.focus()}}})}
  }catch(x){if(window.console)console.warn('Tambahan dashboard gagal:',x)}}
 
@@ -718,13 +806,13 @@ function vRep(t){var s=ST[t]=ST[t]||{page:1,q:'',from:'',to:'',status:''},c=T[t]
 
 
 /* ---- unduh Excel per kategori (mengikuti filter yang sedang aktif) ---- */
-function exportXls(t,fmt){
+function exportXls(t,fmt,ov){
  var pdf=fmt==='pdf';
  if(pdf?!(window.jspdf&&window.jspdf.jsPDF):typeof XLSX==='undefined'){toast('Library '+(pdf?'PDF':'Excel')+' belum termuat. Periksa koneksi internet lalu muat ulang halaman.',1);return}
- var b=$(pdf?'rpdf':'rx'),b0=b.textContent,FT=fltTxt();b.disabled=true;b.textContent='Menyiapkan...';
- api('rep_export',{type:t,q:$('rq').value,from:$('rf').value,to:$('rt').value,status:$('rs')?$('rs').value:''}).then(function(r){
+ var b=ov?ov.btn:$(pdf?'rpdf':'rx'),b0=b.textContent,FT=ov?ov.FT:fltTxt();b.disabled=true;b.textContent='Menyiapkan...';
+ return (ov?Promise.resolve({items:ov.items}):api('rep_export',{type:t,q:$('rq').value,from:$('rf').value,to:$('rt').value,status:$('rs')?$('rs').value:''})).then(function(r){
   if(!r.items.length){toast('Tidak ada data untuk diunduh.',1);return}
-  return gatherPhotos(r.items.slice().reverse(),function(n,tt){b.textContent='Memuat foto '+n+'/'+tt+'...'}).then(function(G){b.textContent='Membuat file...';return (function(){
+  return (ov?Promise.resolve({g:{},lost:0,n:0}):gatherPhotos(r.items.slice().reverse(),function(n,tt){b.textContent='Memuat foto '+n+'/'+tt+'...'})).then(function(G){b.textContent='Membuat file...';return (function(){
   if(pdf)return pdfOut(t,r.items.slice().reverse(),FT,G.g,G.lost);
   var it=r.items.slice().reverse(),wb=XLSX.utils.book_new(),n=function(v){return v==null?'':v},W=t==='work';
   var lk=function(u,l){return u?{t:'s',v:l,l:{Target:u}}:''};
