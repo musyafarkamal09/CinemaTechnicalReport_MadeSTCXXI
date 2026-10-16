@@ -674,3 +674,6 @@ td[data-l="No. laporan"]{font-weight:700;color:var(--gt);white-space:nowrap}
 .cdx .cd.warn b{color:var(--red)}
 .hint{display:block;margin-top:4px;color:var(--mut);font-size:12px}
 @media(max-width:640px){.card.gl{flex-direction:column}.card.sf{grid-template-columns:44px minmax(0,1fr)}.card.sf .sx{width:44px;height:44px}.card.sf .macts{grid-column:1/-1}}
+
+/* Inspeksi & Patroli Studio: dokumentasi foto per studio */
+.studio-photo-block{border:1px solid var(--line,#d9dfdc);border-radius:12px;padding:12px;margin:10px 0;background:var(--card,#fff)}.studio-photo-block>label{display:block;font-weight:700;margin-bottom:8px}.studio-photo-block .pick{display:flex;flex-wrap:wrap;gap:8px}.studio-photo-block .ph{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
