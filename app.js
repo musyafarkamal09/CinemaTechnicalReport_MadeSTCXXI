@@ -1040,7 +1040,13 @@ function repForm(t,rec,after){var c=T[t],d=rec?rec.data:(t==='issue'?{priority:'
   if(c.team)h+='<label>Anggota tim yang mengerjakan</label><div id="tm">'+team.map(function(n){return '<label style="font-weight:400;margin:4px 0"><input type="checkbox" style="width:auto;min-height:0" value="'+esc(n)+'"'+((d.team||[]).indexOf(n)>=0?' checked':'')+'> '+esc(n)+'</label>'}).join('')+'</div>';
   if(c.items)h+='<label>Barang *</label><div id="its">'+(d.items||[{}]).map(irow).join('')+'</div><button type="button" class="btn sec" id="ai">+ Tambah Barang</button><p><b>Total transaksi: <span id="gt">Rp 0</span></b></p>';
   h+=GR.map(function(g){return '<div class="full studio-photo-block"><label>'+g[1]+' '+(t==='patrol'?'*':'')+' (JPG/PNG/WebP, maks '+PHMAX+' foto total)</label><div class="pick"><label class="btn sec pk" for="fi_'+g[0]+'">Pilih dari galeri</label><label class="btn sec pk" for="fc_'+g[0]+'">Ambil dengan kamera</label></div><input class="vh" type="file" id="fi_'+g[0]+'" accept="image/jpeg,image/png,image/webp" multiple><input class="vh" type="file" id="fc_'+g[0]+'" accept="image/*" capture="environment"><div class="ph" id="pv_'+g[0]+'"></div></div>'}).join('')+'<div class="merr" id="re"></div><div class="fact"><button class="btn" id="rsv">Simpan laporan</button><button type="button" class="btn sec" id="rc">Batal</button></div></form>';
-  modal(h);$('rc').onclick=closeM;
+  modal(h);
+  /* Untuk patroli, dokumentasi tiap studio ditempatkan tepat di bawah catatan studio terkait. */
+  if(t==='patrol'){
+   var patrolCards=document.querySelectorAll('#rfm .patrol-studios > .row2'),photoBlocks=document.querySelectorAll('#rfm .studio-photo-block');
+   for(var pi=0;pi<4;pi++){if(patrolCards[pi]&&photoBlocks[pi]){photoBlocks[pi].classList.add('patrol-photo-inline');patrolCards[pi].appendChild(photoBlocks[pi]);}}
+  }
+  $('rc').onclick=closeM;
   if(t==='ac'){var acs=$('acs'),cnt=function(){$('apc').textContent='Foto: '+PH.length+' / '+PHMAX};
    var pv=function(id){var el=$('pv_'+id);if(el)el.innerHTML=PH.map(function(p,i){return p.rid===id?'<div><img src="'+p.url+'"><button type="button" class="x" data-i="'+i+'">×</button></div>':''}).join('')};
    var allPv=function(){[].forEach.call(acs.children,function(el){pv(+el.dataset.r)});cnt()};
