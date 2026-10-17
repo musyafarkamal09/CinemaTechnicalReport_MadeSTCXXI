@@ -677,8 +677,9 @@ td[data-l="No. laporan"]{font-weight:700;color:var(--gt);white-space:nowrap}
 
 /* Inspeksi & Patroli Studio: dokumentasi foto per studio */
 .studio-photo-block{border:1px solid var(--line,#d9dfdc);border-radius:12px;padding:12px;margin:10px 0;background:var(--card,#fff)}.studio-photo-block>label{display:block;font-weight:700;margin-bottom:8px}.studio-photo-block .pick{display:flex;flex-wrap:wrap;gap:8px}.studio-photo-block .ph{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-/* Inspeksi & Patroli Studio: dokumentasi berada tepat di bawah catatan tiap studio */
-.patrol-studios{display:flex;flex-direction:column;gap:12px}
+
+
+/* Layout patroli studio: foto dan kamera berada di kartu studio masing-masing. */
 .patrol-studio-card{border:1px solid var(--line,#d9dfdc);border-radius:12px;padding:12px;background:var(--card,rgba(128,128,128,.04));margin:0}
 .patrol-studio-card .row2{margin:0}
 .patrol-photo-inline{margin:10px 0 0;background:transparent}
