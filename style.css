@@ -686,12 +686,3 @@ td[data-l="No. laporan"]{font-weight:700;color:var(--gt);white-space:nowrap}
 .patrol-photo-inline .pick .pk{flex:0 1 190px;justify-content:center}
 .patrol-photo-inline .ph img{width:84px;height:84px;object-fit:cover;border-radius:8px}
 @media(max-width:600px){.patrol-studio-card{padding:10px}.patrol-photo-inline .pick .pk{flex:1 1 140px}}
-
-/* ===== Fix ukuran foto dokumentasi di detail SEMUA laporan =====
-   Berlaku untuk Before/After, masalah/penyelesaian, patroli, dan foto umum.
-   Selector dibatasi ke galeri detail (#gal) agar tidak mengubah kontrol upload. */
-#gal .gg .ph:not(.acg){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px;align-items:start;width:100%}
-#gal .gg .ph:not(.acg) figure{display:flex;flex-direction:column;align-items:stretch;min-width:0;width:100%;margin:0;gap:8px}
-#gal .gg .ph:not(.acg) figure img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:contain;background:var(--bg,#f4f6f4);border:1px solid var(--bd,#d9dfdc);border-radius:12px;cursor:zoom-in}
-#gal .gg .ph:not(.acg) figure figcaption{width:100%;min-width:0;font-size:12px;line-height:1.45;text-align:center;overflow-wrap:anywhere;white-space:normal}
-@media(max-width:600px){#gal .gg .ph:not(.acg){grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px}#gal .gg .ph:not(.acg) figure img{border-radius:10px}}
