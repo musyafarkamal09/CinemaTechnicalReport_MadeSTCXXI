@@ -482,13 +482,14 @@ var doc=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
  doc.setFont('helvetica','normal');
  var noteLines=cap?doc.splitTextToSize(cap,noteW):[];
  if(noteLines.length){doc.text(noteLines,noteLeft,noteTop+10);}
- // Keterangan ditempatkan di kolom kanan, sejajar dengan awal blok NOTE.
+ // Keterangan berada di kolom kanan NOTE, tetapi seluruh teks rata kiri agar rapi.
+ var infoLeft=infoRight-infoW;
  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(0,0,0);
- doc.text('KETERANGAN :',infoRight,noteTop,{align:'right'});
+ doc.text('KETERANGAN :',infoLeft,noteTop,{align:'left'});
  doc.setFont('helvetica','normal');doc.setTextColor(0,0,0);
- doc.text('FONT HITAM ( FILM BELUM TAYANG )',infoRight,noteTop+5,{align:'right'});
- doc.setTextColor(GRN[0],GRN[1],GRN[2]);doc.text('FONT HIJAU ( FILM SEDANG TAYANG )',infoRight,noteTop+10,{align:'right'});
- doc.setTextColor(RED[0],RED[1],RED[2]);doc.text('FONT MERAH ( FILM SUDAH TAYANG )',infoRight,noteTop+15,{align:'right'});
+ doc.text('FONT HITAM ( FILM BELUM TAYANG )',infoLeft,noteTop+5,{align:'left'});
+ doc.setTextColor(GRN[0],GRN[1],GRN[2]);doc.text('FONT HIJAU ( FILM SEDANG TAYANG )',infoLeft,noteTop+10,{align:'left'});
+ doc.setTextColor(RED[0],RED[1],RED[2]);doc.text('FONT MERAH ( FILM SUDAH TAYANG )',infoLeft,noteTop+15,{align:'left'});
  doc.setTextColor(0,0,0);
  // Sisakan ruang berdasarkan kolom yang lebih tinggi agar tanda tangan tidak bertumpuk.
  var noteBlockH=Math.max(20,10+noteLines.length*4);
