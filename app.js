@@ -404,15 +404,16 @@ var FILM_STATUS=['SEDANG TAYANG','SUDAH TAYANG','BELUM TAYANG'],FILM_FORMAT=['2D
 function filmStatusNorm(v){var s=String(v||'').trim().toUpperCase().replace(/[ _-]+/g,' ');if(['SEDANG TAYANG','SEDANG MAIN','NOW SHOWING','TAYANG'].includes(s))return 'SEDANG TAYANG';if(['SUDAH TAYANG','SELESAI TAYANG','ENDED','FINISHED'].includes(s))return 'SUDAH TAYANG';if(['BELUM TAYANG','AKAN TAYANG','COMING SOON','UPCOMING'].includes(s))return 'BELUM TAYANG';return s||'STATUS BELUM DIKENALI'}
 function filmSort(l){var o={'SEDANG TAYANG':0,'SUDAH TAYANG':1,'BELUM TAYANG':2};return l.slice().map(function(f){return Object.assign({},f,{status:filmStatusNorm(f.status)})}).sort(function(a,b){return (o[a.status]??9)-(o[b.status]??9)||String(a.title||'').localeCompare(String(b.title||''),'id',{sensitivity:'base'})})}
 function vFilm(){api('filmrep_list',{q:($('filmq')||{}).value||''}).then(function(l){l=filmSort(l);var adm=U.role==='ADMIN',imp=U.role!=='REPORTER'; /* impor Excel/PDF: semua pengguna (kecuali Pelapor); tambah/edit/hapus tetap Admin */
- $('view').innerHTML='<div class="sh"><div><h2>Laporan Data Film di Server</h2><p class="muted">Data tersimpan di database website dan digunakan langsung untuk ekspor.</p></div>'+((imp||adm)?'<div class="film-actions">'+(imp?'<button class="btn sec" id="frimport">⇧ Impor Excel/PDF</button>':'')+(adm?'<button class="btn sec" id="frbulk">＋ Input Banyak Film</button><button class="btn" id="frnew">＋ Tambah Film</button>':'')+'</div>':'')+'</div><div class="bar filmbar"><input id="filmq" placeholder="Cari judul, status, format, KDM, outlet..." value="'+esc(($('filmq')||{}).value||'')+'"><input id="frdate" type="date" aria-label="Tanggal laporan"><input id="froutlet" placeholder="Nama outlet" value="SUKARAMAI TRADE CENTER XXI"><button class="btn sec" id="frpdf">Ekspor PDF</button><button class="btn sec" id="frxlsx">Ekspor Excel</button></div>'+
+ $('view').innerHTML='<div class="sh"><div><h2>Laporan Data Film di Server</h2><p class="muted">Data tersimpan di database website dan digunakan langsung untuk ekspor.</p></div>'+((imp||adm)?'<div class="film-actions">'+(imp?'<button class="btn sec" id="frimport">⇧ Impor Excel/PDF</button>':'')+(adm?'<button class="btn sec" id="frbulk">＋ Input Banyak Film</button><button class="btn" id="frnew">＋ Tambah Film</button>':'')+'</div>':'')+'</div><div class="bar filmbar"><input id="filmq" placeholder="Cari judul, status, format, KDM, outlet..." value="'+esc(($('filmq')||{}).value||'')+'"><input id="frdate" type="date" aria-label="Tanggal laporan"><input id="froutlet" placeholder="Nama outlet" value="SUKARAMAI TRADE CENTER XXI"><label class="btn sec" for="frsigfile" style="display:inline-flex;align-items:center;cursor:pointer">Unggah TTD Pembuat</label><input id="frsigfile" type="file" accept="image/png,image/jpeg,image/webp" style="display:none"><button class="btn sec" id="frpdf">Ekspor PDF</button><button class="btn sec" id="frxlsx">Ekspor Excel</button></div>'+
  (l.length?'<div class="film-groups">'+FILM_STATUS.map(function(status){var group=l.filter(function(f){return filmStatusNorm(f.status)===status});if(!group.length)return '';var cls=status==='BELUM TAYANG'?'belum':status==='SEDANG TAYANG'?'sedang':'sudah';return '<section class="film-group fg-'+cls+'"><div class="film-group-head"><span class="film-status fs-'+status.toLowerCase().replace(/ /g,'-')+'">'+esc(status)+'</span><b>'+group.length+' film</b></div><div class="scroll cards"><table class="rt film-table"><thead><tr><th>No.</th><th>Judul Film</th><th>Status</th><th>Format</th><th>KDM</th><th>Tanggal</th><th>Outlet</th><th>Pembuat / TTD</th>'+(adm?'<th>Aksi</th>':'')+'</tr></thead><tbody>'+group.map(function(f,i){return '<tr><td data-l="No">'+(i+1)+'</td><td class="sm" data-l="Judul Film"><b>'+esc(f.title)+'</b></td><td data-l="Status"><span class="film-status fs-'+f.status.toLowerCase().replace(/ /g,'-')+'">'+esc(f.status)+'</span></td><td data-l="Format">'+esc(f.format)+'</td><td data-l="KDM">'+esc(f.kdm||'TIDAK ADA')+'</td><td data-l="Tanggal">'+esc(f.reportDate)+'</td><td data-l="Outlet">'+esc(f.outlet)+'</td><td data-l="Pembuat / TTD">'+esc(f.createdBy||'-')+(f.signature?'<br><img loading="lazy" alt="Tanda tangan" src="'+esc(f.signature)+'" style="max-width:100px;max-height:34px;object-fit:contain">':'')+'</td>'+(adm?'<td class="act"><button class="btn sec" data-fedit="'+f.id+'">Edit</button><button class="btn sec" data-fdel="'+f.id+'">Hapus</button></td>':'')+'</tr>'}).join('')+'</tbody></table></div></section>'}).join('')+'</div>':'<div class="empty"><b>Belum ada data film</b>Tambahkan data untuk mulai membuat laporan.</div>')+
  '<div class="film-capacity"><b>NOTE — Sisa kapasitas penyimpanan server</b><p>Kapasitas ditambahkan pada data laporan dan dicantumkan di ekspor jika tersedia.</p></div>';
  var q=$('filmq');q.oninput=function(){var pos=this.selectionStart;vFilm();var nq=$('filmq');nq.focus();nq.setSelectionRange(pos,pos)};
  if(imp)$('frimport').onclick=filmImportForm;
  if(adm){$('frnew').onclick=function(){filmFormReport(null)};$('frbulk').onclick=filmBulkForm;document.querySelectorAll('[data-fedit]').forEach(function(b){b.onclick=function(){filmFormReport(l.filter(function(x){return x.id===b.dataset.fedit})[0])}});document.querySelectorAll('[data-fdel]').forEach(function(b){b.onclick=function(){if(confirm('Hapus data film ini?'))api('filmrep_del',{id:b.dataset.fdel}).then(vFilm).catch(function(e){toast(e.message,1)})}})}
+ window._filmExportSignature=window._filmExportSignature||'';var sigInput=$('frsigfile');if(sigInput)sigInput.onchange=function(){var file=this.files&&this.files[0];if(!file)return;if(file.size>1000000){toast('Gambar tanda tangan maksimal 1 MB.',1);this.value='';return}var reader=new FileReader();reader.onload=function(){window._filmExportSignature=reader.result;toast('Tanda tangan pembuat siap digunakan pada ekspor PDF.')};reader.readAsDataURL(file)};
  $('frpdf').onclick=function(){filmExport(l,'pdf',$('froutlet').value,$('frdate').value)};$('frxlsx').onclick=function(){filmExport(l,'xlsx',$('froutlet').value,$('frdate').value)};
  }).catch(err)}
-function filmFormReport(f){f=f||{};modal('<h3>'+(f.id?'Edit':'Tambah')+' data film</h3><form id="filmrf"><label>Judul film *</label><input id="filmrt" required maxlength="200" value="'+esc(f.title)+'"><div class="row2"><div><label>Status *</label><select id="filmrs">'+FILM_STATUS.map(function(x){return '<option'+(x===f.status?' selected':'')+'>'+x+'</option>'}).join('')+'</select></div><div><label>Format *</label><select id="filmrfmt">'+FILM_FORMAT.map(function(x){return '<option'+(x===(f.format||'2D')?' selected':'')+'>'+x+'</option>'}).join('')+'</select></div><div><label>KDM / periode / keterangan</label><input id="film-rkdm" placeholder="07-10-2026 s/d 09-11-2026 / HABIS / TIDAK ADA" value="'+esc(f.kdm)+'"></div><div><label>Tanggal laporan *</label><input id="filmrd" type="date" required value="'+esc(f.reportDate||new Date(now()+7*3600000).toISOString().slice(0,10))+'"></div><div class="full"><label>Nama outlet *</label><input id="filmro" required value="'+esc(f.outlet||'SUKARAMAI TRADE CENTER XXI')+'"></div><div class="full"><label>Nama pembuat laporan *</label><input id="filmcreator" required value="'+esc(f.createdBy||U.name)+'"></div><div class="full"><label>Tanda tangan pembuat (gambar, opsional)</label><input id="filmsigfile" type="file" accept="image/png,image/jpeg,image/webp"><div class="ph" id="filmsigpreview">'+(f.signature?'<img alt="Tanda tangan tersimpan" style="max-width:240px;max-height:90px" src="'+esc(f.signature)+'">':'')+'</div><small class="muted">Tanda tangan disimpan bersama laporan dan digunakan pada ekspor PDF jika browser mengizinkan pemuatan gambar.</small></div><div class="full"><label>NOTE — Sisa kapasitas penyimpanan server (opsional)</label><textarea id="filmrc" rows="3" placeholder="AAM LIBRARY: 9239 GB 41%&#10;STD 1 IMS 3000: 10736 GB 86%">'+esc(f.capacity)+'</textarea></div></div><div class="merr" id="filmre"></div><div class="fact"><button class="btn">Simpan</button><button type="button" class="btn sec" id="filmrcancel">Batal</button></div></form>');
+function filmFormReport(f){f=f||{};modal('<h3>'+(f.id?'Edit':'Tambah')+' data film</h3><form id="filmrf"><label>Judul film *</label><input id="filmrt" required maxlength="200" value="'+esc(f.title)+'"><div class="row2"><div><label>Status *</label><select id="filmrs">'+FILM_STATUS.map(function(x){return '<option'+(x===f.status?' selected':'')+'>'+x+'</option>'}).join('')+'</select></div><div><label>Format *</label><select id="filmrfmt">'+FILM_FORMAT.map(function(x){return '<option'+(x===(f.format||'2D')?' selected':'')+'>'+x+'</option>'}).join('')+'</select></div><div><label>KDM / periode / keterangan</label><input id="film-rkdm" placeholder="07-10-2026 s/d 09-11-2026 / HABIS / TIDAK ADA" value="'+esc(f.kdm)+'"></div><div><label>Tanggal laporan *</label><input id="filmrd" type="date" required value="'+esc(f.reportDate||new Date(now()+7*3600000).toISOString().slice(0,10))+'"></div><div class="full"><label>Nama outlet *</label><input id="filmro" required value="'+esc(f.outlet||'SUKARAMAI TRADE CENTER XXI')+'"></div><div class="full"><label>Nama pembuat laporan *</label><input id="filmcreator" required value="'+esc(f.createdBy||U.name)+'"></div><div class="full"><label>Tanda tangan pembuat (gambar, opsional)</label><input id="filmsigfile" type="file" accept="image/png,image/jpeg,image/webp"><div class="ph" id="filmsigpreview">'+(f.signature?'<img alt="Tanda tangan tersimpan" style="max-width:240px;max-height:90px" src="'+esc(f.signature)+'">':'')+'</div><small class="muted">Tanda tangan disimpan bersama laporan dan digunakan pada ekspor PDF jika browser mengizinkan pemuatan gambar.</small></div><div class="full"><label>NOTE — Sisa kapasitas penyimpanan server (opsional)</label><textarea id="filmrc" rows="3" placeholder="AAM LIBRARY : 9239 GB    33%&#10;STD 1 IMS 3000 : 10736 GB    80%&#10;STD 2 IMS 3000 : 10736 GB    84%&#10;STD 3 IMS 3000 : 10736 GB    74%&#10;STD 4 IMS 3000 : 10736 GB    75%">'+esc(f.capacity)+'</textarea></div></div><div class="merr" id="filmre"></div><div class="fact"><button class="btn">Simpan</button><button type="button" class="btn sec" id="filmrcancel">Batal</button></div></form>');
  var filmDraftForm=$('filmrf');if(!f.id){draftRestore(filmDraftForm,draftKey('film_single'));var filmDraftNote=document.createElement('div');filmDraftNote.className='info stc-draft-status';filmDraftNote.textContent='Autosave aktif untuk data teks. Tanda tangan berupa file perlu dipilih kembali jika jendela ditutup.';filmDraftForm.insertBefore(filmDraftNote,filmDraftForm.firstChild)}$('filmrcancel').onclick=closeM;var sigData=f.signature||'';$('filmsigfile').onchange=function(){var file=this.files&&this.files[0];if(!file)return;if(file.size>1000000){$('filmre').textContent='Tanda tangan maksimal 1 MB.';this.value='';return}var rd=new FileReader();rd.onload=function(){sigData=rd.result;$('filmsigpreview').innerHTML='<img alt="Pratinjau tanda tangan" style="max-width:240px;max-height:90px" src="'+sigData+'">'};rd.readAsDataURL(file)};$('filmrf').onsubmit=function(e){e.preventDefault();api('filmrep_save',{id:f.id,title:$('filmrt').value,status:$('filmrs').value,format:$('filmrfmt').value,kdm:$('film-rkdm').value,reportDate:$('filmrd').value,outlet:$('filmro').value,createdBy:$('filmcreator').value,signature:sigData,capacity:$('filmrc').value}).then(function(){draftClear(filmDraftForm);closeM();toast('Data film tersimpan.');vFilm()}).catch(function(x){$('filmre').textContent=x.message})}}
 function filmBulkForm(){
  var today=new Date(now()+7*3600000).toISOString().slice(0,10);
@@ -471,32 +472,54 @@ var doc=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   y+=rh;
  });
  doc.setTextColor(0,0,0);doc.setFont('helvetica','normal');
- // NOTE penyimpanan di kiri dan KETERANGAN di kanan, sejajar di atas tanda tangan.
+ // Dua kolom informasi profesional: NOTE kapasitas di kiri, KETERANGAN status film di kanan.
  y+=7;
- var noteLeft=X0,noteW=82,infoRight=196,infoW=82;
- doc.setFontSize(8.5);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);
- if(y>PB-48){doc.addPage('a4','portrait');y=18;}
+ var noteLeft=X0,noteW=88,infoLeft=116,infoW=80;
+ if(y>PB-55){doc.addPage('a4','portrait');y=18;}
  var noteTop=y;
- doc.text('NOTE :',noteLeft,noteTop);
- doc.text('SISA KAPASITAS PENYIMPANAN SERVER',noteLeft,noteTop+5);
- doc.setFont('helvetica','normal');
- var noteLines=cap?doc.splitTextToSize(cap,noteW):[];
- if(noteLines.length){doc.text(noteLines,noteLeft,noteTop+10);}
- // Keterangan berada di kolom kanan NOTE, tetapi seluruh teks rata kiri agar rapi.
- var infoLeft=infoRight-infoW;
+ doc.setDrawColor(205,205,205);doc.setLineWidth(.25);doc.line(noteLeft,noteTop-3,196,noteTop-3);
  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(0,0,0);
- doc.text('KETERANGAN :',infoLeft,noteTop,{align:'left'});
- doc.setFont('helvetica','normal');doc.setTextColor(0,0,0);
- doc.text('FONT HITAM ( FILM BELUM TAYANG )',infoLeft,noteTop+5,{align:'left'});
- doc.setTextColor(GRN[0],GRN[1],GRN[2]);doc.text('FONT HIJAU ( FILM SEDANG TAYANG )',infoLeft,noteTop+10,{align:'left'});
- doc.setTextColor(RED[0],RED[1],RED[2]);doc.text('FONT MERAH ( FILM SUDAH TAYANG )',infoLeft,noteTop+15,{align:'left'});
+ doc.text('NOTE',noteLeft,noteTop);
+ doc.setFontSize(7.5);doc.text('SISA KAPASITAS PENYIMPANAN SERVER',noteLeft,noteTop+5);
+ doc.setFont('helvetica','normal');doc.setFontSize(8);
+ var capText=cap||'Belum diisi';
+ // Render kapasitas sebagai baris tabel mini: nama server | kapasitas | persentase.
+ // Mendukung input contoh: "AAM LIBRARY : 9239 GB    33%".
+ var capRows=String(capText).split(/\r?\n/).map(function(line){
+  line=String(line||'').trim();if(!line)return null;
+  var m=line.match(/^(.+?)\s*:\s*(.*?)\s+(\d{1,3}\s*%)\s*$/);
+  if(m)return {name:m[1].trim(),capacity:m[2].trim(),percent:m[3].replace(/\s+/g,'')};
+  m=line.match(/^(.+?)\s{2,}(.+?)\s{2,}(\d{1,3}\s*%)\s*$/);
+  if(m)return {name:m[1].trim().replace(/\s*:\s*$/,''),capacity:m[2].trim(),percent:m[3].replace(/\s+/g,'')};
+  return {raw:line};
+ });
+ var noteY=noteTop+10, rowH=4.4, nameW=43, capacityW=22, percentW=13;
+ doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(0,0,0);
+ capRows.forEach(function(r){
+  if(!r)return;
+  if(r.raw){var wrapped=doc.splitTextToSize(r.raw,noteW);doc.text(wrapped,noteLeft,noteY);noteY+=Math.max(1,wrapped.length)*rowH;return;}
+  var names=doc.splitTextToSize(r.name,nameW), capacities=doc.splitTextToSize(r.capacity,capacityW);
+  var lines=Math.max(names.length,capacities.length,1);
+  doc.text(names,noteLeft,noteY);
+  doc.text(capacities,noteLeft+nameW+1,noteY);
+  doc.text(r.percent,noteLeft+nameW+capacityW+3,noteY);
+  noteY+=lines*rowH;
+ });
+ doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(0,0,0);
+ doc.text('KETERANGAN',infoLeft,noteTop);
+ doc.setFont('helvetica','normal');doc.setFontSize(7.7);
+ doc.setTextColor(0,0,0);doc.text(doc.splitTextToSize('FONT HITAM ( FILM BELUM TAYANG )',infoW),infoLeft,noteTop+6);
+ doc.setTextColor(GRN[0],GRN[1],GRN[2]);doc.text(doc.splitTextToSize('FONT HIJAU ( FILM SEDANG TAYANG )',infoW),infoLeft,noteTop+12);
+ doc.setTextColor(RED[0],RED[1],RED[2]);doc.text(doc.splitTextToSize('FONT MERAH ( FILM SUDAH TAYANG )',infoW),infoLeft,noteTop+18);
  doc.setTextColor(0,0,0);
- // Sisakan ruang berdasarkan kolom yang lebih tinggi agar tanda tangan tidak bertumpuk.
- var noteBlockH=Math.max(20,10+noteLines.length*4);
- y=noteTop+noteBlockH+5;
- // Pastikan ruang tanda tangan cukup; bila tidak, pindahkan seluruh blok tanda tangan ke halaman berikutnya.
+ var noteBlockH=Math.max(25,noteY-noteTop+2);
+ y=noteTop+noteBlockH+8;
  if(y>PB-35){doc.addPage('a4','portrait');y=18;}
- doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.text('Yang Membuat,',20,y);doc.text('Mengetahui,',145,y);var maker=(l[0]&&l[0].createdBy)||U.name,sig=(l[0]&&l[0].signature)||'';if(sig&&/^data:image\/(png|jpeg|webp);base64,/i.test(sig)){try{var fmt=/^data:image\/png/i.test(sig)?'PNG':/^data:image\/webp/i.test(sig)?'WEBP':'JPEG';doc.addImage(sig,fmt,20,y+3,42,15)}catch(se){}}doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text(maker,20,y+25);doc.text('FERRY FERNANDO',145,y+25);doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.text('TECHNICAL',20,y+30);doc.text('CINEMA MANAGER',145,y+30);
+ doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.text('Yang Membuat,',20,y);doc.text('Mengetahui,',145,y);
+ var maker=(l[0]&&l[0].createdBy)||U.name,sig=(l[0]&&l[0].signature)||'';
+ if(window._filmExportSignature){sig=window._filmExportSignature;}
+ if(sig&&/^data:image\/(png|jpeg|webp);base64,/i.test(sig)){try{var fmt=/^data:image\/png/i.test(sig)?'PNG':/^data:image\/webp/i.test(sig)?'WEBP':'JPEG';doc.addImage(sig,fmt,20,y+3,42,15)}catch(se){}}
+ doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text(maker,20,y+25);doc.text('FERRY FERNANDO',145,y+25);doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.text('TECHNICAL',20,y+30);doc.text('CINEMA MANAGER',145,y+30);
  doc.save('Laporan_Film_STCXXI_'+repDate.replace(/\s+/g,'_')+'.pdf')
 }
 
