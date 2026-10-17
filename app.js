@@ -53,7 +53,7 @@ function imgRun(j){var k=j.kind+':'+j.id;
  .then(function(){IMGB--;imgPump()})}
 function loadImg(img,kind,id){IMGQ.push({img:img,kind:kind,id:id,tries:0});imgPump()}
 function fillImg(i,kind){var u=i.dataset.u;if(u){i.src=u;i.dataset.ok='1';i.onerror=function(){i.onerror=null;delete i.dataset.ok;i.removeAttribute('src');loadImg(i,kind,i.dataset.p)}}else loadImg(i,kind,i.dataset.p)}
-function acGal(r){var ps=r.photos||[];if(!ps.length)return '<div id="gal"></div>';return '<div id="gal"><div class="gg gg-full"><b>Foto dokumentasi area<span>'+ps.length+'</span></b><div class="ph acg">'+ps.map(function(p){var k=esc(p.kind||'Foto');return '<figure><img loading="lazy" data-p="'+p.id+'" data-u="'+esc(p.url||'')+'" alt="Foto area '+k+'" title="Klik untuk memperbesar"><figcaption>'+k+'</figcaption></figure>'}).join('')+'</div></div></div>'}
+function acGal(r){var ps=r.photos||[];if(!ps.length)return '<div id="gal"></div>';return '<div id="gal"><div class="gg gg-full"><b>Foto dokumentasi area<span>'+ps.length+'</span></b><div class="ph acg">'+ps.map(function(p){var k=esc(p.kind||'Foto');return '<figure><img loading="lazy" data-p="'+p.id+'" data-u="'+esc(p.url||'')+'" alt="Foto area '+k+'" title="Klik untuk memperbesar"><figcaption>'+k+'<small>Diunggah: '+dt(p.capturedAt||p.uploadedAt)+'</small></figcaption></figure>'}).join('')+'</div></div></div>'}
 function lightbox(src){var d=document.createElement('div');d.style.cssText='position:fixed;inset:0;background:#000d;z-index:120;display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out';var i=document.createElement('img');i.style.cssText='max-width:100%;max-height:100%;border-radius:8px;background:#fff';i.src=src;d.appendChild(i);d.onclick=function(){d.remove()};document.body.appendChild(d)}
 
 /* ---- modal ---- */
@@ -604,7 +604,7 @@ function upTxt(b,n,t){b.textContent='Mengunggah foto '+n+'/'+t+'...';b.classList
 function upOff(b){b.classList.remove('prog');b.style.removeProperty('--p')}
 function upPh(id,phs,prog){var failed=0,sent=0;if(!phs.length)return Promise.resolve(0);
  var chunks=[],i;for(i=0;i<phs.length;i+=PHBATCH)chunks.push(phs.slice(i,i+PHBATCH));
- function send(ch,n){return api('photo_save',{id:id,photos:ch.map(function(p){return {mime:p.mime,b64:p.b64,kind:p.kind}})}).then(function(x){failed+=x.failed},function(e){if(n<2)return send(ch,n+1);failed+=ch.length})}
+ function send(ch,n){return api('photo_save',{id:id,photos:ch.map(function(p){return {mime:p.mime,b64:p.b64,kind:p.kind,capturedAt:Date.now()}})}).then(function(x){failed+=x.failed},function(e){if(n<2)return send(ch,n+1);failed+=ch.length})}
  return chunks.reduce(function(p,ch){return p.then(function(){return send(ch,0).then(function(){sent+=ch.length;if(prog)prog(sent)})})},Promise.resolve())
   .then(function(){return api('photo_done',{id:id}).catch(function(){})}).then(function(){return failed})}
 /* ---- meteran: detail, akumulasi, grafik ---- */
@@ -911,7 +911,7 @@ function detail(id,after){modal('<div class="empty">Memuat...</div>');api('rep_g
  if(t==='ac')h+='<p class="acs"><b>Status suhu laporan:</b> '+acBadges(d)+'</p><div class="scroll"><table><tr><th>Area</th><th>Merk</th><th>Suhu</th><th>Status</th><th>Catatan</th></tr>'+acRowsOf(d).map(function(a){return '<tr><td>'+esc(a.location)+'</td><td>'+esc(a.unit)+'</td><td>'+esc(a.roomTemp)+' °C</td><td>'+(tsb(acSt(a,d))||'-')+'</td><td>'+esc(a.note||'-')+'</td></tr>'}).join('')+'</table></div>'+(d.tempStd?'<small class="mnote">Standar suhu: '+esc(d.tempStd.min)+' - '+esc(d.tempStd.max)+' °C. Status dihitung otomatis oleh server.</small>':'');
  if(t==='purchase')h+='<div class="scroll"><table><tr><th>Barang</th><th>Jml</th><th>Harga</th><th>Total</th></tr>'+d.items.map(function(i){return '<tr><td>'+esc(i.name)+'<br><small>'+esc(i.category)+'</small></td><td>'+i.qty+' '+esc(i.unit)+'</td><td>'+RP.format(i.price)+'</td><td>'+RP.format(i.total)+'</td></tr>'}).join('')+'<tr><th colspan="3">Total transaksi</th><th>'+RP.format(d.total)+'</th></tr></table></div>';
  var gk=t==='issue'?[['Masalah','Foto masalah'],['Penyelesaian','Foto penyelesaian']]:t==='work'?[['Sebelum','Sebelum (Before)'],['Sesudah','Sesudah (After)'],['Foto','Lainnya']]:t==='ac'?(r.photos||[]).map(function(p){return p.kind||'Foto'}).filter(function(k,i,a){return a.indexOf(k)===i}).map(function(k){return [k,k==='Foto'?'Foto':'Foto area '+k]}):[['','Foto']];
- if(t==='ac')h+=acGal(r);else h+='<div id="gal">'+gk.map(function(g){var ps=(r.photos||[]).filter(function(p){return (t==='issue'&&(p.kind||'Masalah')===g[0])||(t!=='work'&&t!=='ac'&&t!=='issue')||(t==='ac'&&(p.kind||'Foto')===g[0])||(t==='work'&&p.kind===g[0])||(g[0]==='Foto'&&p.kind!=='Sebelum'&&p.kind!=='Sesudah')});return ps.length?'<div class="gg"><b>'+g[1]+'<span>'+ps.length+'</span></b><div class="ph">'+ps.map(function(p){return '<div><img loading="lazy" data-p="'+p.id+'" data-u="'+esc(p.url||'')+'" alt="Foto dokumentasi" title="Klik untuk memperbesar"></div>'}).join('')+'</div></div>':''}).join('')+'</div>';
+ if(t==='ac')h+=acGal(r);else h+='<div id="gal">'+gk.map(function(g){var ps=(r.photos||[]).filter(function(p){return (t==='issue'&&(p.kind||'Masalah')===g[0])||(t!=='work'&&t!=='ac'&&t!=='issue')||(t==='ac'&&(p.kind||'Foto')===g[0])||(t==='work'&&p.kind===g[0])||(g[0]==='Foto'&&p.kind!=='Sebelum'&&p.kind!=='Sesudah')});return ps.length?'<div class="gg"><b>'+g[1]+'<span>'+ps.length+'</span></b><div class="ph">'+ps.map(function(p){return '<figure><img loading="lazy" data-p="'+p.id+'" data-u="'+esc(p.url||'')+'" alt="Foto dokumentasi" title="Klik untuk memperbesar"><figcaption>Diunggah: '+dt(p.capturedAt||p.uploadedAt)+'</figcaption></figure>'}).join('')+'</div></div>':''}).join('')+'</div>';
  var np=(r.photos||[]).length;if(np)h+='<div class="zipbar"><span>'+np+' foto'+(np>10?' · ZIP dibuat otomatis':'')+'</span><button type="button" class="btn sec" id="dz">Unduh semua foto (ZIP)</button>'+(r.folder?'<a class="btn sec" href="'+esc(r.folder)+'" target="_blank" rel="noopener">Buka folder Drive</a>':'')+'</div>';
  if(t==='issue'){
   h+='<h4 style="margin:14px 0 6px">Tanggapan dan penyelesaian</h4>'+((d.responses||[]).length?d.responses.map(function(x){return '<div class="rsp"><b>'+esc(x.by)+'</b> '+stb(x.status)+'<br>'+esc(x.text).replace(/\n/g,'<br>')+'<br><small>'+dt(x.at)+'</small></div>'}).join(''):'<div class="info">Belum ada tanggapan. Teknisi yang melihat laporan ini dapat menanggapinya.</div>');
@@ -1040,13 +1040,7 @@ function repForm(t,rec,after){var c=T[t],d=rec?rec.data:(t==='issue'?{priority:'
   if(c.team)h+='<label>Anggota tim yang mengerjakan</label><div id="tm">'+team.map(function(n){return '<label style="font-weight:400;margin:4px 0"><input type="checkbox" style="width:auto;min-height:0" value="'+esc(n)+'"'+((d.team||[]).indexOf(n)>=0?' checked':'')+'> '+esc(n)+'</label>'}).join('')+'</div>';
   if(c.items)h+='<label>Barang *</label><div id="its">'+(d.items||[{}]).map(irow).join('')+'</div><button type="button" class="btn sec" id="ai">+ Tambah Barang</button><p><b>Total transaksi: <span id="gt">Rp 0</span></b></p>';
   h+=GR.map(function(g){return '<div class="full studio-photo-block"><label>'+g[1]+' '+(t==='patrol'?'*':'')+' (JPG/PNG/WebP, maks '+PHMAX+' foto total)</label><div class="pick"><label class="btn sec pk" for="fi_'+g[0]+'">Pilih dari galeri</label><label class="btn sec pk" for="fc_'+g[0]+'">Ambil dengan kamera</label></div><input class="vh" type="file" id="fi_'+g[0]+'" accept="image/jpeg,image/png,image/webp" multiple><input class="vh" type="file" id="fc_'+g[0]+'" accept="image/*" capture="environment"><div class="ph" id="pv_'+g[0]+'"></div></div>'}).join('')+'<div class="merr" id="re"></div><div class="fact"><button class="btn" id="rsv">Simpan laporan</button><button type="button" class="btn sec" id="rc">Batal</button></div></form>';
-  modal(h);
-  /* Untuk patroli, dokumentasi tiap studio ditempatkan tepat di bawah catatan studio terkait. */
-  if(t==='patrol'){
-   var patrolCards=document.querySelectorAll('#rfm .patrol-studios > .row2'),photoBlocks=document.querySelectorAll('#rfm .studio-photo-block');
-   for(var pi=0;pi<4;pi++){if(patrolCards[pi]&&photoBlocks[pi]){photoBlocks[pi].classList.add('patrol-photo-inline');patrolCards[pi].appendChild(photoBlocks[pi]);}}
-  }
-  $('rc').onclick=closeM;
+  modal(h);$('rc').onclick=closeM;
   if(t==='ac'){var acs=$('acs'),cnt=function(){$('apc').textContent='Foto: '+PH.length+' / '+PHMAX};
    var pv=function(id){var el=$('pv_'+id);if(el)el.innerHTML=PH.map(function(p,i){return p.rid===id?'<div><img src="'+p.url+'"><button type="button" class="x" data-i="'+i+'">×</button></div>':''}).join('')};
    var allPv=function(){[].forEach.call(acs.children,function(el){pv(+el.dataset.r)});cnt()};
@@ -1113,7 +1107,7 @@ function repForm(t,rec,after){var c=T[t],d=rec?rec.data:(t==='issue'?{priority:'
    api('rep_save',{type:t,id:rec&&rec.id,reqId:rid,data:data}).then(function(r){
     if(!phs.length)return r;
     var chunks=[],i;for(i=0;i<phs.length;i+=PHBATCH)chunks.push(phs.slice(i,i+PHBATCH));
-    function send(ch,n){return api('photo_save',{id:r.id,photos:ch.map(function(p){return {mime:p.mime,b64:p.b64,kind:p.kind}})}).then(function(x){failed+=x.failed},function(e){if(n<2)return send(ch,n+1);failed+=ch.length})}
+    function send(ch,n){return api('photo_save',{id:r.id,photos:ch.map(function(p){return {mime:p.mime,b64:p.b64,kind:p.kind,capturedAt:Date.now()}})}).then(function(x){failed+=x.failed},function(e){if(n<2)return send(ch,n+1);failed+=ch.length})}
     return chunks.reduce(function(p,ch){return p.then(function(){upTxt(b,sent,phs.length);return send(ch,0).then(function(){sent+=ch.length;upTxt(b,sent,phs.length)})})},Promise.resolve())
      .then(function(){b.textContent='Menyelesaikan...';return api('photo_done',{id:r.id}).catch(function(){})}).then(function(){r.photoFailed=failed;return r})
    }).then(function(r){BUSY=false;MALL={};closeM();toast(r.photoFailed?'Laporan '+r.id+' tersimpan, tetapi '+r.photoFailed+' foto gagal diunggah. Buka laporan lalu pilih Edit untuk menambah foto lagi.':'Laporan berhasil disimpan: '+r.id,!!r.photoFailed);after&&after()},

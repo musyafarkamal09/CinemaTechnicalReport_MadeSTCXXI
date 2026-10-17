@@ -677,11 +677,3 @@ td[data-l="No. laporan"]{font-weight:700;color:var(--gt);white-space:nowrap}
 
 /* Inspeksi & Patroli Studio: dokumentasi foto per studio */
 .studio-photo-block{border:1px solid var(--line,#d9dfdc);border-radius:12px;padding:12px;margin:10px 0;background:var(--card,#fff)}.studio-photo-block>label{display:block;font-weight:700;margin-bottom:8px}.studio-photo-block .pick{display:flex;flex-wrap:wrap;gap:8px}.studio-photo-block .ph{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-
-/* Inspeksi & Patroli Studio: dokumentasi tampil langsung di bawah catatan studio masing-masing */
-.patrol-studios>.row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:12px 0;padding:12px;border:1px solid var(--line,#263a31);border-radius:12px;background:rgba(255,255,255,.018)}
-.patrol-studios>.row2>.full{grid-column:1/-1}
-.patrol-studios .patrol-photo-inline{grid-column:1/-1;width:100%;margin:2px 0 0;padding:12px;border:1px solid var(--line,#263a31);border-radius:10px;background:rgba(0,0,0,.10)}
-.patrol-photo-inline .pick{display:flex;gap:8px;flex-wrap:wrap}
-.patrol-photo-inline .pick .btn{flex:1;min-width:145px}
-@media(max-width:600px){.patrol-studios>.row2{grid-template-columns:minmax(0,1fr)}.patrol-studios>.row2>.full,.patrol-studios .patrol-photo-inline{grid-column:1}.patrol-photo-inline .pick .btn{min-width:0}}
