@@ -471,15 +471,15 @@ var doc=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   y+=rh;
  });
  doc.setTextColor(0,0,0);doc.setFont('helvetica','normal');
- // Blok NOTE diratakan ke kiri mengikuti batas tabel dan memakai lebar halaman agar tidak menumpuk di sisi kanan.
+ // Blok NOTE kapasitas dirapikan di kolom kanan; tepi kanannya menjadi acuan posisi KETERANGAN.
  y+=8;if(y>228){doc.addPage('a4','portrait');y=18}
- var noteX=X0,noteW=TW;
- doc.setFontSize(8.5);doc.setFont('helvetica','bold');doc.text('NOTE :',noteX,y);doc.text('SISA KAPASITAS PENYIMPANAN SERVER',noteX,y+5);doc.setFont('helvetica','normal');
+ var noteRight=196,noteW=82,noteX=noteRight-noteW;
+ doc.setFontSize(8.5);doc.setFont('helvetica','bold');doc.text('NOTE :',noteRight,y,{align:'right'});doc.text('SISA KAPASITAS PENYIMPANAN SERVER',noteRight,y+5,{align:'right'});doc.setFont('helvetica','normal');
  var noteLines=cap?doc.splitTextToSize(cap,noteW):[];
- if(noteLines.length){var noteHeight=10+noteLines.length*4;if(y+noteHeight>PB){doc.addPage('a4','portrait');y=18;doc.setFont('helvetica','bold');doc.text('NOTE :',noteX,y);doc.text('SISA KAPASITAS PENYIMPANAN SERVER',noteX,y+5);doc.setFont('helvetica','normal');y+=0;}doc.text(noteLines,noteX,y+10);y+=Math.max(16,10+noteLines.length*4)}else{y+=10}
+ if(noteLines.length){var noteHeight=10+noteLines.length*4;if(y+noteHeight>PB){doc.addPage('a4','portrait');y=18;doc.setFont('helvetica','bold');doc.text('NOTE :',noteRight,y,{align:'right'});doc.text('SISA KAPASITAS PENYIMPANAN SERVER',noteRight,y+5,{align:'right'});doc.setFont('helvetica','normal');}doc.text(noteLines,noteRight,y+10,{align:'right'});y+=Math.max(16,10+noteLines.length*4)}else{y+=10}
  y+=8;if(y>245){doc.addPage('a4','portrait');y=18}
  doc.setFontSize(8.5);doc.text('Yang Membuat,',20,y);doc.text('Mengetahui,',145,y);var maker=(l[0]&&l[0].createdBy)||U.name,sig=(l[0]&&l[0].signature)||'';if(sig&&/^data:image\/(png|jpeg|webp);base64,/i.test(sig)){try{var fmt=/^data:image\/png/i.test(sig)?'PNG':/^data:image\/webp/i.test(sig)?'WEBP':'JPEG';doc.addImage(sig,fmt,20,y+3,42,15)}catch(se){}}doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text(maker,20,y+25);doc.text('FERRY FERNANDO',145,y+25);doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.text('TECHNICAL',20,y+30);doc.text('CINEMA MANAGER',145,y+30);
- y+=43;if(y>278){doc.addPage('a4','portrait');y=18}doc.setFontSize(8.5);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);doc.text('KETERANGAN :',112,y);doc.text('FONT HITAM ( FILM BELUM TAYANG )',112,y+5);doc.setTextColor(GRN[0],GRN[1],GRN[2]);doc.text('FONT HIJAU ( FILM SEDANG TAYANG )',112,y+10);doc.setTextColor(RED[0],RED[1],RED[2]);doc.text('FONT MERAH ( FILM SUDAH TAYANG )',112,y+15);
+ y+=43;if(y>278){doc.addPage('a4','portrait');y=18}doc.setFontSize(8.5);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);doc.text('KETERANGAN :',196,y,{align:'right'});doc.text('FONT HITAM ( FILM BELUM TAYANG )',196,y+5,{align:'right'});doc.setTextColor(GRN[0],GRN[1],GRN[2]);doc.text('FONT HIJAU ( FILM SEDANG TAYANG )',196,y+10,{align:'right'});doc.setTextColor(RED[0],RED[1],RED[2]);doc.text('FONT MERAH ( FILM SUDAH TAYANG )',196,y+15,{align:'right'});
  doc.save('Laporan_Film_STCXXI_'+repDate.replace(/\s+/g,'_')+'.pdf')
 }
 
