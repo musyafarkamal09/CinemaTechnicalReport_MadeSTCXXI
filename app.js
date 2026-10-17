@@ -471,24 +471,28 @@ var doc=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   y+=rh;
  });
  doc.setTextColor(0,0,0);doc.setFont('helvetica','normal');
- // NOTE penyimpanan dan KETERANGAN ditempatkan bersama di atas blok tanda tangan.
+ // NOTE penyimpanan di kiri dan KETERANGAN di kanan, sejajar di atas tanda tangan.
  y+=7;
- var noteRight=196,noteW=82;
+ var noteLeft=X0,noteW=82,infoRight=196,infoW=82;
  doc.setFontSize(8.5);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);
  if(y>PB-48){doc.addPage('a4','portrait');y=18;}
- doc.text('NOTE :',noteRight,y,{align:'right'});
- doc.text('SISA KAPASITAS PENYIMPANAN SERVER',noteRight,y+5,{align:'right'});
+ var noteTop=y;
+ doc.text('NOTE :',noteLeft,noteTop);
+ doc.text('SISA KAPASITAS PENYIMPANAN SERVER',noteLeft,noteTop+5);
  doc.setFont('helvetica','normal');
  var noteLines=cap?doc.splitTextToSize(cap,noteW):[];
- if(noteLines.length){doc.text(noteLines,noteRight,y+10,{align:'right'});y+=Math.max(15,10+noteLines.length*4);}else{y+=10;}
- y+=3;
- // Keterangan warna tepat di bawah NOTE dan tetap berada di atas tanda tangan.
+ if(noteLines.length){doc.text(noteLines,noteLeft,noteTop+10);}
+ // Keterangan ditempatkan di kolom kanan, sejajar dengan awal blok NOTE.
  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(0,0,0);
- doc.text('KETERANGAN :',196,y,{align:'right'});
- doc.setFont('helvetica','normal');doc.text('FONT HITAM ( FILM BELUM TAYANG )',196,y+5,{align:'right'});
- doc.setTextColor(GRN[0],GRN[1],GRN[2]);doc.text('FONT HIJAU ( FILM SEDANG TAYANG )',196,y+10,{align:'right'});
- doc.setTextColor(RED[0],RED[1],RED[2]);doc.text('FONT MERAH ( FILM SUDAH TAYANG )',196,y+15,{align:'right'});
- doc.setTextColor(0,0,0);y+=23;
+ doc.text('KETERANGAN :',infoRight,noteTop,{align:'right'});
+ doc.setFont('helvetica','normal');doc.setTextColor(0,0,0);
+ doc.text('FONT HITAM ( FILM BELUM TAYANG )',infoRight,noteTop+5,{align:'right'});
+ doc.setTextColor(GRN[0],GRN[1],GRN[2]);doc.text('FONT HIJAU ( FILM SEDANG TAYANG )',infoRight,noteTop+10,{align:'right'});
+ doc.setTextColor(RED[0],RED[1],RED[2]);doc.text('FONT MERAH ( FILM SUDAH TAYANG )',infoRight,noteTop+15,{align:'right'});
+ doc.setTextColor(0,0,0);
+ // Sisakan ruang berdasarkan kolom yang lebih tinggi agar tanda tangan tidak bertumpuk.
+ var noteBlockH=Math.max(20,10+noteLines.length*4);
+ y=noteTop+noteBlockH+5;
  // Pastikan ruang tanda tangan cukup; bila tidak, pindahkan seluruh blok tanda tangan ke halaman berikutnya.
  if(y>PB-35){doc.addPage('a4','portrait');y=18;}
  doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.text('Yang Membuat,',20,y);doc.text('Mengetahui,',145,y);var maker=(l[0]&&l[0].createdBy)||U.name,sig=(l[0]&&l[0].signature)||'';if(sig&&/^data:image\/(png|jpeg|webp);base64,/i.test(sig)){try{var fmt=/^data:image\/png/i.test(sig)?'PNG':/^data:image\/webp/i.test(sig)?'WEBP':'JPEG';doc.addImage(sig,fmt,20,y+3,42,15)}catch(se){}}doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text(maker,20,y+25);doc.text('FERRY FERNANDO',145,y+25);doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.text('TECHNICAL',20,y+30);doc.text('CINEMA MANAGER',145,y+30);
