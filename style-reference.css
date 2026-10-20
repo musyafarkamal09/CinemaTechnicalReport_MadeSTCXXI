@@ -284,7 +284,7 @@ footer,#cp{color:var(--mut);border-top:1px solid var(--bd)}
 #login .lhero .lscene{position:absolute;inset:0;width:100%;height:100%;max-width:none;aspect-ratio:auto;margin:0;border:0;border-radius:0;box-shadow:none;background:#03100d;z-index:0;filter:saturate(.95) contrast(1.05)}
 #login .lhero .lphoto{transform:scale(1.03);transition:transform 2.6s cubic-bezier(.2,.7,.2,1)}
 #login .lhero:hover .lphoto{transform:scale(1.07)}
-#login .lhero:before{z-index:1;background:linear-gradient(180deg,#03110e66 0%,#03110e10 28%,#03110e40 60%,#03110ee6 100%),linear-gradient(90deg,#03110ed0 0%,#03110e60 60%,#03110e20 100%)}
+#login .lhero:before{z-index:1;background:linear-gradient(180deg,#03110e30 0%,#03110e00 30%,#03110e00 62%,#03110ea0 100%),linear-gradient(90deg,#03110ec8 0%,#03110e70 34%,#03110e10 70%,#03110e00 100%)}
 #login .lhero>*:not(.lscene){position:relative;z-index:2}
 #login .lhero .llogo{margin-bottom:auto;height:auto;max-height:64px;width:clamp(120px,12vw,168px);object-fit:contain;object-position:left center;filter:drop-shadow(0 4px 18px #0009)}
 #login .lhero h1{font-size:clamp(46px,5.6vw,88px);line-height:.96;letter-spacing:-.025em;margin:0 0 16px;text-shadow:0 6px 40px #0008}

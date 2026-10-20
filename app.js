@@ -219,8 +219,8 @@ var STUDIOS=[['Studio 1',214],['Studio 2',154],['Studio 3',137],['Studio 4',137]
 /* Materi Teori Management XXI (dari file zip). Format: [judul, sub, [[judul kartu, isi],...]]. Hapus satu baris untuk menghilangkan satu slide. */
 var KB=[
 ['Visi & Misi','Arah dan komitmen pelayanan teknikal bioskop.',[
-['Visi','Menjadi jaringan bioskop terbaik di dunia dan kebanggaan Indonesia" (World's best cinema network, Indonesia's pride.'],
-['Misi','Kualitas Terbaik, Hiburan Terjangkau, Selalu Lebih Baik.']]],
+['Visi','Menjadi tim teknikal bioskop yang andal, profesional, responsif, dan konsisten menjaga pengalaman menonton terbaik.'],
+['Misi','Menjaga seluruh fasilitas dan peralatan beroperasi optimal melalui pemeriksaan terencana, respons cepat, standar keselamatan, dan perbaikan berkelanjutan.']]],
 ['Core Values 4P','adalah landasan yang harus kita miliki, untuk berkarir di perusahaan.',[
 ['Purpose','Bekerja harus mempunyai tujuan, juga harus punya target dalam mengembangkan karir di Cinema XXI. Harus memiliki VISI yang jelas ingin menjadi apa di Cinema XXI.'],
 ['Passion','Bekerja dengan hati dan penuh tanggung jawab. Harus memiliki kebanggaan dalam menjalankan setiap tugas, tanggung jawab dalam bekerja, sehingga akan timbul rasa memiliki terhadap Perusahaan (sense of belonging).'],
