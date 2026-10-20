@@ -229,3 +229,24 @@ footer,#cp{color:var(--mut);border-top:1px solid var(--bd)}
 :root[data-theme="light"] #login .lfoot{color:#657b6e!important;}
 :root[data-theme="light"] #login .lthm{background:#fff!important;color:#164b36!important;border-color:#c8d8ce!important;}
 @media(max-width:800px){#login .lhero{min-width:0;}#login .lbox{width:100%;max-width:470px;}#login .lpane{min-width:0;}}
+
+/* ===== Hotfix mode terang 2026-10-20 =====
+   Penyebab: :root di file ini berisi palet GELAP dan menimpa :root terang di style.css, lalu warna emas pucat
+   (--gold-hi, dirancang untuk latar gelap) ikut dipakai sebagai warna TEKS di atas kartu terang
+   (tab "Bioskop", ikon dan total kursi studio, dst.) sehingga hampir tak terbaca.
+   Perbaikan: --gold-ink = emas tua untuk teks di permukaan terang; mode gelap tetap memakai --gold-hi. */
+:root{--gold-ink:var(--gold-hi)}
+:root[data-theme=light]{--gold-ink:#7c5a14}
+.dstu-card .dstu-icon,.dstu-t strong,.dsl-tabs button.on{color:var(--gold-ink)}
+:root[data-theme=light] .dsl-tabs button.on{background:#f6ead0;border-color:#b98a36}
+:root[data-theme=light] .dstu-card .dstu-icon{background:#f6ecd2;border-color:#d9c48a}
+:root[data-theme=light] .dstu-t{background:linear-gradient(100deg,#f8eed2,#fcf7e8);border-color:#d9c48a}
+:root[data-theme=light] .dstu-c.tot .l{color:var(--gold-ink)}
+/* teks "Belum diisi" dan panah daftar terlalu pudar di latar terang */
+:root[data-theme=light] .dac-c.na span,:root[data-theme=light] .dx-ai em{color:var(--mut)}
+/* chip Monitoring AC: kondisi (Studio kosong / Tidak ada show) memakai ukuran teks biasa, bukan ukuran angka suhu */
+.dx .dac-c .dac-t.dac-cn{font-size:15px;line-height:1.3;font-weight:700;letter-spacing:0;margin-top:8px}
+/* tombol utama mode gelap: aturan lama (hijau) mengalahkan gaya emas sehingga teks gelap di atas hijau (kontras rendah) */
+:root[data-theme=dark] .btn:not(.sec){background:linear-gradient(135deg,#e0bb68,#b98a36);border:1px solid #f0d48a;color:#1c170b;box-shadow:0 5px 16px #b88a3622}
+:root[data-theme=dark] .btn:not(.sec):hover{background:linear-gradient(135deg,#e9c776,#c4953f)}
+:root[data-theme=dark] .btn:not(.sec):disabled{opacity:.55}

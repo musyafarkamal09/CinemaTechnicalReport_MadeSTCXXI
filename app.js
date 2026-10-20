@@ -374,7 +374,7 @@ function dAc(){var el=$('dac');if(!el)return;var td=jkd(0),box=el.querySelector(
   var n=0,bad=0,chips=ACD.map(function(z){var g=got[z];
    if(!g)return '<button class="dac-c na" data-go="ac"><b>'+z+'</b><span>Belum diisi</span></button>';
    var cd=acCnd(g.a),v=acV(g.a),st=acSt(g.a,g.d);if(cd||!isNaN(v))n++;var cls=st==='APPROVED'?'ok':st==='NODATA'?'na2':st==='TOO-COLD'?'cold':'bad';if(st==='TOO-WARM'||st==='TOO-COLD')bad++;
-   return '<button class="dac-c '+cls+'" data-go="ac"><b>'+z+'</b><span class="dac-t">'+(cd?esc(ACCND[g.a.cond]):(isNaN(v)?'\u2013':String(v).replace('.',',')+'\u00B0C'))+'</span><small>'+(tsl(st)||'')+'</small></button>'}).join('');
+   return '<button class="dac-c '+cls+'" data-go="ac"><b>'+z+'</b><span class="dac-t'+(cd?' dac-cn':'')+'">'+(cd?esc(ACCND[g.a.cond]):(isNaN(v)?'\u2013':String(v).replace('.',',')+'\u00B0C'))+'</span><small>'+(tsl(st)||'')+'</small></button>'}).join('');
   var ms=n===ACD.length?(bad?bad+' area di luar standar suhu.':'Semua area sudah diisi.'):n+' dari '+ACD.length+' area sudah diisi hari ini.';
   box.innerHTML='<div class="dac-s">'+ms+(n<ACD.length?' <button class="lnk" data-new="ac">Isi sekarang</button>':'')+'</div><div class="dac-g">'+chips+'</div>';
   box.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){go(b.dataset.go)}});
@@ -1106,7 +1106,7 @@ function repForm(t,rec,after){var c=T[t],d=rec?rec.data:(t==='issue'?{priority:'
    var allPv=function(){[].forEach.call(acs.children,function(el){pv(+el.dataset.r)});cnt()};
    var wire=function(el){var id=+el.dataset.r,sel=el.querySelector('.as'),oth=el.querySelector('.ao');
     sel.onchange=function(){var o=sel.value==='Lainnya';oth.style.display=o?'':'none';if(o)oth.focus()};
-    var cs=el.querySelector('.ac'),tg=el.querySelector('.acr-t'),nt=el.querySelector('.acc-n');cs.onchange=function(){var c=!!cs.value;tg.style.display=c?'none':'';nt.style.display=c?'':'none';if(c)el.querySelector('.at').value=''};
+    var cs=el.querySelector('.ac'),tg=el.querySelector('.acr-t'),nt=el.querySelector('.acc-n');var syncCond=function(){var c=!!cs.value;tg.style.display=c?'none':'';nt.style.display=c?'':'none';oth.style.display=sel.value==='Lainnya'?'':'none'};cs.onchange=function(){if(cs.value)el.querySelector('.at').value='';syncCond()};syncCond();
     el.querySelector('.rm').onclick=function(){if(acs.children.length<2){$('re').textContent='Minimal harus ada satu area.';return}PH=PH.filter(function(p){return p.rid!==id});el.remove();allPv()};
     $('pv_'+id).onclick=function(e){if(e.target.dataset.i!=null){PH.splice(+e.target.dataset.i,1);allPv()}};
     var onPick=function(){var fs=[].slice.call(this.files),bad=0,isCamera=(this.id.indexOf('gc_')===0),capturedAt=Date.now();this.value='';
@@ -1175,7 +1175,7 @@ function repForm(t,rec,after){var c=T[t],d=rec?rec.data:(t==='issue'?{priority:'
     return chunks.reduce(function(p,ch){return p.then(function(){upTxt(b,sent,phs.length);return send(ch,0).then(function(){sent+=ch.length;upTxt(b,sent,phs.length)})})},Promise.resolve())
      .then(function(){b.textContent='Menyelesaikan...';return api('photo_done',{id:r.id}).catch(function(){})}).then(function(){r.photoFailed=failed;return r})
    }).then(function(r){BUSY=false;MALL={};draftClear(draftForm);closeM();toast(r.photoFailed?'Laporan '+r.id+' tersimpan, tetapi '+r.photoFailed+' foto gagal diunggah. Buka laporan lalu pilih Edit untuk menambah foto lagi.':'Laporan berhasil disimpan: '+r.id,!!r.photoFailed);after&&after()},
-   function(x){BUSY=false;$('re').textContent=x.message+' Isian Anda tidak dihapus; silakan coba lagi.';toast('Laporan gagal disimpan: '+x.message,1);upOff(b);b.disabled=false;rc.disabled=false;b.textContent='Simpan laporan'})}};
+   function(x){BUSY=false;var oldBe=t==='ac'&&/suhu AC \(angka -10 sampai 80\)\.?$/.test(x.message||'')&&(data.rows||[]).some(function(r){return r.cond});$('re').textContent=(oldBe?'Server Apps Script Anda masih versi lama dan belum mengenali pilihan Studio kosong / Tidak ada show. Deploy ulang Code.gs terbaru sebagai versi baru, lalu coba simpan lagi. (Pesan server: '+x.message+')':x.message)+' Isian Anda tidak dihapus; silakan coba lagi.';toast('Laporan gagal disimpan: '+x.message,1);upOff(b);b.disabled=false;rc.disabled=false;b.textContent='Simpan laporan'})}};
  if(c.team)api('team').then(function(n){team=n;go2()}).catch(function(x){toast(x.message,1)});else go2()}
 
 /* ---- pengguna, audit, pengaturan ---- */
