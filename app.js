@@ -281,7 +281,7 @@ function dStudios(){
  STUDIOS.map(function(s,i){return '<article class="dstu-card" id="dstu'+i+'"><span class="dstu-icon" aria-hidden="true">▦</span><span class="nm">'+esc(s[0])+'</span><strong>'+s[1]+'</strong><small>kursi tetap</small></article>'}).join('')+
  '<div class="dstu-t"><span>Total seluruh kursi</span><strong>'+dStuTotal()+' <small>kursi · '+STUDIOS.length+' studio</small></strong></div></div></section>'}
 function dSlides(d,fl){var S=[],mx=Math.max.apply(null,STUDIOS.map(function(s){return s[1]}));
- S.push({g:'bioskop',k:'Informasi Bioskop',t:'Sukaramai Trade Center XXI',p:STUDIOS.length+' studio \u00b7 total '+dStuTotal()+' kursi',go:'#dstu',c:'a',art:seatArt(4,12,1)});
+ S.push({g:'bioskop',k:'TECHNICAL REPORT SYSTEM',t:'Bioskop yang Hebat Dimulai dari Teknologi yang Terjaga',p:'Kapasitas seluruh bioskop: '+dStuTotal()+' kursi dari '+STUDIOS.length+' studio.',go:'#dstu',c:'a',img:'img/projector-hero-4k.webp'});
  KB.forEach(function(k,i){S.push({g:'budaya',k:'Teori Management XXI',t:k[0],p:k[1],kb:i,c:i%2?'e':'f',d:12000})});
  (fl||[]).slice(0,3).forEach(function(f){S.push({g:'film',k:'Advanced Ticket Sales',t:f.title||'Film',p:'Mulai ATS '+dt(f.atsAt)+' \u00b7 tayang '+dt(f.showAt),img:f.posterUrl,go:'ats',c:'c'})});
  ((d&&d.announcements)||[]).slice(0,3).forEach(function(a){var b=String(a.body||'').replace(/\s+/g,' ').trim();S.push({g:'info',k:'Pengumuman',t:a.title||'Pengumuman',p:b.length>150?b.slice(0,147)+'...':b,go:'pengumuman',c:'d'})});
