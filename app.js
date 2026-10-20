@@ -218,6 +218,9 @@ function vDash(){Promise.all([api('dashboard'),api('ats_list')]).then(function(r
 var STUDIOS=[['Studio 1',214],['Studio 2',154],['Studio 3',137],['Studio 4',137]],DQI=[],DQP=null,RPC={t:0,busy:null,items:[],fail:0};
 /* Materi Teori Management XXI (dari file zip). Format: [judul, sub, [[judul kartu, isi],...]]. Hapus satu baris untuk menghilangkan satu slide. */
 var KB=[
+['Visi & Misi','Arah dan komitmen pelayanan teknikal bioskop.',[
+['Visi','Menjadi tim teknikal bioskop yang andal, profesional, responsif, dan konsisten menjaga pengalaman menonton terbaik.'],
+['Misi','Menjaga seluruh fasilitas dan peralatan beroperasi optimal melalui pemeriksaan terencana, respons cepat, standar keselamatan, dan perbaikan berkelanjutan.']]],
 ['Core Values 4P','adalah landasan yang harus kita miliki, untuk berkarir di perusahaan.',[
 ['Purpose','Bekerja harus mempunyai tujuan, juga harus punya target dalam mengembangkan karir di Cinema XXI. Harus memiliki VISI yang jelas ingin menjadi apa di Cinema XXI.'],
 ['Passion','Bekerja dengan hati dan penuh tanggung jawab. Harus memiliki kebanggaan dalam menjalankan setiap tugas, tanggung jawab dalam bekerja, sehingga akan timbul rasa memiliki terhadap Perusahaan (sense of belonging).'],
@@ -273,13 +276,12 @@ function seatArt(rows,cols,screen){var s=20,g=5,aisle=cols>8?Math.floor(cols/2):
  for(r=0;r<rows;r++)for(c=0;c<cols;c++){x=c*(s+g)+(aisle&&c>=aisle?aw:0);y=top+r*(s+g);o+='<use class="s" href="#stc-seat" x="'+x+'" y="'+y+'" width="'+s+'" height="'+s+'" style="animation-delay:'+(c*.11+r*.38).toFixed(2)+'s"/>'}
  return '<svg class="seatart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Ilustrasi kursi bioskop">'+(screen?'<path class="scr" d="M4 22Q'+(W/2)+' 2 '+(W-4)+' 22" fill="none"/>':'')+o+'</svg>'}
 function seatRow(n,sz,delay){var g=3,o='',c;for(c=0;c<n;c++)o+='<use class="s" href="#stc-seat" x="'+c*(sz+g)+'" y="0" width="'+sz+'" height="'+sz+'" style="animation-delay:'+(delay+c*.12).toFixed(2)+'s"/>';return '<svg class="seatrow" viewBox="0 0 '+(n*(sz+g)-g)+' '+sz+'" aria-hidden="true">'+o+'</svg>'}
-function dStudios(){var mx=Math.max.apply(null,STUDIOS.map(function(s){return s[1]}).concat([1]));
- return '<section class="dx-sec dstu" id="dstu"><div class="sh"><h2>Informasi Bioskop</h2><small class="dstu-n">Sukaramai Trade Center XXI</small></div><div class="dstu-b">'+
- STUDIOS.map(function(s,i){return '<div class="dstu-r" id="dstu'+i+'"><span class="nm">'+esc(s[0])+'</span><i><b style="width:'+Math.round(s[1]/mx*100)+'%"></b></i><strong>'+s[1]+'<small> kursi</small></strong></div>'}).join('')+
- '<div class="dstu-t"><span>Total kapasitas</span><strong>'+dStuTotal()+' <small>kursi · '+STUDIOS.length+' studio</small></strong></div></div></section>'}
+function dStudios(){
+ return '<section class="dx-sec dstu" id="dstu"><div class="sh"><h2>Kapasitas Kursi per Studio</h2><small class="dstu-n">Sukaramai Trade Center XXI</small></div><div class="dstu-b dstu-grid">'+
+ STUDIOS.map(function(s,i){return '<article class="dstu-card" id="dstu'+i+'"><span class="dstu-icon" aria-hidden="true">▦</span><span class="nm">'+esc(s[0])+'</span><strong>'+s[1]+'</strong><small>kursi tetap</small></article>'}).join('')+
+ '<div class="dstu-t"><span>Total seluruh kursi</span><strong>'+dStuTotal()+' <small>kursi · '+STUDIOS.length+' studio</small></strong></div></div></section>'}
 function dSlides(d,fl){var S=[],mx=Math.max.apply(null,STUDIOS.map(function(s){return s[1]}));
  S.push({g:'bioskop',k:'Informasi Bioskop',t:'Sukaramai Trade Center XXI',p:STUDIOS.length+' studio \u00b7 total '+dStuTotal()+' kursi',go:'#dstu',c:'a',art:seatArt(4,12,1)});
- dStuGroups().forEach(function(g,i){S.push({g:'bioskop',k:'Kapasitas studio',t:g.names.join(' & ')+' \u00b7 '+g.seat+' kursi',p:g.names.length>1?'Masing-masing '+g.seat+' kursi':(g.seat===mx?'Studio berkapasitas terbesar':'Kapasitas '+g.seat+' kursi'),go:'#dstu',c:i%2?'a':'b',art:seatArt(g.seat>200?4:3,g.seat>200?12:g.seat>150?10:9,1)})});
  KB.forEach(function(k,i){S.push({g:'budaya',k:'Teori Management XXI',t:k[0],p:k[1],kb:i,c:i%2?'e':'f',d:12000})});
  (fl||[]).slice(0,3).forEach(function(f){S.push({g:'film',k:'Advanced Ticket Sales',t:f.title||'Film',p:'Mulai ATS '+dt(f.atsAt)+' \u00b7 tayang '+dt(f.showAt),img:f.posterUrl,go:'ats',c:'c'})});
  ((d&&d.announcements)||[]).slice(0,3).forEach(function(a){var b=String(a.body||'').replace(/\s+/g,' ').trim();S.push({g:'info',k:'Pengumuman',t:a.title||'Pengumuman',p:b.length>150?b.slice(0,147)+'...':b,go:'pengumuman',c:'d'})});
