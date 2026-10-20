@@ -181,3 +181,127 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--rd-gold)
   .dx-q{min-height:72px}
   .dx-k .n{font-size:30px!important}
 }
+
+/* =========================================================
+   DASHBOARD — rapikan tata letak, tidak ada area kosong
+   Kolom kanan (Pengumuman) mengisi tinggi baris agar sejajar dengan kolom kiri (ATS).
+   ========================================================= */
+.dx-cols{align-items:stretch!important}
+.dx-col{display:flex;flex-direction:column}
+.dx-col>.dx-ann{flex:1 1 auto;display:flex;flex-direction:column}
+.dx-ann>.card.ann,.dx-ann>.ann{flex:1 1 0;display:flex;flex-direction:column;justify-content:flex-start}
+.dx-ann>.card.ann+.card.ann,.dx-ann>.ann+.ann{margin-top:12px}
+.dx-ann .card.ann .ann-body,.dx-ann .card.ann p{flex:1}
+/* Tidak ada kartu pengumuman: tampilkan kotak kosong dengan tinggi tetap agar tidak terlihat bolong */
+.dx-ann>.empty{flex:1 1 auto;display:flex;flex-direction:column;justify-content:flex-start}
+
+/* =========================================================
+   Profil & keluar pindah ke sudut kanan atas (header)
+   ========================================================= */
+#main>header{display:flex;align-items:center;gap:12px}
+#main>header .clk{margin-left:auto}
+.uhead{display:flex;align-items:center;gap:10px;margin-left:14px;padding:6px 8px 6px 6px;border-radius:999px;background:var(--card);border:1px solid var(--bd);box-shadow:var(--rd-shadow)}
+.uhead .sme{display:flex;align-items:center;gap:10px;border:0!important;padding:0!important;background:none!important}
+.uhead .sme>div{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15}
+.uhead .sme b{color:var(--ink)!important;font-size:13px;font-weight:750}
+.uhead .sme .badge{margin-top:3px;font-size:10px;padding:2px 8px}
+.uhead .av{width:34px;height:34px;font-size:14px;flex:0 0 auto}
+.uhead .sact{display:flex;gap:6px;padding-left:6px;border-left:1px solid var(--bd)}
+.uhead .sact .btn{min-height:34px;height:34px;padding:0 12px;font-size:12.5px;border-radius:999px}
+@media(max-width:900px){
+  .uhead{margin-left:6px}
+  .uhead .sme>div{display:none}
+}
+@media(max-width:600px){
+  #main>header{flex-wrap:wrap}
+  .uhead{margin-left:auto;padding:4px}
+  .uhead .sact{border-left:0;padding-left:0}
+  .uhead .sact .btn{padding:0 10px}
+}
+
+/* =========================================================
+   Dashboard: kartu kapasitas mengisi tinggi baris (tanpa celah kosong)
+   ========================================================= */
+.dx-col>.dstu{flex:1 1 auto;display:flex;flex-direction:column}
+.dx-col>.dstu>.dstu-b{flex:1 1 auto}
+.dx-col>.dstu .dstu-grid{align-content:start}
+.dx-col>.dchart{flex:1 1 auto;display:flex;flex-direction:column}
+.dx-col>.dchart>.dc-b{flex:1 1 auto;display:flex;flex-direction:column}
+.dx-col>.dchart .dc-k+*,.dx-col>.dchart>.dc-b>*:last-child{flex:1 1 auto}
+
+/* Reset sisa gaya sidebar pada .sfoot setelah dipindah ke header */
+.uhead .sfoot{position:static!important;width:auto!important;height:auto!important;margin:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:10px}
+.uhead .sact .btn.sec{color:var(--txt)!important;background:var(--card2)!important;border:1px solid var(--bd2)!important;box-shadow:none!important}
+.uhead .sact .btn.sec:hover{background:var(--g100)!important}
+.uhead .sme b,.uhead .sme span{color:var(--ink)!important}
+.uhead .sme .badge{color:var(--gold-ink)!important;background:#c89b4822!important}
+
+/* =========================================================
+   MOBILE / SMARTPHONE — tata letak responsif
+   ========================================================= */
+@media(max-width:800px){
+  html,body{overflow-x:hidden;max-width:100%}
+  #main{min-width:0;width:100%}
+  #main>header{height:auto;min-height:0;padding:10px 12px;display:grid;grid-template-columns:auto 1fr auto;gap:8px 10px;align-items:center}
+  #main>header .hs{min-width:0}
+  #main>header .hs small,#clock,#conn,#main>header .hlogo{display:none!important}
+  #main>header #ptitle{font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+  #main>header .clk{margin-left:0;display:flex;gap:6px}
+  #main>header .clk .bell{display:inline-flex}
+  .uhead{grid-column:1/-1;margin:0;width:100%;justify-content:space-between;border-radius:16px;padding:6px 8px}
+  .uhead .sact .btn{flex:1}
+  .uhead .sact{flex:1;justify-content:flex-end}
+  #phero{padding:0 12px}
+  #view{padding:12px 12px calc(var(--tabh,64px) + 28px)}
+  .dx{gap:14px}
+  .dx-top h1,.dx-top h2,#main h1{font-size:26px}
+  .dsl-s.sc-a .dsl-x>b{font-size:clamp(24px,7vw,32px)!important}
+  .dsl-s{min-height:280px!important}
+  .dsl-tabs{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;margin-inline:-2px;padding-bottom:2px}
+  .dsl-tabs button{flex:0 0 auto;white-space:nowrap}
+  .dx-qg,.dx-qa{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px}
+  .dx-q{min-height:76px}
+  .dx-kpi{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px}
+  .dx-k{min-height:112px;padding:14px!important}
+  .dx-k .n{font-size:30px!important}
+  .dx-cols{grid-template-columns:minmax(0,1fr)!important;gap:14px}
+  .dx-sec{padding:14px}
+  .dstu-b.dstu-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #dac .dac-b,.dac-b{overflow-x:auto}
+  .card,.dq,.ds-big,.ds-list{padding:14px}
+  #tabs{box-shadow:0 -8px 24px -12px #0b382033}
+}
+@media(max-width:480px){
+  .dx-qg,.dx-qa{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .dx-k .l{font-size:12px}
+  .uhead .sme{display:none}
+}
+
+/* ATS: poster tetap tampil di semua ukuran layar; info & hitung mundur tersusun rapi */
+.tk-poster,.tk .poster img,.ats-card img.tk-poster{display:block;object-fit:cover;flex:0 0 auto}
+@media(max-width:800px){
+  .tk{display:grid!important;grid-template-columns:92px minmax(0,1fr)!important;gap:12px 14px;align-items:start}
+  .tk .tk-poster{width:92px;height:138px;border-radius:12px;grid-row:1}
+  .tk .tl{grid-column:2;grid-row:1;min-width:0}
+  .tk .tr{grid-column:1/-1;grid-row:2}
+  .tk .tl b{font-size:17px;line-height:1.2}
+  .tk .tm{grid-template-columns:1fr 1fr;gap:8px}
+}
+@media(max-width:480px){
+  .tk{grid-template-columns:76px minmax(0,1fr)!important;gap:10px 12px}
+  .tk .tk-poster{width:76px;height:114px}
+}
+.dx-ann .card.ann .pri{align-self:flex-start}
+
+/* LOGIN di HP: satu kolom, foto proyektor di atas, form di bawah */
+@media(max-width:800px){
+  #login{grid-template-columns:minmax(0,1fr)!important;min-height:100dvh;height:auto}
+  #login .lhero{min-width:0;width:100%;min-height:auto!important;padding:22px 20px 24px!important;justify-content:flex-start}
+  #login .lhero .lscene{position:relative!important;inset:auto!important;width:100%!important;max-width:none!important;height:auto!important;aspect-ratio:16/9!important;margin:0 0 18px!important;border-radius:16px!important}
+  #login .lhero .llogo{width:110px;max-height:44px;margin-bottom:14px}
+  #login .lhero h1{font-size:clamp(36px,11vw,50px)!important}
+  #login .lhero .tag{display:block!important;font-size:13px;max-width:none}
+  #login .lpane{min-width:0!important;width:100%;padding:18px 16px 32px!important;justify-content:center;align-items:flex-start}
+  #login .lbox{width:100%!important;max-width:460px;margin:0 auto;padding:24px 20px!important;border-radius:20px!important}
+  #login .lbox h2{font-size:28px!important}
+}

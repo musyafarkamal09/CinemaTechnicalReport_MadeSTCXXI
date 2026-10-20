@@ -218,54 +218,13 @@ function vDash(){Promise.all([api('dashboard'),api('ats_list')]).then(function(r
 var STUDIOS=[['Studio 1',214],['Studio 2',154],['Studio 3',137],['Studio 4',137]],DQI=[],DQP=null,RPC={t:0,busy:null,items:[],fail:0};
 /* Materi Teori Management XXI (dari file zip). Format: [judul, sub, [[judul kartu, isi],...]]. Hapus satu baris untuk menghilangkan satu slide. */
 var KB=[
-['Visi & Misi','Arah dan komitmen pelayanan teknikal bioskop.',[
-['Visi','Menjadi tim teknikal bioskop yang andal, profesional, responsif, dan konsisten menjaga pengalaman menonton terbaik.'],
-['Misi','Menjaga seluruh fasilitas dan peralatan beroperasi optimal melalui pemeriksaan terencana, respons cepat, standar keselamatan, dan perbaikan berkelanjutan.']]],
-['Core Values 4P','adalah landasan yang harus kita miliki, untuk berkarir di perusahaan.',[
-['Purpose','Bekerja harus mempunyai tujuan, juga harus punya target dalam mengembangkan karir di Cinema XXI. Harus memiliki VISI yang jelas ingin menjadi apa di Cinema XXI.'],
-['Passion','Bekerja dengan hati dan penuh tanggung jawab. Harus memiliki kebanggaan dalam menjalankan setiap tugas, tanggung jawab dalam bekerja, sehingga akan timbul rasa memiliki terhadap Perusahaan (sense of belonging).'],
-['Professional','Bekerja dengan target yang terperinci, serta data juga angka yang jelas. Data sebagai bahan acuan untuk analisa, serta tolak ukur kemajuan atau perkembangan Cinema XXI atau perkembangan karir seseorang.'],
-['Pray','Selalu berdoa dalam setiap pekerjaan yang baik, serta membahagiakan sesama manusia sebagai makhluk ciptaan Tuhan, tanpa membeda-bedakan Agama, Ras, Warna Kulit, dan juga status sosial. PRAY yang tertinggi adalah selalu bersyukur. Sharing pengetahuan yang kita miliki kepada tim (Develop People to be a Better Person).']]],
-['Core Values 5C','Lima nilai yang harus dimiliki seorang leader.',[
-['Character (karakter)','Personality yang baik, seorang leader itu harus: Mau Capek, Mau Pusing, Mau Ribet.'],
-['Capability (kemampuan)','Adaptif, pintar, punya strategi atau planning, memiliki akhlak, integritas yang baik, serta kemampuan Handling People dan membina dan mengayomi SDM.'],
-['Cooperative (koperatif)','Mampu bekerja sama dan menjalin komunikasi dengan baik, sehingga dapat membentuk Super Team, bukan Superman.'],
-['Clean (bersih)','Peduli dengan kebersihan: area kerja, cara kerja dan kepribadian yang bersih, jujur dan memiliki Integritas Tinggi.'],
-['Care (peduli)','Peduli kepada Perusahaan, Customer dan Team. Mengapa harus peduli? Karena kita berada di bisnis pelayanan.']]],
-['Core Values 3E','Engagement, Entertain, Education.',[
-['Engagement','Membangun hubungan dan interaksi jangka panjang antara Cinema XXI dengan customer dan sesama rekan kerja. Berkomunikasi dan bertemu bisa menjadi kunci untuk membangun hubungan.\nMenumbuhkan rasa percaya, respect di dalam team, sehingga jika ada masalah bisa bercerita dan menjadi solusi untuk team kita.'],
-['Entertain','Menghibur customer yang datang ke tempat kita, memberikan senyuman, mengajak berbicara, agar bisa lebih dekat dengan kita.\nSebagai Leader, ketika target yang diberikan dapat dicapai oleh team kita, maka adanya REWARD yang diberikan. Bisa memberikan solusi kepada team.'],
-['Education','Mengedukasi customer kita seperti menginformasikan dapat membeli tiket melalui m.tix, dan bisa membeli makanan minuman melalui m.tix atau m.food.\nMengedukasi team kita, bisa belajar dari siapapun, mencukupi atau mengisi kebutuhan dan kekurangan team kita.']]],
-['One Team, One Spirit, One Goal, One Knowledge','Empat kesatuan yang menyatukan seluruh tim.',[
-['One Team','yaitu satu team yang mempunyai satu tujuan yang sama.'],
-['One Spirit','yaitu satu semangat di dalam team, dengan saling memberikan dukungan, saling mengisi satu sama lain dengan ilmu atau melakukan transfer knowledge.'],
-['One Goal','yaitu mempunyai GOAL serta menyamakan VISI di dalam satu team, agar dapat tercipta GOAL.'],
-['One Knowledge','yaitu pengetahuan yang sama yang WAJIB dimiliki oleh para leader, mulai dari Sabang sampai Merauke.']]],
-['Love, Care, Share','Tiga sikap dasar dalam bekerja.',[
-['Love','CINTA, kita harus mencintai semua yang ada di sekitar tempat kita bekerja, serta mencintai perusahaan dengan sepenuh hati, agar kita bisa terus maju dan berkembang.'],
-['Care','PEDULI, setelah kita mencintai yang ada di sekeliling kita, maka pasti kita akan peduli dengan pekerjaan, perusahaan kita, tempat kita bekerja demi mencapai kemajuan dan perkembangan perusahaan kita bersama-sama.'],
-['Share','BERBAGI, kita harus bisa berbagi kepada semua yang ada di sekitar kita, agar dapat mengembangkan diri, orang di sekitar kita dan perusahaan sesuai dengan salah satu MISI kita yaitu Developing People to be a Better Person.']]],
-['PCDCA 10 Keys','Plan, Coordination, Do, Check, Action: sepuluh kunci dalam lima tahap.',[
-['Plan','1. Planning Work Ahead (rencana kerja)\n2. Setting Individual Goal & Standard (menetapkan sasaran PIC dan standarnya)'],
-['Coordination','3. Setting Team Goal and Standard (menetapkan goal untuk team / PIC)\n4. Monitoring Team Performance (memonitoring performa kinerja team)'],
-['Do','5. Performing Coordinated Activities (action, roll out dan perform)\n6. Monitoring Individual Performance'],
-['Check','7. Reviewing Individual Performance\n8. Rewarding Individual Performance'],
-['Action','9. Solving Problem\n10. Training Team Member']]],
-['Meritokrasi','Sistem management yang sangat menjunjung tinggi NILAI & PRESTASI.',[
-['Prinsip','Para leader dipilih berdasarkan prestasi dan kemampuannya. Bukan senioritas, suku, agama, gender, maupun nepotisme.'],
-['Promosi jabatan','Pemilihan dan pengangkatan jabatan dipilih pada orang yang memiliki 5C yang terbaik untuk bisa menduduki suatu jabatan, menjadi seorang Leader di tiap posisi.'],
-['Penghargaan','MERITOKRASI juga akan memberikan penghargaan kepada mereka yang berprestasi. Menemukan orang yang memiliki kemampuan unggul, yang management berikan melalui Training, Test Approval dari atasannya dengan objective, tanpa SARA, SENIORITAS dan NEPOTISME.']]],
-['3 Pilar yang Harus Dibahagiakan','Tiga pihak kunci sukses dalam dunia F&B.',[
-['Pimpinan Perusahaan','Tempat kita bekerja dan yang sudah memberikan kita pekerjaan dan kesempatan untuk berkarir mencari rejeki. Setiap staff harus mempunyai VISI untuk bisa menyenangkan Pimpinan & Perusahaannya, sehingga hal ini bisa memotivasi setiap orang untuk melakukan yang terbaik.'],
-['Customer','CUSTOMER yang sudah bersedia datang ke tempat kita dan memberikan INCOME bagi perusahaan. Yang dimaksud dengan membahagiakan customer adalah bagaimana kita memberikan pelayanan yang prima, makanan minuman yang berkualitas, sehingga dapat diterima oleh customer dengan cepat dan tepat.\nKita harus menjalankan 3 pilar kunci sukses dalam Dunia F&B.'],
-['Anggota Team','Orang-orang yang selalu bekerja sama dengan kita di outlet untuk menjalankan operasional dan memberikan pelayanan terbaik kepada setiap customer yang datang ke Cinema XXI. Membuat team kita bangga karena mereka tumbuh, berkembang dan menjadi pintar karena adanya kita, sehingga membuat TEAM menjadi lebih baik dan memiliki kesejahteraan yang lebih baik.']]],
 ['Visi & Misi Cinema XXI','PT. Nusantara Sejahtera Raya Tbk',[
-['Visi','Menjadi jejaring bioskop terbaik di dunia, dan menjadi kebanggaan Indonesia.'],
+['Visi','Menjadi salah satu jaringan bioskop terbaik di dunia, sekaligus menjadi kebanggaan Indonesia.'],
 ['Misi: Uncompromised Quality','Menghadirkan kualitas terbaik.'],
 ['Misi: Affordable Entertainment','Menghadirkan hiburan yang terjangkau.'],
 ['Misi: Forever Better','Selalu lebih baik.']]]
 ];
-var DGRP={bioskop:'Bioskop',budaya:'Teori Management XXI',film:'Film ATS',info:'Pengumuman'};
+var DGRP={bioskop:'Bioskop',budaya:'Visi & Misi',film:'Film ATS',info:'Pengumuman'};
 function nrm(s){return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
 function nq(s){return nrm(s).replace(/[^a-z0-9]+/g,' ').trim()}
 function dStuTotal(){return STUDIOS.reduce(function(a,s){return a+s[1]},0)}
