@@ -152,25 +152,3 @@ button.dx-k:hover{border-color:var(--gold);transform:translateY(-1px)}
 .dx .dac-c.ok,.dx .dac-c.bad,.dx .dac-c.cold,.dx .dac-c.na2{box-shadow:none}
 @media(max-width:900px){.dx-cols{grid-template-columns:1fr}}
 @media(max-width:620px){.dx .dac-b{padding:16px}.dx .dac-g{grid-template-columns:1fr 1fr;gap:12px}.dx .dac-c{padding:14px 16px;min-height:112px}.dx .dac-c .dac-t{font-size:24px}.dsl-s{min-height:200px}}
-
-/* slide film (ATS): poster lebih kecil dan proporsional, slide lebih padat */
-.dsl-s.sc-c{min-height:150px;padding:16px 56px 40px;gap:14px}
-.dsl-s.sc-c .dsl-im{height:88px;width:62px;border-radius:8px}
-.dsl-s.sc-c .dsl-x>b{font-size:clamp(17px,2.2vw,22px)}
-.dsl-s.sc-c .dsl-x>span{font-size:13px;-webkit-line-clamp:1}
-@media(max-width:560px){.dsl-s.sc-c{min-height:124px;padding:14px 18px 38px;gap:10px}.dsl-s.sc-c .dsl-im{height:68px;width:48px;border-radius:6px}.dsl-s.sc-c .dsl-x>b{font-size:16px}}
-
-/* materi Teori Management XXI: isi kartu tampil penuh (tidak disembunyikan/dipotong), slide menyesuaikan isi */
-.dsl-s.kb{min-height:0;padding-bottom:46px}
-.dsl-s.kb .kbc p{display:block;-webkit-line-clamp:unset;-webkit-box-orient:unset;overflow:visible;white-space:normal;margin-top:4px}
-.dsl-s.kb .kbc{padding:10px 12px}
-@media(max-width:700px){
- .dsl-s.kb .kbg{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
- .dsl-s.kb .kbc{border-radius:12px;padding:9px 12px}
- .dsl-s.kb .kbc p{font-size:12.5px}
-}
-
-/* poster film di slide ATS: ukuran sama dengan poster di kartu ATS dashboard (76x112 / HP 68x100) agar lebih terlihat */
-.dsl-s.sc-c{min-height:170px;padding-top:18px;padding-bottom:40px}
-.dsl-s.sc-c .dsl-im{height:112px;width:76px;border-radius:9px;box-shadow:0 5px 16px #0002}
-@media(max-width:560px){.dsl-s.sc-c{min-height:150px;padding-top:14px}.dsl-s.sc-c .dsl-im{height:100px;width:68px}}
