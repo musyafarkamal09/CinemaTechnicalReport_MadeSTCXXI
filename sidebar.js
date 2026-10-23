@@ -1,6 +1,7 @@
 /* STC XXI Technical Report - tambahan sidebar (hanya perilaku tampilan).
    1) Kolom "Cari menu" menyaring daftar menu.
    2) Tombol Profil / Keluar di bawah sidebar meneruskan klik ke tombol aslinya (di header).
+   3) Slide Film ATS di dashboard: poster yang sama dipakai sebagai latar kabur agar tidak ada ruang kosong.
    Tidak mengubah fungsi app.js. Hapus file ini + 1 baris <script> untuk menonaktifkan. */
 (function(){
 'use strict';
@@ -36,4 +37,21 @@ if(inp){
 document.querySelectorAll('#side [data-proxy]').forEach(function(b){
  b.addEventListener('click',function(){var t=document.getElementById(b.getAttribute('data-proxy'));if(t)t.click()});
 });
+
+/* latar poster kabur pada slide Film ATS (slide dirender ulang tiap buka dashboard) */
+var raf=0;
+function posterBg(){
+ raf=0;
+ document.querySelectorAll('.dsl-s.sc-c .dsl-im').forEach(function(im){
+  var s=im.parentNode;
+  if(!s||s.querySelector('.dsl-bg'))return;
+  var bg=document.createElement('img');bg.className='dsl-bg';bg.alt='';bg.setAttribute('aria-hidden','true');
+  bg.src=im.getAttribute('src');s.insertBefore(bg,s.firstChild);
+ });
+}
+var view=document.getElementById('view');
+if(view&&window.MutationObserver){
+ new MutationObserver(function(){if(!raf)raf=requestAnimationFrame(posterBg)}).observe(view,{childList:true,subtree:true});
+ posterBg();
+}
 })();
