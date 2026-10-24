@@ -1,98 +1,116 @@
 /* =====================================================================
-   STC XXI Technical Report - SIDEBAR "kartu melayang" (gaya video CSS Sidebar)
-   Dimuat PALING AKHIR (setelah style-redesign.css). Hanya mengubah tampilan sidebar.
-   Warna mengikuti tema hijau zamrud + emas dari style-redesign.css.
-   Profil & tombol Keluar tetap di header (sesuai desain terbaru).
-   Desktop : rail ikon ramping, melebar saat kursor di atasnya / fokus keyboard.
-   Mobile  : tetap laci (drawer) yang dibuka dari tombol Menu.
-   Menonaktifkan: hapus file ini, sidebar.js, dan 2 baris terkait di index.html
-   (lalu kembalikan blok <aside> lama).
+   STC XXI Technical Report - SIDEBAR + TATA LETAK (dimuat PALING AKHIR)
+   Sidebar kini panel tetap di samping konten (tidak melayang / tidak menimpa halaman),
+   nama website selalu tampak, menu bergrup rapi, aksi akun di bagian bawah.
+   Tombol menu di header (sbtn) tetap dapat menyembunyikan / menampilkan sidebar.
+   Hanya mengubah tampilan: tidak ada fungsi app.js yang diubah.
    ===================================================================== */
 
-/* ---------- BASE (= keadaan melebar; dipakai juga di mobile) ---------- */
-#side{background:transparent!important;border-right:0!important;box-shadow:none!important}
-#side .scard{display:flex;flex-direction:column;min-height:0;height:100%;overflow:hidden;white-space:nowrap;
- background:linear-gradient(180deg,#0b2a20 0%,#06160f 60%,#041009 100%);color:#bdd4c8}
+:root{--sbw:272px;--pad:clamp(14px,2.2vw,32px);--cmax:1480px}
 
-/* brand */
-#side .brand{flex:none;align-items:flex-start;gap:6px;padding:16px 11px 12px;border-bottom:1px solid #ffffff10}
-#side .brand img{width:92px;height:auto;transition:width .28s cubic-bezier(.2,.8,.2,1)}
-#side .brand b,#side .brand small{display:block;max-height:44px;opacity:1;overflow:hidden;transition:opacity .2s .08s,max-height .28s}
+/* ---------- PANEL SIDEBAR ---------- */
+#side{background:linear-gradient(180deg,#0b2a20 0%,#06160f 58%,#041009 100%)!important;border-right:1px solid #c89b4833!important;box-shadow:none!important}
+#side .scard{display:flex;flex-direction:column;min-height:0;height:100%;overflow:hidden;white-space:nowrap;background:none;color:#bdd4c8;border:0;border-radius:0;box-shadow:none}
+
+/* merek: logo + nama website (selalu tampak) */
+#side .brand{flex:none;display:flex;flex-direction:row;align-items:center;gap:12px;padding:18px 16px 14px;border-bottom:1px solid #ffffff12}
+#side .brand img{flex:none;width:58px;height:auto}
+#side .brand>div{min-width:0;padding-left:12px;border-left:1px solid #c89b4866}
+#side .brand b,#side .brand small{display:block;overflow:hidden;text-overflow:ellipsis;max-height:none;opacity:1}
+#side .brand b{font:700 16px/1.25 "Bodoni Moda",Georgia,serif;color:#f7f3e8;letter-spacing:0}
+#side .brand small{white-space:normal;margin-top:3px;font-size:11.5px;line-height:1.3;color:#9fbdb1;letter-spacing:.01em}
 
 /* pencarian menu */
-#side .ssrch{flex:none;display:flex;align-items:center;gap:10px;height:38px;margin:12px 11px 4px;padding:0 10px;overflow:hidden;
- border:1px solid #ffffff1a;border-radius:12px;background:#ffffff0d;color:#8fb3a2;cursor:text;transition:border-color .16s,background .16s}
+#side .ssrch{flex:none;display:flex;align-items:center;gap:10px;height:40px;margin:14px 14px 6px;padding:0 12px;overflow:hidden;
+ border:1px solid #ffffff1c;border-radius:11px;background:#ffffff0d;color:#8fb3a2;cursor:text;transition:border-color .16s,background .16s}
 #side .ssrch:focus-within{border-color:#c89b48;background:#ffffff14}
-#side .ssrch .ic{flex:none;width:18px;height:18px}
-#side .ssrch input{flex:1;min-width:0;width:100%;height:100%;border:0;outline:0;background:transparent;box-shadow:none;
- padding:0;margin:0;min-height:0;font:inherit;font-size:13.5px;color:#e6f1ea;-webkit-appearance:none;appearance:none}
+#side .ssrch .ic{flex:none;width:17px;height:17px}
+#side .ssrch input{flex:1;min-width:0;width:100%;height:100%;border:0;outline:0;background:transparent;box-shadow:none;padding:0;margin:0;min-height:0;font:inherit;font-size:13.5px;color:#e6f1ea;-webkit-appearance:none;appearance:none}
 #side .ssrch input::placeholder{color:#7f9c90}
 #side .ssrch input::-webkit-search-cancel-button{display:none}
 
 /* daftar menu */
-#side #nav{flex:1;min-height:0;padding:12px 11px 22px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;
- -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 12px,#000 calc(100% - 22px),transparent 100%);
- mask-image:linear-gradient(to bottom,transparent 0,#000 12px,#000 calc(100% - 22px),transparent 100%)}
-#side #nav::-webkit-scrollbar{display:none}
-#side #nav a{width:100%;gap:14px;min-height:38px;margin:0 0 2px;padding:0 9px;border:1px solid transparent;border-radius:12px;
- font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;transition:background .16s,color .16s,border-color .16s}
-#side #nav a i{flex:none;width:20px;justify-content:center}
-#side #nav a:hover{padding-left:9px}
-#side #nav a.on::before{display:none}
+#side #nav{flex:1;min-height:0;padding:6px 14px 14px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#ffffff22 transparent}
+#side #nav::-webkit-scrollbar{width:6px}
+#side #nav::-webkit-scrollbar-thumb{background:#ffffff22;border-radius:6px}
+#side .ng{margin:12px 6px 4px;padding:0;height:auto;background:none;overflow:hidden;font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:none;color:#c9a55a;opacity:.95}
+#side .ng:first-child{margin-top:8px}
+#side #nav a{display:flex;align-items:center;width:100%;gap:12px;min-height:39px;margin:0 0 1px;padding:0 12px;border:1px solid transparent;border-radius:11px;
+ font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#bdd4c8;position:relative;transition:background .16s,color .16s,border-color .16s}
+#side #nav a i{flex:none;display:flex;width:20px;justify-content:center;opacity:.85}
+#side #nav a:hover{padding-left:12px;background:#ffffff10!important;color:#fff!important}
+#side #nav a.on,#side #nav a.on:hover{background:linear-gradient(90deg,#c89b4829,#ffffff0b)!important;border-color:#c89b4833;color:#fff!important;font-weight:650}
+#side #nav a.on::before{display:block;content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:#e1c476}
+#side #nav a.on i{color:#edcb7a;opacity:1}
 #side #nav a.soon{opacity:.6}
-#side .ng{margin:12px 10px 3px;padding:0;font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
- color:#c9a55a;opacity:.95;height:auto;background:none;overflow:hidden;transition:font-size .2s,margin .28s}
 
 /* aksi bawah: tema, profil, keluar */
-#side .sbot{flex:none;display:flex;flex-wrap:wrap;gap:6px;padding:10px 11px 12px;border-top:1px solid #ffffff12}
-#side .sbot .thm,#side .sbot .sbb{flex:1 1 36px;width:auto;min-width:36px;height:36px;min-height:36px;padding:0;margin:0;cursor:pointer;
- display:inline-flex;align-items:center;justify-content:center;border-radius:12px;
- background:#ffffff0d;color:#cfe3d8;border:1px solid #ffffff1f;box-shadow:none;transition:background .16s,border-color .16s,color .16s}
-#side .sbot .thm[data-thm]{color:#cfe3d8}
+#side .sbot{flex:none;display:flex;gap:8px;padding:12px 14px 16px;border-top:1px solid #ffffff14;background:#00000026}
+#side .sbot .thm,#side .sbot .sbb{height:40px;min-height:40px;margin:0;padding:0 12px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+ border-radius:11px;background:#ffffff0d;color:#cfe3d8;border:1px solid #ffffff1f;box-shadow:none;font:600 13px/1 inherit;font-family:inherit;transition:background .16s,border-color .16s,color .16s}
+#side .sbot .thm{flex:none;width:40px;padding:0}
+#side .sbot .sbb{flex:1 1 0;min-width:0}
+#side .sbot .sbb::after{content:attr(aria-label)}
+#side .sbot .sbb .ic{width:17px;height:17px;flex:none}
 #side .sbot .thm:hover,#side .sbot .sbb:hover{background:#ffffff1c;color:#f2d98e;border-color:#c89b48}
 #side .sbot [data-proxy=logout]:hover{color:#ff8a80;border-color:#ff8a80}
-
-/* sisa .sfoot (jika skrip pemindah ke header gagal) jangan merusak kartu */
 #side .scard>.sfoot{flex:none}
 
-/* ---------- DESKTOP: rail ikon -> melebar saat hover / fokus keyboard ---------- */
+/* ---------- DESKTOP: sidebar tetap di samping, konten bergeser ---------- */
 @media(min-width:821px){
- #side{width:92px;z-index:40;overflow:visible}
- #side .scard{position:absolute;left:14px;top:14px;bottom:14px;width:264px;height:auto;
-  border:1px solid #ffffff14;border-radius:26px;
-  box-shadow:0 24px 60px -18px #000c,0 2px 6px #0004;
-  transition:width .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s}
- body.sb-off #side{margin-left:-92px}
-
- /* keadaan ramping (kursor tidak di atas sidebar) */
- #side:not(:hover):not(:has(:focus-visible)) .scard{width:64px;box-shadow:0 10px 30px -14px #0009}
- #side:not(:hover):not(:has(:focus-visible)) .brand img{width:40px}
- #side:not(:hover):not(:has(:focus-visible)) .brand b,
- #side:not(:hover):not(:has(:focus-visible)) .brand small{max-height:0;opacity:0;transition:opacity .1s,max-height .28s}
- #side:not(:hover):not(:has(:focus-visible)) .ng{font-size:0;height:1px;margin:7px 14px;background:#ffffff14}
- #side:not(:hover):not(:has(:focus-visible)) .sbot [data-proxy=prof]{display:none}
+ #side{position:sticky;top:0;width:var(--sbw);height:100vh;height:100dvh;flex:none;z-index:40;overflow:visible}
+ body.sb-off #side{margin-left:calc(var(--sbw) * -1);visibility:hidden}
+ /* nama pengguna cukup di header; Profil & Keluar ada di sidebar */
+ .uhead .sact{display:none!important}
 }
 
-/* ---------- MOBILE: laci penuh, tampil melebar ---------- */
+/* ---------- MOBILE: laci ---------- */
 @media(max-width:820px){
  #side{background:linear-gradient(180deg,#0b2a20 0%,#06160f 60%,#041009 100%)!important;border-radius:0 24px 24px 0;overflow:hidden}
- #side .scard{border:0;border-radius:0;box-shadow:none;background:transparent;padding-top:env(safe-area-inset-top,0px)}
+ #side .scard{padding-top:env(safe-area-inset-top,0px)}
 }
+@media(prefers-reduced-motion:reduce){#side,#side #nav a,#side .ssrch{transition:none!important}}
 
-@media(prefers-reduced-motion:reduce){
- #side .scard,#side .brand img,#side .ng,#side .brand b,#side .brand small{transition:none!important}
-}
-
-/* ---------- NAMA WEBSITE selalu tampak di header ---------- */
+/* ---------- HEADER: tulisan di atas judul halaman dihapus ---------- */
+.hsite{display:none!important}
 #main>header{height:auto;min-height:64px}
-.hsite{display:block;margin:0 0 2px;font-size:10.5px;font-weight:800;letter-spacing:.18em;line-height:1.2;text-transform:uppercase;
- color:var(--gold-lo);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hsite i{font-style:normal;opacity:.6;margin:0 .7em}
-.hsite .hsh{display:none}
-@media(max-width:560px){
- .hsite{font-size:9.5px;letter-spacing:.12em}
- .hsite .hl{display:none}.hsite .hsh{display:inline}
-}
+
+/* ---------- TATA LETAK: semua blok selebar & sejajar, tanpa ruang kosong ---------- */
+#view{width:100%;max-width:var(--cmax);margin-inline:auto;box-sizing:border-box;padding-inline:var(--pad)}
+#phero{width:calc(100% - 2*var(--pad));max-width:calc(var(--cmax) - 2*var(--pad));margin-inline:auto;box-sizing:border-box}
+body.sb-off #view{max-width:var(--cmax)}
+body.sb-off #phero{max-width:calc(var(--cmax) - 2*var(--pad))}
+#view>*{max-width:100%}
+#view .card:not(.film):not(.ann){max-width:none}
+#view .scroll.cards,#view #rl{width:100%}
+
+/* bilah pencarian / filter: item mengisi baris penuh, baris yang terbungkus tetap terisi */
+#view .bar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;width:100%;box-sizing:border-box}
+#view .bar>input[type=search],#view .bar>input:not([type]){flex:2 1 260px;min-width:0}
+#view .bar>.fl{flex:1 1 160px;min-width:0}
+#view .bar>select{flex:1 1 170px;min-width:0}
+#view .bar>.btn{flex:1 1 130px;white-space:nowrap}
+#view .bar>#ua,#view .bar>#ra{flex:1 1 150px}
+
+/* dashboard: kolom yang kosong (mis. grafik tanpa data) tidak menyisakan ruang */
+.dx-cols{grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr))!important}
+.dx-col:empty{display:none}
+.dx-col>section{flex:1 1 auto}
+
+/* grid auto-fill meninggalkan kolom kosong di kanan -> auto-fit membuat kartu memenuhi baris */
+.grid:has(>.card.film){grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr))!important}
+#gl{grid-template-columns:repeat(auto-fit,minmax(min(100%,500px),1fr))}
+.dx .dac-g{grid-template-columns:repeat(auto-fit,minmax(88px,1fr))}
+
+/* bilah filter Laporan Film: baris yang terbungkus tetap terisi penuh */
+.filmbar{display:flex;flex-wrap:wrap;align-items:flex-end}
+.filmbar>*{flex:1 1 170px;min-width:0}
+.filmbar #filmq,.filmbar #froutlet{flex:2 1 240px}
+
+/* Advance Ticket Sales: kartu film selebar halaman */
+#view .grid>.card.film{max-width:none;display:grid;grid-template-columns:minmax(120px,170px) minmax(0,1fr);gap:18px;align-items:start}
+#view .grid>.card.film>img{width:100%;height:auto;aspect-ratio:2/3;object-fit:cover;border-radius:12px}
+@media(max-width:520px){#view .grid>.card.film{grid-template-columns:110px minmax(0,1fr);gap:12px}}
 
 /* ---------- SLIDE ATS: poster besar, tanpa ruang kosong ---------- */
 .dsl-s.sc-c{isolation:isolate;background:#04140f}
@@ -113,3 +131,17 @@
  .dsl-s.sc-c .dsl-im{top:18px;right:auto;left:50%;transform:translateX(-50%);height:min(calc(100% - 190px),300px)}
  .dsl-s.sc-c::before{background:linear-gradient(180deg,#03120f55 0%,#03120fa0 45%,#03120ff2 100%)}
 }
+
+/* ---------- FORM DAILY MONITORING AC: Merk | Kondisi | Suhu sejajar, tanpa ruang kosong ---------- */
+@media(min-width:700px){
+ .acr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px;align-items:end}
+ .acr>*{grid-column:1/-1;margin:0}
+ .acr>.acr-g{display:block;grid-column:auto}
+ .acr>.acc-l{grid-column:auto;margin:0}
+ .acr>.acr-g.acr-t{grid-column:auto}
+ .acr:has(>.acr-t[style*="display:none"])>.acc-l{grid-column:span 2}
+ .acr>.acr-g label,.acr>.acc-l{display:block}
+ .acr select,.acr input:not([type=file]){width:100%;box-sizing:border-box}
+}
+.acr .pick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.acr .pick>*{width:100%;box-sizing:border-box}
