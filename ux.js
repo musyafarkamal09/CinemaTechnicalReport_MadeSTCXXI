@@ -230,4 +230,26 @@ if(!reduce&&'IntersectionObserver' in window){
  }
  window.addEventListener('appinstalled',function(){deferred=null;if(btn)btn.hidden=true});
 })();
+
+/* ---------- 7) NOTIFIKASI: panel tepat di bawah lonceng (PC/tablet), Esc untuk menutup ---------- */
+(function(){
+ var bell=document.getElementById('bell'),np=document.getElementById('npanel');
+ if(!bell||!np)return;
+ var W=380,GAP=10,EDGE=12;
+ function place(){
+  if(window.innerWidth<=800){np.style.top='';np.style.left='';np.style.right='';return}
+  var r=bell.getBoundingClientRect();
+  var right=Math.max(EDGE,window.innerWidth-r.right);
+  if(window.innerWidth-right-W<EDGE)right=window.innerWidth-W-EDGE; /* jangan keluar layar kiri */
+  np.style.top=Math.round(r.bottom+GAP)+'px';
+  np.style.right=Math.round(right)+'px';
+  np.style.left='auto';
+ }
+ bell.addEventListener('click',function(){requestAnimationFrame(place)});
+ window.addEventListener('resize',function(){if(!np.classList.contains('hidden'))place()});
+ window.addEventListener('scroll',function(){if(!np.classList.contains('hidden'))place()},{passive:true});
+ document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&!np.classList.contains('hidden')){bell.click();bell.focus()}
+ });
+})();
 })();
