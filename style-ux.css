@@ -97,3 +97,5 @@ img,video,canvas,svg{max-width:100%}
  #side .sb-close{display:inline-flex;position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:9px}
 }
 #tabs a[aria-current=page]{color:var(--gt)}
+
+#main>header .uhead .sact .btn[hidden]{display:none!important}
