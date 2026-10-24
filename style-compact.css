@@ -305,3 +305,16 @@ html.pwa .tk { padding: 9px 0 !important; }
 html.pwa .dstu-card { min-height: 0 !important; padding: 10px !important; }
 html.pwa .dac-c { min-height: 0 !important; padding: 8px 10px !important; }
 html.pwa .dx-k .dx-ki { margin-bottom: 6px !important; }
+
+/* Menu samping (drawer) di mode terpasang: tombol tutup tidak menimpa judul */
+html.pwa #side .brand { position: relative; padding-right: 60px !important; }
+html.pwa #side .sb-close { position: absolute !important; top: 50%; right: 12px; transform: translateY(-50%); width: 40px !important; height: 40px !important; border-radius: 12px !important; }
+html.pwa #side .brand img { width: 46px !important; }
+html.pwa #side .brand b { font-size: 15px !important; }
+
+/* Bilah navigasi bawah: beri ruang minimum 16px di bawah label agar tidak tertutup strip navigasi sistem */
+html.pwa #tabs {
+  height: calc(60px + max(env(safe-area-inset-bottom, 0px), 16px)) !important;
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px) !important;
+}
+html.pwa #tabs a { padding-bottom: 4px !important; }
