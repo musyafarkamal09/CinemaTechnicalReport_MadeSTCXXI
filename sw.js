@@ -3,7 +3,7 @@
    selalu mendapat versi terbaru; cache hanya dipakai saat jaringan tidak tersedia.
    Permintaan API (Apps Script, lintas domain, POST) tidak pernah disentuh.
    Saat merilis versi baru, naikkan CACHE_VERSION. */
-var CACHE_VERSION = 'stc-tr-v1';
+var CACHE_VERSION = 'stc-tr-v3';
 var CACHE = CACHE_VERSION;
 var SHELL = [
   './',

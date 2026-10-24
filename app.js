@@ -104,7 +104,7 @@ IC.ac='<svg class="ic" viewBox="0 0 24 24"><path d="M12 2v20M4.9 7l14.2 10M4.9 1
 IC.water='<svg class="ic" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>';
 IC.film='<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg>';
 IC.menu='<svg class="ic" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
-var GRP={dashboard:'Utama',work:'Laporan',glosarium:'Referensi',pengguna:'Administrasi'},TB=[['dashboard','Beranda'],['work','Pekerjaan'],['meter','Meteran'],['purchase','Pembelian']],TBR=[['dashboard','Beranda'],['issue','Perbaikan'],['pengumuman','Pengumuman']],RO=['dashboard','pengumuman','ats','issue','glosarium'];var GSR=['dashboard','pengumuman','ats','patrol'];
+var GRP={dashboard:'Utama',work:'Laporan',glosarium:'Referensi',pengguna:'Administrasi'},TB=[['dashboard','Beranda'],['work','Pekerjaan'],['meter','Meteran']],TBR=[['dashboard','Beranda'],['issue','Perbaikan'],['pengumuman','Pengumuman']],RO=['dashboard','pengumuman','ats','issue','glosarium'];var GSR=['dashboard','pengumuman','ats','patrol'];
 function tbFor(){return U&&(U.role==='REPORTER'||U.role==='GUIDE_SECURITY')?TBR:TB}
 function can(m){if(m[2])return U.role==='ADMIN';if(U.role==='REPORTER')return RO.indexOf(m[0])>=0;if(U.role==='GUIDE_SECURITY')return GSR.indexOf(m[0])>=0;return true}
 /* ---- shell ---- */
@@ -115,7 +115,7 @@ var SOON_MSG='Fitur belum tersedia';
 function soonOf(p){return MENU.filter(function(m){return m[0]===p&&m[3]})[0]}
 function go(p){if(soonOf(p)){toast(SOON_MSG);return}if(!MENU.some(function(m){return m[0]===p&&can(m)}))p='dashboard';CUR=p;LS.setItem('stc_p',p);var oldFab=document.querySelector('body>#ra');if(oldFab)oldFab.remove();var adm=U.role==='ADMIN',h='';
  MENU.forEach(function(m){if(!can(m))return;if(GRP[m[0]])h+='<div class="ng">'+GRP[m[0]]+'</div>';h+='<a data-p="'+m[0]+'" class="'+(p===m[0]?'on':'')+(m[3]?' soon':'')+'"'+(m[3]?' aria-disabled="true"':'')+'><i>'+(IC[m[0]]||'')+'</i>'+m[1]+(m[3]?'<span class="sb">'+m[3]+'</span>':'')+'</a>'});
- var TBX=tbFor();if(U.role==='GUIDE_SECURITY')TBX=[['dashboard','Beranda'],['pengumuman','Pengumuman'],['ats','ATS'],['patrol','Patroli']];$('tabs').innerHTML=TBX.map(function(m){return '<a data-p="'+m[0]+'" class="'+(p===m[0]?'on':'')+'"><i>'+IC[m[0]]+'</i>'+m[1]+'</a>'}).join('')+'<a data-p="menu" class="'+(TBX.some(function(m){return m[0]===p})?'':'on')+'"><i>'+IC.menu+'</i>Menu</a>';
+ var TBX=tbFor();var TABI=function(k,l,ic,on){return '<a data-p="'+k+'" class="'+(on?'on':'')+'" aria-label="'+l+'"><i>'+ic+'</i>'+l+'</a>'};$('tabs').innerHTML=TABI('dashboard','Beranda',IC.dashboard,p==='dashboard')+'<a data-p="search" aria-label="Cari laporan"><i>'+IC.search+'</i>Cari</a>'+NEWBTN+TABI('ats','ATS',IC.ats,p==='ats')+TABI('menu','Menu',IC.menu,p!=='dashboard'&&p!=='ats');
  $('nav').innerHTML=h;pHero(p);$('ptitle').textContent=(MENU.filter(function(m){return m[0]===p})[0]||[0,''])[1];$('psub').textContent=DESC[p]||'';closeMenu();var v=$('view');v.innerHTML='<div class="sk" style="height:30px;width:240px"></div><div class="sk" style="height:110px;margin-top:18px"></div><div class="sk" style="height:280px;margin-top:18px"></div>';
  ({dashboard:vDash,pengumuman:vAnn,ats:vAts,film:vFilm,patrol:function(){vRep('patrol')},work:function(){vRep('work')},issue:function(){vRep('issue')},meter:function(){vRep('meter')},ac:function(){vRep('ac')},purchase:function(){vRep('purchase')},glosarium:vGloss,penyimpanan:vStore,pengguna:vUsers,audit:vAudit,pengaturan:vSet})[p]()}
 
@@ -131,7 +131,42 @@ function pHero(p){var el=$('phero');if(!el)return;if(p==='dashboard'){el.classNa
 function closeMenu(){$('side').classList.remove('open');$('shade').classList.remove('open')}
 $('nav').onclick=function(e){var a=e.target.closest('a');if(a)go(a.dataset.p)};
 function openMenu(){$('side').classList.add('open');$('shade').classList.add('open')}
-$('tabs').onclick=function(e){var a=e.target.closest('a');if(!a)return;if(a.dataset.p==='menu')openMenu();else go(a.dataset.p)};$('shade').onclick=closeMenu;
+/* ---- tombol "+" (buat laporan) di tengah navigasi bawah ---- */
+IC.search='<svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
+var NEWBTN='<a data-p="new" class="pl" role="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Buat laporan baru"><span class="pl-b" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><em>Buat</em></a>';
+var NEWI={ADMIN:[['work','Laporan Pekerjaan','Pekerjaan teknis harian'],['meter','Laporan Meteran','Listrik & air'],['ac','Daily Monitoring AC','Suhu & kondisi AC'],['purchase','Laporan Pembelian','Barang & jasa'],['issue','Perlu Diperbaiki','Lapor kerusakan'],['patrol','Inspeksi & Patroli Studio','Catat hasil patroli']],
+ REPORTER:[['issue','Perlu Diperbaiki','Lapor kerusakan']],
+ GUIDE_SECURITY:[['patrol','Inspeksi & Patroli Studio','Catat hasil patroli']]};
+var NEWCREATE={work:'ra',meter:'ra',ac:'ra',purchase:'ra',issue:'ra',patrol:'ra'};
+function newOpen(){
+ var list=(NEWI[U.role]||NEWI.ADMIN).filter(function(x){var m=MENU.filter(function(q){return q[0]===x[0]})[0];return m&&can(m)});
+ $('nsgrid').innerHTML=list.map(function(x,i){return '<button type="button" class="nsi" style="--i:'+i+'" data-p="'+x[0]+'"><i>'+(IC[x[0]]||'')+'</i><b>'+esc(x[1])+'</b><small>'+esc(x[2])+'</small></button>'}).join('');
+ $('nsheet').classList.remove('hidden');
+ var t=document.querySelector('#tabs a[data-p=new]');if(t)t.setAttribute('aria-expanded','true');
+ }
+function newClose(){
+ $('nsheet').classList.add('hidden');
+ var t=document.querySelector('#tabs a[data-p=new]');if(t)t.setAttribute('aria-expanded','false');
+}
+function toggleNew(){if($('nsheet').classList.contains('hidden'))newOpen();else newClose()}
+function newCreate(p){
+ newClose();go(p);
+ var id=NEWCREATE[p]||'ra',tries=0;
+ (function wait(){var b=document.getElementById(id);if(b){b.click();return}if(++tries<50)setTimeout(wait,100)})();
+}
+/* ---- tombol Cari: fokus ke kolom pencarian laporan di Beranda ---- */
+var dqRepOnly=false; /* true = dibuka dari tombol Cari di navigasi: hanya cari laporan, bukan kategori */
+function focusDq(){var i=document.getElementById('dq');if(!i)return false;try{i.focus({preventScroll:true});i.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){}return true}
+function searchTab(){
+ dqRepOnly=true;
+ if(CUR==='dashboard'){focusDq();return}
+ go('dashboard');var t=0;
+ (function w(){if(focusDq()||++t>60)return;setTimeout(w,100)})();
+}
+$('nsgrid').onclick=function(e){var b=e.target.closest('button[data-p]');if(b)newCreate(b.dataset.p)};
+$('nshade').onclick=newClose;
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('nsheet').classList.contains('hidden'))newClose()});
+$('tabs').onclick=function(e){var a=e.target.closest('a');if(!a)return;if(a.dataset.p!=='new')newClose();if(a.dataset.p==='menu')openMenu();else if(a.dataset.p==='new')toggleNew();else if(a.dataset.p==='search')searchTab();else go(a.dataset.p)};$('shade').onclick=closeMenu;
 $('tp').onclick=function(){var p=$('p'),s=p.type==='password';p.type=s?'text':'password';this.textContent=s?'Sembunyikan':'Tampilkan'};
 /* ---- tema terang/gelap ---- */
 function applyTheme(t){document.documentElement.setAttribute('data-theme',t);try{localStorage.setItem('stc_theme',t)}catch(e){}
@@ -246,7 +281,7 @@ function dSlides(d,fl){var S=[],mx=Math.max.apply(null,STUDIOS.map(function(s){r
  ((d&&d.announcements)||[]).slice(0,3).forEach(function(a){var b=String(a.body||'').replace(/\s+/g,' ').trim();S.push({g:'info',k:'Pengumuman',t:a.title||'Pengumuman',p:b.length>150?b.slice(0,147)+'...':b,go:'pengumuman',c:'d'})});
  return S}
 function dKbOpen(i){var k=KB[i];if(!k)return;modal('<h3>'+esc(k[0])+'<span class="mid">Teori Management XXI</span></h3><p class="kbs">'+esc(k[1])+'</p>'+k[2].map(function(x){return '<div class="kbm"><b>'+esc(x[0])+'</b><p>'+esc(x[1])+'</p></div>'}).join(''))}
-function dSearch(){return '<section class="dsx" role="search"><label class="dsr-lb" for="dq">Pencarian</label><div class="dsr-b"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="dq" type="search" autocomplete="off" spellcheck="false" placeholder="Cari laporan, pelapor, lokasi, barang, studio, materi XXI..." aria-controls="dqr" aria-expanded="false"><button type="button" id="dqc" class="dsr-x hidden" aria-label="Hapus pencarian">&times;</button><kbd aria-hidden="true">/</kbd></div><div id="dqr" class="dsr-r hidden"></div></section>'}
+function dSearch(){return '<section class="dsx" role="search"><label class="dsr-lb" for="dq">Pencarian</label><div class="dsr-b"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="dq" type="search" autocomplete="off" spellcheck="false" placeholder="Cari laporan tertentu (nomor, judul, pelapor, lokasi)..." aria-controls="dqr" aria-expanded="false"><button type="button" id="dqc" class="dsr-x hidden" aria-label="Hapus pencarian">&times;</button><kbd aria-hidden="true">/</kbd></div><div id="dqr" class="dsr-r hidden"></div></section>'}
 function dSlider(d,fl){var S=dSlides(d,fl),n=S.length,gs=[],cnt={};S.forEach(function(s){if(!cnt[s.g]){cnt[s.g]=0;gs.push(s.g)}cnt[s.g]++});
  return '<section class="dx-sec dsl-w"><div class="sh"><h2>Sorotan</h2></div><div class="dsl" id="dsl" aria-roledescription="carousel" aria-label="Sorotan"><div class="dsl-v"><div class="dsl-t" id="dslt">'+
  S.map(function(s,i){var kb=s.kb!=null,body=kb?'<div class="kbg">'+KB[s.kb][2].map(function(x){return '<div class="kbc"><em>'+esc(x[0])+'</em><p>'+esc(x[1])+'</p></div>'}).join('')+'</div><small class="kbh">Ketuk untuk membaca selengkapnya</small>':'<span>'+esc(s.p)+'</span>';
@@ -294,17 +329,17 @@ function dExportAll(fmt,list,q,btn){var by={},b0=btn.textContent;list.forEach(fu
  ts.forEach(function(t){by[t].sort(function(a,b){return (b.createdAt||0)-(a.createdAt||0)});ch=ch.then(function(){return exportXls(t,fmt,{items:by[t],FT:'Pencarian: '+q,btn:btn})})});
  ch.catch(function(e){toast(e.message,1)}).then(function(){btn.disabled=false;btn.textContent=b0})}
 function dSearchInit(){var inp=$('dq'),box=$('dqr'),clr=$('dqc');if(!inp||!box)return;var cat='all',lim=40,rows=[],cur=-1,qs=[],qv='',rpl=[];
- function close(){box.classList.add('hidden');inp.setAttribute('aria-expanded','false')}
+ function close(){box.classList.add('hidden');inp.setAttribute('aria-expanded','false');dqRepOnly=false}
  function snip(r){var w=qs.filter(function(x){return x.length>1}),meta=nq([r.x.id,r.x.reporter,dRepTitle(r.x)].join(' '));if(!w.length)return '';for(var j=0;j<r.L.length;j++){var a=nq(r.L[j]);if(w.some(function(x){return a.indexOf(x)>=0})&&!w.every(function(x){return meta.indexOf(x)>=0})){var s=r.L[j];return s.length>90?s.slice(0,87)+'...':s}}return ''}
  function paint(){if(!document.body.contains(inp))return;clr.classList.toggle('hidden',!inp.value);qv=nq(inp.value);qs=qv?qv.split(' '):[];var st=RPC.busy?'Memuat data laporan...':(RPC.t&&RPC.fail?RPC.fail+' kategori gagal dimuat':'');
   if(!qs.length){box.innerHTML='';box.classList.add('hidden');inp.setAttribute('aria-expanded','false');rows=[];cur=-1;return}
-  var A=[],Rr=[],cn={Laporan:0,Halaman:0,Studio:0,'Info XXI':0};
-  DQI.forEach(function(r){if(dHit(r.h,qs)){A.push({c:r.g,r:r,sc:r.n.indexOf(qv)===0?0:1});cn[r.g]++}});A.sort(function(a,b){return a.sc-b.sc});
+  var rep=dqRepOnly,A=[],Rr=[],cn={Laporan:0,Halaman:0,Studio:0,'Info XXI':0};
+  if(!rep)DQI.forEach(function(r){if(dHit(r.h,qs)){A.push({c:r.g,r:r,sc:r.n.indexOf(qv)===0?0:1});cn[r.g]++}});A.sort(function(a,b){return a.sc-b.sc});
   RPC.items.forEach(function(r){if(dHit(r.n,qs))Rr.push(r)});cn.Laporan=Rr.length;Rr.sort(function(a,b){return (b.x.createdAt||0)-(a.x.createdAt||0)});
   var ex=U.role!=='REPORTER'?Rr.filter(function(r){return r.t!=='film'}):[];
   var list=cat==='all'?A.slice(0,6).map(function(a){return {k:'a',r:a.r}}).concat(Rr.map(function(r){return {k:'r',r:r}})):cat==='Laporan'?Rr.map(function(r){return {k:'r',r:r}}):A.filter(function(a){return a.c===cat}).map(function(a){return {k:'a',r:a.r}});
   var total=list.length;rows=list.slice(0,lim);cur=rows.length?0:-1;
-  var chips=[['all','Semua',A.slice(0,6).length+Rr.length]].concat(['Laporan','Halaman','Studio','Info XXI'].map(function(c){return [c,c,cn[c]]})).filter(function(c){return c[0]==='all'||c[2]>0});
+  var chips=[['all','Semua',A.slice(0,6).length+Rr.length]].concat(rep?[]:['Laporan','Halaman','Studio','Info XXI'].map(function(c){return [c,c,cn[c]]})).filter(function(c){return c[0]==='all'||c[2]>0});
   var h='<div class="dsr-h"><span class="dsr-s">'+(Rr.length?'<b>'+Rr.length+'</b> laporan cocok':'Hasil pencarian')+(st?' \u00b7 '+esc(st):'')+'</span>'+(ex.length?'<span class="dsr-ex"><button type="button" class="btn sec" data-ex="xlsx">Unduh Excel ('+ex.length+')</button><button type="button" class="btn sec" data-ex="pdf">Unduh PDF ('+ex.length+')</button></span>':'')+'</div>'+
   '<div class="dsr-tabs">'+chips.map(function(c){return '<button type="button" data-c="'+c[0]+'" class="'+(c[0]===cat?'on':'')+'">'+c[1]+' <em>'+c[2]+'</em></button>'}).join('')+'</div>';
   h+=rows.length?'<div class="dsr-list" role="listbox">'+rows.map(function(w,i){var r=w.r;if(w.k==='a')return '<div class="dsr-i'+(i===0?' on':'')+'" role="option" data-i="'+i+'"><span class="g">'+esc(r.g)+'</span><div><b>'+dMark(r.t,qs)+'</b>'+(r.s?'<small>'+esc(r.s)+'</small>':'')+'</div></div>';
@@ -1215,7 +1250,10 @@ window.addEventListener('online',function(){if(NT.t)ntPoll()});
 var IDLE_MS=10*60*1000,IDLE_WARN=60*1000,IDLE_TXT='Anda keluar otomatis karena tidak ada aktivitas selama 10 menit. Silakan masuk lagi.',IDLE_W=false,IDLE_L=0;
 function idleGet(){return Number(LS.getItem('stc_act'))||0}
 function idleMark(){var n=Date.now();if(n-IDLE_L<1000)return;IDLE_L=n;try{LS.setItem('stc_act',String(n))}catch(e){}}
-function idleStale(){var l=idleGet();return !!l&&Date.now()-l>IDLE_MS}
+/* Aplikasi yang sudah dipasang (ke layar utama / Chrome / Safari) tidak logout otomatis karena diam;
+   pembukaan lewat browser biasa tetap logout setelah 10 menit tanpa aktivitas. */
+function isInstalled(){try{if(window.matchMedia&&['standalone','fullscreen','minimal-ui'].some(function(m){return matchMedia('(display-mode: '+m+')').matches}))return true}catch(e){}return navigator.standalone===true}
+function idleStale(){if(isInstalled())return false;var l=idleGet();return !!l&&Date.now()-l>IDLE_MS}
 function idleWarnHide(){IDLE_W=false;var w=$('idle');if(w)w.remove()}
 function idleWarnShow(s){var w=$('idle');
  if(!w){w=document.createElement('div');w.id='idle';w.setAttribute('role','alertdialog');w.setAttribute('aria-live','assertive');
@@ -1229,7 +1267,7 @@ function idleOut(manual){idleWarnHide();if(BUSY)return;
  api('logout').catch(function(){});clearSess();try{LS.removeItem('stc_act')}catch(e){}
  $('modal').classList.add('hidden');ntClose();showLogin();$('lerr').textContent=manual?'':IDLE_TXT}
 function idleTick(){
- if(!TOKEN||!U){if(IDLE_W)idleWarnHide();return}
+ if(!TOKEN||!U||isInstalled()){if(IDLE_W)idleWarnHide();return}
  if(BUSY){IDLE_L=0;idleMark();if(IDLE_W)idleWarnHide();return}
  if(!idleGet()){IDLE_L=0;idleMark()}
  var left=IDLE_MS-(Date.now()-idleGet());
