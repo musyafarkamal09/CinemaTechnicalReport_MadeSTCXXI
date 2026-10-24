@@ -328,3 +328,8 @@ html.pwa #nsheet::-webkit-scrollbar, html.pwa #nsheet *::-webkit-scrollbar,
 html.pwa #nsbox::-webkit-scrollbar, html.pwa #nsgrid::-webkit-scrollbar {
   width: 0 !important; height: 0 !important; display: none !important;
 }
+
+/* Menu samping di HP: hilangkan handle geser (khusus PC) dan garis tepi kanan yang mengganggu */
+html.pwa #side .sb-rz { display: none !important; }
+html.pwa #side { box-shadow: none !important; border-right: 0 !important; }
+html.pwa #side::after { display: none !important; }
