@@ -318,3 +318,13 @@ html.pwa #tabs {
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px) !important;
 }
 html.pwa #tabs a { padding-bottom: 4px !important; }
+
+/* Sheet "Buat laporan baru": sembunyikan garis scroll yang mengganggu; tetap bisa digulir dengan sentuhan */
+html.pwa #nsheet, html.pwa #nsheet *, html.pwa #nsbox, html.pwa #nsgrid, html.pwa #npanel {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+html.pwa #nsheet::-webkit-scrollbar, html.pwa #nsheet *::-webkit-scrollbar,
+html.pwa #nsbox::-webkit-scrollbar, html.pwa #nsgrid::-webkit-scrollbar {
+  width: 0 !important; height: 0 !important; display: none !important;
+}
