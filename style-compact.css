@@ -269,3 +269,39 @@ html.pwa .dx-q { flex-direction: column !important; align-items: flex-start !imp
 html.pwa .dx-q > span { display: block; width: 100%; }
 html.pwa .dx-q i { margin-bottom: 2px; }
 html.pwa .dx-qg > .dx-q:last-child:nth-child(odd) { grid-column: 1 / -1; flex-direction: row !important; align-items: center !important; }
+
+/* ==========================================================================
+   PADAT & RAPI (mode aplikasi terpasang): ruang lebih sedikit, tetap modern
+   ========================================================================== */
+html.pwa #main > header { padding: 8px 14px !important; }
+html.pwa #view { padding: 10px 14px 96px !important; }
+html.pwa .dx > * + * { margin-top: 12px !important; }
+html.pwa .dx-top h1 { font-size: 20px !important; }
+html.pwa .dx-sum { margin-top: 8px !important; padding: 6px 12px !important; font-size: 12px !important; }
+html.pwa .dsx { margin-top: 0 !important; }
+html.pwa .dsr-b { height: 44px !important; }
+html.pwa .dx-lb, html.pwa .dx-sec .sh h2 { margin-bottom: 8px !important; }
+
+/* Catat cepat: dua kolom lebih ringkas, judul satu baris */
+html.pwa .dx-qg { gap: 8px !important; }
+html.pwa .dx-q { min-height: 0 !important; padding: 10px !important; gap: 6px !important; border-radius: 14px !important; }
+html.pwa .dx-q i { width: 32px !important; height: 32px !important; min-width: 32px !important; border-radius: 10px !important; margin-bottom: 0 !important; }
+html.pwa .dx-q b { font-size: 13px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.pwa .dx-q small { font-size: 11px !important; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+html.pwa .dx-qg > .dx-q:last-child:nth-child(odd) { padding: 10px 12px !important; }
+
+/* Ringkasan: tile lebih pendek */
+html.pwa .dx-kpi { gap: 8px !important; }
+html.pwa .dx-k { min-height: 0 !important; padding: 10px 12px !important; border-radius: 14px !important; gap: 0 !important; }
+html.pwa .dx-k .dx-ki { width: 28px !important; height: 28px !important; min-width: 28px !important; border-radius: 9px !important; }
+html.pwa .dx-k .n { font-size: 22px !important; margin-top: 4px !important; }
+html.pwa .dx-k small { margin-top: 2px !important; font-size: 11px !important; }
+
+/* Bagian: padding lebih kecil */
+html.pwa .dx-sec { padding: 12px !important; border-radius: 14px !important; }
+html.pwa .dx-sec .sh { margin-bottom: 8px !important; }
+html.pwa .dx-ai { min-height: 0 !important; padding: 9px 2px !important; }
+html.pwa .tk { padding: 9px 0 !important; }
+html.pwa .dstu-card { min-height: 0 !important; padding: 10px !important; }
+html.pwa .dac-c { min-height: 0 !important; padding: 8px 10px !important; }
+html.pwa .dx-k .dx-ki { margin-bottom: 6px !important; }
