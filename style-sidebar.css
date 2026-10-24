@@ -3,6 +3,7 @@
    Sidebar kini panel tetap di samping konten (tidak melayang / tidak menimpa halaman),
    nama website selalu tampak, menu bergrup rapi, aksi akun di bagian bawah.
    Tombol menu di header (sbtn) tetap dapat menyembunyikan / menampilkan sidebar.
+   Akun (nama, Profil, Keluar) dan tombol tema ada di header sudut kanan atas.
    Hanya mengubah tampilan: tidak ada fungsi app.js yang diubah.
    ===================================================================== */
 
@@ -44,24 +45,11 @@
 #side #nav a.on i{color:#edcb7a;opacity:1}
 #side #nav a.soon{opacity:.6}
 
-/* aksi bawah: tema, profil, keluar */
-#side .sbot{flex:none;display:flex;gap:8px;padding:12px 14px 16px;border-top:1px solid #ffffff14;background:#00000026}
-#side .sbot .thm,#side .sbot .sbb{height:40px;min-height:40px;margin:0;padding:0 12px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;
- border-radius:11px;background:#ffffff0d;color:#cfe3d8;border:1px solid #ffffff1f;box-shadow:none;font:600 13px/1 inherit;font-family:inherit;transition:background .16s,border-color .16s,color .16s}
-#side .sbot .thm{flex:none;width:40px;padding:0}
-#side .sbot .sbb{flex:1 1 0;min-width:0}
-#side .sbot .sbb::after{content:attr(aria-label)}
-#side .sbot .sbb .ic{width:17px;height:17px;flex:none}
-#side .sbot .thm:hover,#side .sbot .sbb:hover{background:#ffffff1c;color:#f2d98e;border-color:#c89b48}
-#side .sbot [data-proxy=logout]:hover{color:#ff8a80;border-color:#ff8a80}
-#side .scard>.sfoot{flex:none}
 
 /* ---------- DESKTOP: sidebar tetap di samping, konten bergeser ---------- */
 @media(min-width:821px){
  #side{position:sticky;top:0;width:var(--sbw);height:100vh;height:100dvh;flex:none;z-index:40;overflow:visible}
  body.sb-off #side{margin-left:calc(var(--sbw) * -1);visibility:hidden}
- /* nama pengguna cukup di header; Profil & Keluar ada di sidebar */
- .uhead .sact{display:none!important}
 }
 
 /* ---------- MOBILE: laci ---------- */

@@ -1,0 +1,89 @@
+/* =====================================================================
+   STC XXI Technical Report - PENYEMPURNAAN UX (dimuat paling akhir)
+   1) Akun pengguna hanya di sudut kanan atas header (nama + menu Profil / Keluar).
+   2) Lebar sidebar dapat diubah pengguna (geser tepi kanan, tombol panah, klik ganda reset).
+   3) Animasi saat scroll: konten muncul bertahap, bilah progres, bayangan header.
+   4) Responsif: PC, tablet, smartphone; aman untuk notch & layar sentuh.
+   Animasi otomatis nonaktif bila pengguna memilih "kurangi gerakan".
+   ===================================================================== */
+
+:root{--sbw:272px}
+
+/* ---------- 1) AKUN DI SUDUT KANAN ATAS ---------- */
+#main>header{position:sticky;top:0}
+#main>header .uhead{position:relative;display:flex;align-items:center;flex:none;margin-left:14px;max-width:100%;
+ padding:4px 6px 4px 4px;border-radius:999px;background:var(--card);border:1px solid var(--bd);box-shadow:var(--rd-shadow)}
+#main>header .uh-tg{display:flex;align-items:center;gap:8px;min-height:40px;min-width:0;margin:0;padding:0 4px 0 0;
+ background:none;border:0;border-radius:999px;color:inherit;font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#main>header .uh-tg:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+#main>header .uhead .sme{display:flex;align-items:center;gap:10px;min-width:0;border:0;padding:0;background:none}
+#main>header .uhead .av{width:34px;height:34px;font-size:14px;flex:0 0 auto}
+#main>header .uh-who{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;min-width:0}
+#main>header .uh-who b{display:block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-size:13px;font-weight:750}
+#main>header .uh-who .badge{margin-top:3px;font-size:10px;padding:2px 8px}
+#main>header .uh-chev{flex:none;width:16px;height:16px;color:var(--mut);transition:transform .2s ease}
+#main>header .uhead.open .uh-chev{transform:rotate(180deg)}
+#main>header .uhead .sact{display:none;position:absolute;top:calc(100% + 10px);right:0;z-index:80;flex-direction:column;gap:6px;min-width:192px;padding:8px;
+ background:var(--card);border:1px solid var(--bd);border-radius:16px;box-shadow:var(--sh2)}
+#main>header .uhead.open .sact{display:flex;animation:uhIn .18s ease both}
+#main>header .uhead .sact .btn{display:flex;align-items:center;justify-content:flex-start;line-height:1;width:100%;height:40px;min-height:40px;margin:0;padding:0 12px;border-radius:11px;font-size:13.5px}
+#main>header .uhead .sact .btn.sec{color:var(--txt)!important;background:var(--card2)!important;border:1px solid var(--bd2)!important;box-shadow:none!important}
+#main>header .uhead .sact .btn.sec:hover{background:var(--g100,var(--card2))!important}
+@keyframes uhIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+
+/* tablet: nama disembunyikan agar header tetap muat */
+@media(min-width:801px) and (max-width:1100px){#main>header .uh-who{display:none}}
+
+/* smartphone: hanya avatar di kanan atas, di sebelah tombol tema & lonceng */
+@media(max-width:800px){
+ #main>header{grid-template-columns:minmax(0,1fr) auto auto;gap:6px 8px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+ #main>header .clk{margin-left:0;gap:6px}
+ #main>header .uhead{grid-column:auto;margin:0;padding:3px;width:auto}
+ #main>header .uh-tg{min-height:40px;padding:0}
+ #main>header .uh-who,#main>header .uh-chev{display:none}
+ #main>header .uhead .sact{min-width:190px}
+}
+@media(pointer:coarse){
+ #main>header .thm,#main>header .bell{min-width:42px;min-height:42px;width:42px;height:42px}
+ #main>header .uh-tg{min-width:40px;min-height:40px}
+}
+
+/* ---------- 2) LEBAR SIDEBAR DAPAT DIATUR ---------- */
+#side{width:var(--sbw)}
+#side .sb-rz{position:absolute;top:0;bottom:0;right:-7px;z-index:6;width:14px;margin:0;padding:0;border:0;background:none;
+ display:flex;justify-content:center;cursor:col-resize;touch-action:none;-webkit-tap-highlight-color:transparent}
+#side .sb-rz::after{content:"";width:2px;height:100%;background:#c89b4826;border-radius:2px;transition:background .18s,box-shadow .18s}
+#side .sb-rz:hover::after,#side .sb-rz.drag::after{background:linear-gradient(180deg,transparent,#e1c476 18%,#e1c476 82%,transparent)}
+#side .sb-rz:focus-visible{outline:none}
+#side .sb-rz:focus-visible::after{background:#e1c476;box-shadow:0 0 0 3px #c89b4866}
+body.sb-resizing,body.sb-resizing *{cursor:col-resize!important;user-select:none!important;-webkit-user-select:none!important}
+@media(max-width:820px){
+ #side{width:min(var(--sbw),86vw)}
+ #side .sb-rz{right:0;width:18px}
+}
+
+/* ---------- 3) ANIMASI SAAT SCROLL ---------- */
+#main>header .sprog{position:absolute;left:0;right:0;bottom:-1px;height:2px;overflow:hidden;pointer-events:none}
+#main>header .sprog i{display:block;width:100%;height:100%;transform:scaleX(0);transform-origin:0 50%;
+ background:linear-gradient(90deg,#c89b48,#edcb7a 60%,#c89b48);will-change:transform}
+#main>header{transition:box-shadow .3s ease}
+#main>header.is-scrolled{box-shadow:0 14px 32px -22px #0b3820aa}
+
+html.anim-ready .rv:not(.rv-in){opacity:0;transform:translate3d(0,26px,0)}
+.rv.rv-in{opacity:1;transform:none;
+ transition:opacity .75s cubic-bezier(.2,.7,.2,1) var(--d,0ms),transform .75s cubic-bezier(.2,.7,.2,1) var(--d,0ms)}
+
+/* ---------- 4) RESPONSIF & KOMPATIBEL ---------- */
+img,video,canvas,svg{max-width:100%}
+#view{min-width:0}
+#view table{max-width:100%}
+@media(max-width:820px){
+ #tabs{padding-bottom:env(safe-area-inset-bottom,0px)}
+}
+@media(prefers-reduced-motion:reduce){
+ html.anim-ready .rv:not(.rv-in){opacity:1;transform:none}
+ .rv.rv-in{transition:none}
+ #main>header .sprog{display:none}
+ #main>header,#side .sb-rz::after,#main>header .uh-chev{transition:none!important}
+ #main>header .uhead.open .sact{animation:none}
+}
