@@ -181,7 +181,7 @@ function pwModal(force){
  $('pf').onsubmit=function(e){e.preventDefault();api('changepw',{old:$('po').value,pw:$('pn').value}).then(function(r){if(r&&r.token)saveSess(r.token,U);U.mustChange=false;LS.setItem('stc_u',JSON.stringify(U));closeM();toast('Password berhasil diganti.');if(force)go(CUR)}).catch(function(x){$('pe').textContent=x.message})}}
 
 /* ---- dashboard ---- */
-function vDash(){Promise.all([api('dashboard'),api('ats_list')]).then(function(r){var d=r[0],fl=r[1].filter(function(f){return f.status!=='Completed'}),
+function vDash(){Promise.all([api('dashboard'),api('ats_list')]).then(function(r){var d=r[0],fl=(Array.isArray(r[1])?r[1]:[]).filter(function(f){return f.status!=='Completed'}),
  hr=Number(new Intl.DateTimeFormat('en-GB',{timeZone:TZ,hour:'2-digit',hour12:false}).format(new Date()))%24,
  gr=hr<11?'Selamat pagi':hr<15?'Selamat siang':hr<18?'Selamat sore':'Selamat malam',rr=U.role==='REPORTER',
  open=Number(d.issueOpen)||0,

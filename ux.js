@@ -176,4 +176,39 @@ if(!reduce&&'IntersectionObserver' in window){
  }
  scan();
 }
+
+/* ---------- 4) MENU HP: tombol tutup, Esc, dan penanda tab aktif ---------- */
+(function(){
+ var sideEl=document.getElementById('side'),shade=document.getElementById('shade'),tabs=document.getElementById('tabs');
+ function closeDrawer(){
+  if(!sideEl||!sideEl.classList.contains('open'))return;
+  sideEl.classList.remove('open');
+  if(shade)shade.classList.remove('open');
+  var m=tabs&&tabs.querySelector('a[data-p=menu]');
+  if(m)m.focus({preventScroll:true});
+ }
+ if(sideEl){
+  var brand=sideEl.querySelector('.brand');
+  if(brand){
+   var x=document.createElement('button');
+   x.type='button';
+   x.className='sb-close';
+   x.setAttribute('aria-label','Tutup menu');
+   x.innerHTML='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+   x.addEventListener('click',closeDrawer);
+   brand.appendChild(x);
+  }
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeDrawer()});
+ }
+ if(tabs&&window.MutationObserver){
+  var mark=function(){
+   var on=tabs.querySelector('a.on');
+   tabs.querySelectorAll('a').forEach(function(a){
+    if(a===on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');
+   });
+  };
+  new MutationObserver(mark).observe(tabs,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  mark();
+ }
+})();
 })();
