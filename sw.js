@@ -1,9 +1,10 @@
+importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js');
 /* STC XXI Technical Report - service worker (cache untuk penggunaan offline).
    Strategi: network-first untuk berkas aplikasi di domain yang sama, sehingga pengguna online
    selalu mendapat versi terbaru; cache hanya dipakai saat jaringan tidak tersedia.
    Permintaan API (Apps Script, lintas domain, POST) tidak pernah disentuh.
    Saat merilis versi baru, naikkan CACHE_VERSION. */
-var CACHE_VERSION = 'stc-tr-v10';
+var CACHE_VERSION = 'stc-tr-v12';
 var CACHE = CACHE_VERSION;
 var SHELL = [
   './',
@@ -20,6 +21,8 @@ var SHELL = [
   './app.js',
   './sidebar.js',
   './ux.js',
+  './drafts.js',
+  './notify.js',
   './manifest.json',
   './logo.png',
   './icons/icon-192.png',
