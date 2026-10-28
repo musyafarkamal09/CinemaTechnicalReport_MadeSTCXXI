@@ -22,3 +22,82 @@ header{border-bottom:1px solid var(--fin-edge)}
 @media (max-width:768px){
   body>#ra{display:none!important}
 }
+
+/* ===== Login kaca (glassmorphism) di atas foto kursi studio ===== */
+#login{
+  display:flex !important;align-items:center;justify-content:center;min-height:100vh;padding:24px 16px;
+  position:relative;isolation:isolate;
+}
+/* latar foto kursi studio diletakkan di lapisan terpisah agar tidak tertimpa aturan background dari stylesheet lama */
+#login::before{
+  content:"";position:fixed;inset:-24px;z-index:-1;pointer-events:none;
+  background:url("img/lobby-xxi.webp") center/cover no-repeat;
+  filter:blur(6px) brightness(.62) saturate(1.05);
+  transform:scale(1.02);
+}
+#login .lhero{display:none !important}
+#login .lpane{background:transparent !important;display:flex;justify-content:center;width:100%;padding:0 !important}
+#login .lbox{
+  position:relative;width:100%;max-width:380px;
+  background:rgba(255,255,255,.14) !important;
+  -webkit-backdrop-filter:blur(18px) saturate(1.25);backdrop-filter:blur(18px) saturate(1.25);
+  border:1px solid rgba(255,255,255,.3) !important;border-radius:24px !important;
+  box-shadow:0 24px 60px rgba(0,0,0,.4) !important;color:#fff !important;padding:30px 26px !important;
+}
+#login .lbox h2,#login .lbox .hello,#login .lbox p,#login .lbox label{color:#fff !important}
+#login .lbox .hello{color:rgba(255,255,255,.8) !important;text-align:center}
+#login .lbox h2{text-align:center;font-family:"Bodoni Moda",Georgia,serif;font-weight:500}
+#login .lbox p{text-align:center;color:rgba(255,255,255,.78) !important;font-size:14px}
+#login .cardlogo{display:block;width:84px;height:auto;margin:0 auto 10px}
+#login .lbox input{
+  background:rgba(255,255,255,.12) !important;color:#fff !important;border:1px solid rgba(255,255,255,.3) !important;
+  border-radius:14px !important;
+}
+#login .lbox input::placeholder{color:rgba(255,255,255,.6)}
+#login .lbox input:focus{outline:2px solid var(--fin-gold-hi);outline-offset:1px}
+#login .lbox .btn.sec,#login .lbox #tp{background:rgba(255,255,255,.14) !important;color:#fff !important;border:1px solid rgba(255,255,255,.3) !important}
+#login #lbtn,#login .lbox button[type=submit]{
+  background:linear-gradient(135deg,#edcb7a,#c89b48) !important;color:#03110e !important;border:0 !important;
+  border-radius:14px !important;font-weight:700;box-shadow:0 10px 24px rgba(200,155,72,.35);
+}
+#login .lthm{background:rgba(255,255,255,.18) !important;color:#fff !important;border:1px solid rgba(255,255,255,.3) !important}
+
+/* Penegasan spesifisitas: menimpa aturan login dari stylesheet lama (style.css, style-reference.css, style-redesign.css, style-compact.css) */
+html body #login{background:transparent !important;background-color:transparent !important}
+html body #login .lpane{background:transparent !important;background-color:transparent !important}
+html body #login .lbox{
+  background:rgba(255,255,255,.14) !important;background-color:rgba(255,255,255,.14) !important;
+  -webkit-backdrop-filter:blur(18px) saturate(1.25) !important;backdrop-filter:blur(18px) saturate(1.25) !important;
+  border:1px solid rgba(255,255,255,.3) !important;border-radius:24px !important;box-shadow:0 24px 60px rgba(0,0,0,.4) !important;
+}
+html body #login .lbox h2{color:#fff !important}
+html body #login .lbox .hello{color:rgba(255,255,255,.85) !important}
+html body #login .lbox p{color:rgba(255,255,255,.8) !important}
+html body #login .lbox label{color:#fff !important}
+html body #login .lbox input{background:rgba(255,255,255,.12) !important;background-color:rgba(255,255,255,.12) !important;color:#fff !important;border:1px solid rgba(255,255,255,.3) !important}
+html body #login .lbox #tp{background:rgba(255,255,255,.16) !important;background-color:rgba(255,255,255,.16) !important;color:#fff !important;border:1px solid rgba(255,255,255,.3) !important}
+html body #login .lbox #lbtn{background:linear-gradient(135deg,#edcb7a,#c89b48) !important;background-color:#c89b48 !important;color:#03110e !important;border:0 !important}
+
+/* Aturan tema terang/gelap dari style-reference.css memakai :root[data-theme] #login ..., jadi perlu dilawan dengan selektor setara */
+:root[data-theme] #login .lbox{background:rgba(255,255,255,.14) !important;background-color:rgba(255,255,255,.14) !important;border:1px solid rgba(255,255,255,.3) !important;color:#fff !important}
+:root[data-theme] #login .lbox input{background:rgba(255,255,255,.12) !important;background-color:rgba(255,255,255,.12) !important;color:#fff !important;border:1px solid rgba(255,255,255,.3) !important}
+:root[data-theme] #login .lbox #tp{background:rgba(255,255,255,.16) !important;color:#fff !important;border:1px solid rgba(255,255,255,.3) !important}
+:root[data-theme] #login .lbox #lbtn{background:linear-gradient(135deg,#edcb7a,#c89b48) !important;color:#03110e !important;border:0 !important}
+:root[data-theme] #login .lpane{background:transparent !important}
+:root[data-theme] #login{background:transparent !important}
+:root[data-theme] #login .lbox h2,:root[data-theme] #login .lbox label{color:#fff !important}
+:root[data-theme] #login .lbox .hello{color:rgba(255,255,255,.88) !important}
+:root[data-theme] #login .lbox p{color:rgba(255,255,255,.82) !important}
+:root[data-theme] #login .lbox input::placeholder{color:rgba(255,255,255,.65) !important}
+:root[data-theme] #login .lbox #uh,:root[data-theme] #login .lbox .foot{color:rgba(255,255,255,.7) !important}
+
+/* ===== Perbaikan blur login =====
+   Satu-satunya blur kaca ada pada kartu .lbox. Blur lama dari style-reference.css (#login .lpane) dimatikan
+   agar tidak muncul sebagai kotak buram di seluruh panel kanan. Latar dipasang pada satu lapisan tetap,
+   sehingga tepi kartu bersih di desktop, tablet, dan HP. */
+html body #login .lpane,:root[data-theme] #login .lpane,#login .lpane{backdrop-filter:none !important;-webkit-backdrop-filter:none !important;filter:none !important}
+html body #login .lbox,:root[data-theme] #login .lbox{
+  -webkit-backdrop-filter:blur(18px) saturate(1.2) !important;backdrop-filter:blur(18px) saturate(1.2) !important;
+  overflow:hidden;isolation:isolate;transform:translateZ(0);
+  box-shadow:0 22px 50px rgba(0,0,0,.35) !important;
+}
