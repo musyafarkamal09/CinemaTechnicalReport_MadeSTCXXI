@@ -108,3 +108,6 @@ html body #login .lbox,:root[data-theme] #login .lbox{
 /* Kartu login tidak boleh ikut memudar bila kelas .ok tertinggal (animasi lok berakhir di opacity 0 dan memakai fill-mode both).
    Kelas .ok hanya dipakai sebagai efek sukses sesaat, jadi kartu tetap terlihat walau proses berpindah ke dashboard tertunda. */
 #login.ok .lbox{animation:none !important;opacity:1 !important;transform:none !important}
+
+/* Tombol ganti tema tidak ditampilkan di halaman login (tema login mengikuti tampilan kaca) */
+#login .lthm{display:none !important}
