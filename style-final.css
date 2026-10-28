@@ -1,0 +1,24 @@
+/* STC XXI Technical Report - lapisan tema final (visual saja).
+   Tidak mengubah DOM, script, atau koneksi ke backend Apps Script.
+   Hapus baris <link> style-final.css di index.html untuk kembali ke tampilan sebelumnya. */
+:root{
+  --fin-ink:#03110e; --fin-panel:#0b1c19; --fin-edge:#1b3932;
+  --fin-paper:#f3f7f3; --fin-muted:#9fb3aa; --fin-gold:#c89b48; --fin-gold-hi:#edcb7a;
+}
+[data-theme="dark"] body{background:var(--fin-ink)}
+#login .lphoto{object-fit:cover;filter:saturate(.9)}
+#login .lhero{background:var(--fin-ink)}
+#side{border-right:1px solid var(--fin-edge)}
+#side .brand b{color:var(--fin-paper)}
+#side .brand small{color:var(--fin-muted)}
+header{border-bottom:1px solid var(--fin-edge)}
+.btn:not(.sec):focus-visible,.nav a:focus-visible,button:focus-visible{outline:2px solid var(--fin-gold);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* Target sentuh minimal 44px di layar kecil (WCAG 2.5.5) */
+@media (max-width:768px){
+  .thm,.bell,#sbtn,#uhtg{min-width:44px;min-height:44px}
+}
+/* Di layar kecil, tombol "+ Buat laporan" melayang menutupi isi halaman dan bilah bawah sudah punya tombol Buat */
+@media (max-width:768px){
+  body>#ra{display:none!important}
+}
