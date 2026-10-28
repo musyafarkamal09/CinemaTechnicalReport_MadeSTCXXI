@@ -24,7 +24,7 @@ header{border-bottom:1px solid var(--fin-edge)}
 }
 
 /* ===== Login kaca (glassmorphism) di atas foto kursi studio ===== */
-#login{
+#login:not(.hidden){
   display:flex !important;align-items:center;justify-content:center;min-height:100vh;padding:24px 16px;
   position:relative;isolation:isolate;
 }
@@ -101,3 +101,10 @@ html body #login .lbox,:root[data-theme] #login .lbox{
   overflow:hidden;isolation:isolate;transform:translateZ(0);
   box-shadow:0 22px 50px rgba(0,0,0,.35) !important;
 }
+
+/* Penting: saat login selesai, kelas .hidden harus benar-benar menyembunyikan halaman login */
+#login.hidden{display:none !important}
+
+/* Kartu login tidak boleh ikut memudar bila kelas .ok tertinggal (animasi lok berakhir di opacity 0 dan memakai fill-mode both).
+   Kelas .ok hanya dipakai sebagai efek sukses sesaat, jadi kartu tetap terlihat walau proses berpindah ke dashboard tertunda. */
+#login.ok .lbox{animation:none !important;opacity:1 !important;transform:none !important}
