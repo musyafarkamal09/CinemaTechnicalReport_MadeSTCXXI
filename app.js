@@ -6,11 +6,11 @@ var $=function(i){return document.getElementById(i)};
 var API_URL='https://script.google.com/macros/s/AKfycbwxTDqs3z6tyCDFeUSQZpbOBIdV6w-4TXSmbYonPmGiqKo1ft_7zfjPKbteOSlsrprT/exec';
 var LS=(function(){try{localStorage.setItem('_t','1');localStorage.removeItem('_t');return localStorage}catch(e){return sessionStorage}})();
 var TOKEN=LS.getItem('stc_t')||sessionStorage.getItem('stc_t'),U=null,CUR='dashboard',ST={},SKEW=0,TZ='Asia/Jakarta';
-var TSL={'APPROVED':['\u2713 APPROVED','ts-ok'],'TOO-WARM':['\u26A0 TOO-WARM','ts-warm'],'TOO-COLD':['\u26A0 TOO-COLD','ts-cold']};
+var TSL={'APPROVED':['\u2713 APPROVED','ts-ok'],'TOO-WARM':['\u26A0 PANAS','ts-warm'],'TOO-COLD':['\u26A0 DINGIN','ts-cold']};
 function tsb(s){var m=TSL[s];return m?'<span class="st '+m[1]+'">'+m[0]+'</span>':''}
 function tsl(s){var m=TSL[s];return m?m[0]:''}
 /* status suhu AC: memakai tempStatus dari server bila ada; bila tidak ada dihitung dari standar laporan (tempStd) atau default 23-23,5. Data suhu kosong/tidak valid TIDAK pernah dianggap APPROVED. */
-var ACSTD={min:23,max:23.5},TSP={'APPROVED':'APPROVED','TOO-WARM':'TOO-WARM','TOO-COLD':'TOO-COLD','NODATA':'DATA KOSONG'};
+var ACSTD={min:23,max:23.5},TSP={'APPROVED':'APPROVED','TOO-WARM':'PANAS','TOO-COLD':'DINGIN','NODATA':'DATA KOSONG'};
 TSL.NODATA=['\u26A0 DATA KOSONG','ts-na'];
 function acV(a){var v=a?a.roomTemp:null;if(v===''||v==null)return NaN;v=Number(String(v).replace(',','.'));return isFinite(v)?v:NaN}
 var ACCND={EMPTY:'Studio kosong',NOSHOW:'Tidak ada show'};
@@ -20,6 +20,8 @@ function acAll(d){var rs=acRowsOf(d),h={};if(!rs.length)h.NODATA=1;rs.forEach(fu
 function acBadges(d){return acAll(d).map(function(k){return k==='NODATA'?'<span class="st ts-na">\u26A0 DATA INCOMPLETE</span>':tsb(k)}).join(' ')}
 function acLine(d){var rs=acRowsOf(d);return rs.length+' area'+rs.map(function(a){var v=acV(a);return ' \u2022 '+esc(a.location)+' '+(acCnd(a)?esc(ACCND[a.cond]):(isNaN(v)?'\u2013':String(v).replace('.',',')+'\u00B0C'))}).join('')}
 function acTxt(d){return acAll(d).map(tsl).join(' + ')}
+function acErr(a){var v=a&&a.err;return v===true||v==='true'||v===1||v==='1'||v==='Ya'}
+function acErrList(d){return acRowsOf(d).filter(acErr).map(function(a){return a.location})}
 function avSet(el){if(!el)return;el.textContent='';if(U&&U.photo){var i=document.createElement('img');i.alt='';el.appendChild(i);loadImg(i,'avatar',U.userId)}else el.textContent=String(U&&U.name||'?').charAt(0).toUpperCase()}
 function stb(s){return '<span class="st st-'+String(s||'').replace(/[^A-Za-z0-9]+/g,'-')+'">'+esc(s)+'</span>'}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
@@ -67,11 +69,16 @@ window.addEventListener('beforeunload',function(e){if(BUSY){e.preventDefault();e
 function closeM(){if(BUSY){toast('Laporan sedang dikirim, mohon tunggu sampai selesai.',1);return}$('modal').classList.add('hidden');$('mbox').innerHTML=''}
 /* ---- autosave draf lokal: mencegah isian laporan hilang saat modal tertutup ---- */
 var DRAFT_TIMER=null;
-function draftKey(name){return 'stc_draft_v1_'+String(U&& (U.userId||U.username||U.name)||'guest')+'_'+name}
+/* Draf hanya untuk akun yang sedang login. Tanpa akun (mis. belum login) tidak ada draf yang disimpan/dipulihkan. */
+function draftOwner(){return (U&&(U.userId||U.username))||null}
+window.draftOwner=draftOwner;
+function draftKey(name){var o=draftOwner();return o?'stc_draft_v1_'+o+'_'+name:null}
+/* membuang draf lama tanpa pemilik (kunci 'guest' dari versi sebelumnya) agar tidak terlihat oleh akun mana pun */
+function draftPurgeGuest(){try{var ks=[];for(var i=0;i<LS.length;i++){var k=LS.key(i);if(k&&k.indexOf('stc_draft_v1_guest_')===0)ks.push(k)}ks.forEach(function(k){LS.removeItem(k)})}catch(e){}if(window.draftPurgeGuestDb)window.draftPurgeGuestDb()}
 function draftRead(key){try{return JSON.parse(LS.getItem(key)||'null')}catch(e){return null}}
 function draftControls(form,restore){var els=[].slice.call(form.querySelectorAll('input,textarea,select')),seen={},out=[];els.forEach(function(el){var base=el.id?'#'+el.id:(el.tagName.toLowerCase()+'.'+String(el.className||'').trim().replace(/\s+/g,'.')+'.'+(el.type||''));var ix=seen[base]||0;seen[base]=ix+1;var key=base+'['+ix+']';if(restore){var d=restore[key];if(!d||el.type==='file'||el.type==='password')return;if(el.type==='checkbox'||el.type==='radio')el.checked=!!d.value;else if(d.value!==undefined)el.value=d.value;}else out.push([key,{type:el.type||el.tagName.toLowerCase(),value:(el.type==='checkbox'||el.type==='radio')?!!el.checked:el.value,disabled:!!el.disabled}]);});return out}
 function draftSave(form){if(!form||!form.dataset.draftKey)return;try{var controls={};draftControls(form).forEach(function(x){controls[x[0]]=x[1]});LS.setItem(form.dataset.draftKey,JSON.stringify({savedAt:Date.now(),controls:controls}));var st=form.querySelector('.stc-draft-status');if(st)st.textContent='Draf tersimpan otomatis di perangkat ini';}catch(e){var st=form.querySelector('.stc-draft-status');if(st)st.textContent='Autosave tidak tersedia: penyimpanan browser penuh';}}
-function draftRestore(form,key){if(!form)return;form.dataset.draftKey=key;var d=draftRead(key);if(d&&d.controls){draftControls(form,d.controls);var st=form.querySelector('.stc-draft-status');if(st)st.textContent='Draf sebelumnya dipulihkan dari '+new Date(d.savedAt).toLocaleString('id-ID');}}
+function draftRestore(form,key){if(!form)return;form.dataset.draftKey=key||'';if(!key)return;var d=draftRead(key);if(d&&d.controls){draftControls(form,d.controls);var st=form.querySelector('.stc-draft-status');if(st)st.textContent='Draf sebelumnya dipulihkan dari '+new Date(d.savedAt).toLocaleString('id-ID');}}
 function draftClear(form){if(!form||!form.dataset.draftKey)return;try{LS.removeItem(form.dataset.draftKey)}catch(e){}form.dataset.draftKey='';}
 document.addEventListener('input',function(e){var f=e.target&&e.target.closest&&e.target.closest('form[data-draft-key]');if(!f)return;clearTimeout(DRAFT_TIMER);DRAFT_TIMER=setTimeout(function(){draftSave(f)},250)});
 document.addEventListener('change',function(e){var f=e.target&&e.target.closest&&e.target.closest('form[data-draft-key]');if(f)draftSave(f)});
@@ -84,7 +91,7 @@ var WS=['Open','In Progress','Completed','Pending','Need Follow-up'];
 var ACA=['TH1','TH2','TH3','TH4','KORIDOR','LOBBY','Lainnya'],ACU=['Daikin','York'],ACD=['TH1','TH2','TH3','TH4','KORIDOR','LOBBY'];
 var ISPR=['Rendah','Sedang','Tinggi','Darurat'],IST=['Menunggu','Ditanggapi','Sedang Dikerjakan','Selesai'];
 var RN={ADMIN:'Admin',USER:'Teknisi',REPORTER:'Pelapor',GUIDE_SECURITY:'Guide/Security'};function rn(r){return RN[r]||r}
-function acRowsOf(d){d=d||{};if(Array.isArray(d.rows)&&d.rows.length)return d.rows;return d.location?[{location:d.location,unit:d.unit,roomTemp:d.roomTemp,note:''}]:[]}
+function acRowsOf(d){d=d||{};var rs=d.rows;if(typeof rs==='string'){try{rs=JSON.parse(rs)}catch(e){rs=null}}if(Array.isArray(rs)&&rs.length)return rs;return d.location?[{location:d.location,unit:d.unit,roomTemp:d.roomTemp,note:''}]:[]}
 var T={
  work:{label:'Laporan Pekerjaan',f:[['title','Judul pekerjaan','text',1],['category','Kategori','select',1,WC],['location','Lokasi','text',1],['date','Tanggal pekerjaan','date',1],['time','Jam pekerjaan','time'],['status','Status','select',1,WS],['desc','Deskripsi','textarea'],['note','Catatan','textarea']],team:1},
  meter:{label:'Laporan Meteran',f:[['location','Lokasi meteran','text',1],['date','Tanggal pencatatan','date',1],['time','Jam pencatatan','time',1],['lwbp','Angka LWBP (kWh)','number',1,null,'Listrik'],['wbp','Angka WBP (kWh)','number',1,null,'Listrik'],['genset','Angka Genset (kWh)','number',1,null,'Listrik'],['reading','Angka meteran air (m³)','number',1,null,'Air'],['note','Catatan','textarea']]},
@@ -109,7 +116,7 @@ function tbFor(){return U&&(U.role==='REPORTER'||U.role==='GUIDE_SECURITY')?TBR:
 function can(m){if(m[2])return U.role==='ADMIN';if(U.role==='REPORTER')return RO.indexOf(m[0])>=0;if(U.role==='GUIDE_SECURITY')return GSR.indexOf(m[0])>=0;return true}
 /* ---- shell ---- */
 function showLogin(){ntStop();U=null;$('app').classList.add('hidden');$('login').classList.remove('hidden');$('lform').reset()}
-function enter(u,page){u=normU(u);U=u;LS.setItem('stc_u',JSON.stringify(u));$('hname').textContent=u.name;$('hrole').textContent=rn(u.role);avSet($('av'));$('login').classList.add('hidden');$('app').classList.remove('hidden');
+function enter(u,page){u=normU(u);U=u;draftPurgeGuest();LS.setItem('stc_u',JSON.stringify(u));$('hname').textContent=u.name;$('hrole').textContent=rn(u.role);avSet($('av'));$('login').classList.add('hidden');$('app').classList.remove('hidden');
  if(u.mustChange){pwModal(true)}IDLE_L=0;idleMark();go(page||'dashboard');ntStart()}
 var SOON_MSG='Fitur belum tersedia';
 function soonOf(p){return MENU.filter(function(m){return m[0]===p&&m[3]})[0]}
@@ -368,9 +375,9 @@ function dAc(){var el=$('dac');if(!el)return;var td=jkd(0),box=el.querySelector(
   var n=0,bad=0,chips=ACD.map(function(z){var g=got[z];
    if(!g)return '<button class="dac-c na" data-go="ac"><b>'+z+'</b><span>Belum diisi</span></button>';
    var cd=acCnd(g.a),v=acV(g.a),st=acSt(g.a,g.d);if(cd||!isNaN(v))n++;var cls=st==='APPROVED'?'ok':st==='NODATA'?'na2':st==='TOO-COLD'?'cold':'bad';if(st==='TOO-WARM'||st==='TOO-COLD')bad++;
-   return '<button class="dac-c '+cls+'" data-go="ac"><b>'+z+'</b><span class="dac-t'+(cd?' dac-cn':'')+'">'+(cd?esc(ACCND[g.a.cond]):(isNaN(v)?'\u2013':String(v).replace('.',',')+'\u00B0C'))+'</span><small>'+(tsl(st)||'')+'</small></button>'}).join('');
-  var ms=n===ACD.length?(bad?bad+' area di luar standar suhu.':'Semua area sudah diisi.'):n+' dari '+ACD.length+' area sudah diisi hari ini.';
-  box.innerHTML='<div class="dac-s">'+ms+(n<ACD.length?' <button class="lnk" data-new="ac">Isi sekarang</button>':'')+'</div><div class="dac-g">'+chips+'</div>';
+   return '<button class="dac-c '+cls+(acErr(g.a)?' err':'')+'" data-go="ac"><b>'+z+'</b><span class="dac-t'+(cd?' dac-cn':'')+'">'+(cd?esc(ACCND[g.a.cond]):(isNaN(v)?'\u2013':String(v).replace('.',',')+'\u00B0C'))+'</span><small>'+(tsl(st)||'')+'</small></button>'}).join('');
+  var EL=ACD.filter(function(z){return got[z]&&acErr(got[z].a)});var ms=n===ACD.length?(bad?bad+' area di luar standar suhu.':'Semua area sudah diisi.'):n+' dari '+ACD.length+' area sudah diisi hari ini.';
+  box.innerHTML=(EL.length?'<div class="dac-alert" role="alert">&#9888; AC error di '+EL.length+' area: <b>'+EL.join(', ')+'</b></div>':'')+'<div class="dac-s">'+ms+(n<ACD.length?' <button class="lnk" data-new="ac">Isi sekarang</button>':'')+'</div><div class="dac-g">'+chips+'</div>';
   box.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){go(b.dataset.go)}});
   box.querySelectorAll('[data-new]').forEach(function(b){b.onclick=function(){repForm('ac',null,function(){go('dashboard')})}})
  }).catch(function(){if(el.parentNode)el.remove()})}
@@ -954,7 +961,7 @@ function pdfOut(t,it,FT,G,L){
  toast('File PDF berhasil dibuat ('+it.length+' laporan'+(nph?', '+nph+' foto':'')+').'+(L?' '+L+' foto gagal dimuat.':''),!!L)}
 
 /* ---- laporan: detail ---- */
-function detail(id,after){modal('<div class="empty">Memuat...</div>');api('rep_get',{id:id}).then(function(r){var t=r.type,d=r.data,h='<h3>'+T[t].label+'<span class="mid">'+esc(r.id)+'</span></h3><table>';
+function detail(id,after){modal('<div class="empty">Memuat...</div>');api('rep_get',{id:id}).then(function(r){var t=r.type,d=r.data||{},h='<h3>'+T[t].label+'<span class="mid">'+esc(r.id)+'</span></h3><table>';
  T[t].f.forEach(function(f){if(f[5])return;if(d[f[0]]!==''&&d[f[0]]!=null)h+='<tr><th>'+f[1]+'</th><td>'+(f[0]==='status'?stb(d[f[0]]):esc(d[f[0]]))+'</td></tr>'});
  if(t==='issue')h+='<tr><th>Status perbaikan</th><td>'+stb(d.status)+'</td></tr>';
  if(t==='work')h+='<tr><th>Anggota tim</th><td>'+esc((d.team||[]).join(', ')||'-')+'</td></tr>';
@@ -962,8 +969,8 @@ function detail(id,after){modal('<div class="empty">Memuat...</div>');api('rep_g
  h+='<tr><th>Pelapor</th><td>'+esc(r.reporter)+'</td></tr><tr><th>Dibuat</th><td>'+dt(r.createdAt)+'</td></tr><tr><th>Diubah</th><td>'+dt(r.updatedAt)+'</td></tr></table>';
  if(t==='meter')h+=meterDetail(d);
  if(t==='patrol')h+='<div class="scroll"><table><tr><th>Studio</th><th>Status / kondisi</th><th>Catatan</th></tr>'+(d.studios||[]).map(function(a){return '<tr><td>'+esc(a.studio)+'</td><td>'+esc(a.status||'-')+'</td><td>'+esc(a.note||'-')+'</td></tr>'}).join('')+'</table></div><h4>Informasi lainnya</h4><p>'+esc(d.otherInfo||'-')+'</p>';
- if(t==='ac')h+='<p class="acs"><b>Status suhu laporan:</b> '+acBadges(d)+'</p><div class="scroll"><table><tr><th>Area</th><th>Merk</th><th>Suhu</th><th>Status</th><th>Catatan</th></tr>'+acRowsOf(d).map(function(a){return '<tr><td>'+esc(a.location)+'</td><td>'+esc(a.unit)+'</td><td>'+(acCnd(a)?esc(ACCND[a.cond]):esc(a.roomTemp)+' °C')+'</td><td>'+(tsb(acSt(a,d))||'-')+'</td><td>'+esc(a.note||'-')+'</td></tr>'}).join('')+'</table></div>'+(d.tempStd?'<small class="mnote">Standar suhu: '+esc(d.tempStd.min)+' - '+esc(d.tempStd.max)+' °C. Status dihitung otomatis oleh server.</small>':'');
- if(t==='purchase')h+='<div class="scroll"><table><tr><th>Barang</th><th>Jml</th><th>Harga</th><th>Total</th></tr>'+d.items.map(function(i){return '<tr><td>'+esc(i.name)+'<br><small>'+esc(i.category)+'</small></td><td>'+i.qty+' '+esc(i.unit)+'</td><td>'+RP.format(i.price)+'</td><td>'+RP.format(i.total)+'</td></tr>'}).join('')+'<tr><th colspan="3">Total transaksi</th><th>'+RP.format(d.total)+'</th></tr></table></div>';
+ if(t==='ac')h+='<p class="acs"><b>Status suhu laporan:</b> '+acBadges(d)+'</p>'+(acErrList(d).length?'<div class="ac-errbox">&#9888; AC error di: <b>'+esc(acErrList(d).join(', '))+'</b></div>':'')+'<div class="scroll"><table><tr><th>Area</th><th>Merk</th><th>Suhu</th><th>Status</th><th>AC Eror</th><th>Catatan</th></tr>'+acRowsOf(d).map(function(a){return '<tr><td>'+esc(a.location)+'</td><td>'+esc(a.unit)+'</td><td>'+(acCnd(a)?esc(ACCND[a.cond]):esc(a.roomTemp)+' °C')+'</td><td>'+(tsb(acSt(a,d))||'-')+'</td><td>'+(acErr(a)?'<span class="st ts-err">Ya</span>':'Tidak')+'</td><td>'+esc(a.note||'-')+'</td></tr>'}).join('')+'</table></div>'+(d.tempStd?'<small class="mnote">Standar suhu: '+esc(d.tempStd.min)+' - '+esc(d.tempStd.max)+' °C. Status dihitung otomatis oleh server.</small>':'');
+ if(t==='purchase')h+='<div class="scroll"><table><tr><th>Barang</th><th>Jml</th><th>Harga</th><th>Total</th></tr>'+(d.items||[]).map(function(i){return '<tr><td>'+esc(i.name)+'<br><small>'+esc(i.category)+'</small></td><td>'+i.qty+' '+esc(i.unit)+'</td><td>'+RP.format(i.price)+'</td><td>'+RP.format(i.total)+'</td></tr>'}).join('')+'<tr><th colspan="3">Total transaksi</th><th>'+RP.format(d.total)+'</th></tr></table></div>';
  var gk=t==='issue'?[['Masalah','Foto masalah'],['Penyelesaian','Foto penyelesaian']]:t==='work'?[['Sebelum','Sebelum (Before)'],['Sesudah','Sesudah (After)'],['Foto','Lainnya']]:t==='ac'?(r.photos||[]).map(function(p){return p.kind||'Foto'}).filter(function(k,i,a){return a.indexOf(k)===i}).map(function(k){return [k,k==='Foto'?'Foto':'Foto area '+k]}):[['','Foto']];
  if(t==='ac')h+=acGal(r);else h+='<div id="gal">'+gk.map(function(g){var ps=(r.photos||[]).filter(function(p){return (t==='issue'&&(p.kind||'Masalah')===g[0])||(t!=='work'&&t!=='ac'&&t!=='issue')||(t==='ac'&&(p.kind||'Foto')===g[0])||(t==='work'&&p.kind===g[0])||(g[0]==='Foto'&&p.kind!=='Sebelum'&&p.kind!=='Sesudah')});return ps.length?'<div class="gg"><b>'+g[1]+'<span>'+ps.length+'</span></b><div class="ph">'+ps.map(function(p){return '<figure><img loading="lazy" data-p="'+p.id+'" data-u="'+esc(p.url||'')+'" alt="Foto dokumentasi" title="Klik untuk memperbesar"><figcaption>Waktu dokumentasi: '+dt(p.capturedAt||p.uploadedAt)+'</figcaption></figure>'}).join('')+'</div></div>':''}).join('')+'</div>';
  var np=(r.photos||[]).length;if(np)h+='<div class="zipbar"><span>'+np+' foto'+(np>10?' · ZIP dibuat otomatis':'')+'</span><button type="button" class="btn sec" id="dz">Unduh semua foto (ZIP)</button>'+(r.folder?'<a class="btn sec" href="'+esc(r.folder)+'" target="_blank" rel="noopener">Buka folder Drive</a>':'')+'</div>';
@@ -974,7 +981,7 @@ function detail(id,after){modal('<div class="empty">Memuat...</div>');api('rep_g
  }
  var left=r.remainMs,t0=Date.now();
  if(U.role!=='ADMIN'&&r.own)h+=r.editable?'<div class="info">Anda dapat mengedit laporan ini selama 30 menit setelah laporan berhasil disimpan. Sisa: <b id="lf"></b></div>':'<div class="info">Batas waktu edit telah berakhir. Hubungi Admin jika diperlukan koreksi.</div>';
- h+='<div class="zipbar"><span>Bukti laporan + foto dokumentasi</span><button type="button" class="btn sec" id="dpdf">Unduh PDF</button><button type="button" class="btn sec" id="dxl">Unduh Excel</button></div><div class="macts fact">'+(r.editable?'<button class="btn" id="de">Edit</button> ':'')+(U.role==='ADMIN'?'<button class="btn sec" id="dx">Arsipkan</button> ':'')+'<button class="btn sec" id="dc">Tutup</button></div>';
+ h+='<div class="zipbar"><span>Bukti laporan + foto dokumentasi</span><div class="dlw"><button type="button" class="btn" id="dlt" aria-haspopup="menu" aria-expanded="false">Download</button><div class="dlm hidden" id="dlm" role="menu"><button type="button" role="menuitem" id="dpdf">Dokumen PDF (.pdf)</button><button type="button" role="menuitem" id="dxl">Spreadsheet Excel (.xlsx)</button></div></div></div><div class="macts fact">'+(r.editable?'<button class="btn" id="de">Edit</button> ':'')+(U.role==='ADMIN'?'<button class="btn sec" id="dx">Arsipkan</button> ':'')+'<button class="btn sec" id="dc">Tutup</button></div>';
  modal(h);$('dc').onclick=closeM;if(t==='meter')meterCum(d);
 if($('rpf'))$('rpf').onsubmit=function(e){e.preventDefault();var b=$('rpb'),fs=[].slice.call($('rpp').files),phs=[],bad=0;b.disabled=true;b.textContent='Mengirim...';$('rpe').textContent='';
   fs.reduce(function(p,f){return p.then(function(){return comp(f).then(function(x){x.kind='Penyelesaian';phs.push(x)},function(){bad++})})},Promise.resolve())
@@ -982,7 +989,8 @@ if($('rpf'))$('rpf').onsubmit=function(e){e.preventDefault();var b=$('rpb'),fs=[
   .then(function(){return upPh(r.id,phs,function(n){upTxt(b,n,phs.length)})})
   .then(function(f){toast(f?'Tanggapan tersimpan, tetapi '+f+' foto gagal diunggah.':(bad?'Tanggapan tersimpan; '+bad+' file foto ditolak.':'Tanggapan tersimpan.'),!!(f||bad));detail(r.id,after);if(after)after()})
   .catch(function(x){$('rpe').textContent=x.message;upOff(b);b.disabled=false;b.textContent='Kirim tanggapan'})};
- if($('dpdf'))$('dpdf').onclick=function(){repDoc(r,'pdf')};if($('dxl'))$('dxl').onclick=function(){repDoc(r,'xlsx')};
+ if($('dlt'))$('dlt').onclick=function(e){e.stopPropagation();var o=$('dlm').classList.toggle('hidden');this.setAttribute('aria-expanded',String(!o))};
+ if($('dpdf'))$('dpdf').onclick=function(){$('dlm').classList.add('hidden');repDoc(r,'pdf')};if($('dxl'))$('dxl').onclick=function(){$('dlm').classList.add('hidden');repDoc(r,'xlsx')};
  if($('dz'))$('dz').onclick=function(){var bz=this;bz.disabled=true;bz.textContent='Menyiapkan ZIP...';api('rep_zip',{id:r.id}).then(function(z){toast('ZIP siap diunduh ('+z.count+' foto).');location.href=z.url}).catch(function(x){toast(x.message,1)}).then(function(){bz.disabled=false;bz.textContent='Unduh semua foto (ZIP)'})};
  document.querySelectorAll('#gal img').forEach(function(i){fillImg(i,'photo');i.onclick=function(){if(i.dataset.ok)lightbox(i.src)}});
  if($('lf')){var iv=setInterval(function(){var m=left-(Date.now()-t0);if(!$('lf')||m<=0){clearInterval(iv);if($('de')&&U.role!=='ADMIN')$('de').disabled=true;if($('lf'))$('lf').textContent='habis';return}$('lf').textContent=p2(Math.floor(m/60000))+':'+p2(Math.floor(m/1000)%60)},1000)}
@@ -1077,14 +1085,14 @@ function acRow(id,r){r=r||{};var loc=r.location||'',mm=ACA.filter(function(o){re
  +'<input class="ao" type="text" maxlength="100" placeholder="Ketik nama area" value="'+esc(ex?loc:'')+'"'+(oth?'':' style="display:none"')+'>'
  +'<div class="acr-g"><label>Merk AC<select class="au">'+ACU.map(function(o){return '<option'+(o===(r.unit||'Daikin')?' selected':'')+'>'+o+'</option>'}).join('')+'</select></label></div><label class="acc-l">Kondisi area<select class="ac"><option value="">Isi suhu AC</option>'+Object.keys(ACCND).map(function(k){return '<option value="'+k+'"'+(r.cond===k?' selected':'')+'>'+ACCND[k]+' (tanpa suhu)</option>'}).join('')+'</select></label><div class="acr-g acr-t"'+(acCnd(r)?' style="display:none"':'')+'><label>Suhu AC (°C)<input class="at" type="number" step="any" min="-10" max="80" inputmode="decimal" placeholder="mis. 24" value="'+(r.roomTemp==null?'':esc(r.roomTemp))+'"></label></div><p class="acc-n" style="margin:0 0 8px;font-size:.88em;opacity:.8;'+(acCnd(r)?'':'display:none')+'">Suhu tidak perlu diisi. Status area otomatis APPROVED.</p>'
  +'<input class="an" type="text" maxlength="300" placeholder="Catatan area (opsional)" value="'+esc(r.note)+'">'
- +'<div class="pick"><label class="btn sec pk" for="gi_'+id+'">Galeri</label><label class="btn sec pk" for="gc_'+id+'">Kamera</label></div><input class="vh" type="file" id="gi_'+id+'" accept="image/jpeg,image/png,image/webp" multiple><input class="vh" type="file" id="gc_'+id+'" accept="image/*" capture="environment"><div class="ph" id="pv_'+id+'"></div></div>'}
+ +'<label class="aerr"><input type="checkbox" class="ae"'+(acErr(r)?' checked':'')+'> AC Eror</label><div class="pick"><label class="btn sec pk" for="gi_'+id+'">Galeri</label><label class="btn sec pk" for="gc_'+id+'">Kamera</label></div><input class="vh" type="file" id="gi_'+id+'" accept="image/jpeg,image/png,image/webp" multiple><input class="vh" type="file" id="gc_'+id+'" accept="image/*" capture="environment"><div class="ph" id="pv_'+id+'"></div></div>'}
 var PHMAX=50,PHBATCH=3; /* PHMAX sama dengan MAXPH di Code.gs; PHBATCH = jumlah foto per kiriman */
 var UNITS=['Pcs','Unit','Buah','Batang','Kotak','Botol','Liter','Meter','Kg','Set'];
 function unitSel(u){u=u||'';var known=UNITS.indexOf(u)>=0,other=u&&!known;
  return '<div class="iu"><select class="us" aria-label="Satuan">'+UNITS.map(function(o){return '<option'+(o===u?' selected':'')+'>'+o+'</option>'}).join('')+'<option value="__o"'+(other?' selected':'')+'>Lainnya</option></select><input class="uo" placeholder="Ketik satuan" maxlength="20" value="'+esc(other?u:'')+'"'+(other?'':' style="display:none"')+'></div>'}
 function unitVal(r){var s=r.querySelector('.us');return s.value==='__o'?r.querySelector('.uo').value.trim():s.value}
 function irow(i){i=i||{};return '<div class="irow"><input class="in" placeholder="Nama barang" value="'+esc(i.name)+'"><input class="ic" placeholder="Kategori" value="'+esc(i.category)+'"><input class="iq" type="number" step="any" min="0" placeholder="Jml" value="'+(i.qty||'')+'">'+unitSel(i.unit)+'<input class="ip" type="number" step="any" min="0" placeholder="Harga satuan" value="'+(i.price==null?'':i.price)+'"><b class="it"></b><button type="button" class="btn sec rm">×</button></div>'}
-function repForm(t,rec,after){var c=T[t],d=rec?rec.data:(t==='issue'?{priority:'Sedang'}:{}),PH=[],rid=uuid(),team=[],GR=t==='work'?[['Sebelum','Foto Sebelum (Before)'],['Sesudah','Foto Sesudah (After)']]:t==='ac'?[]:t==='issue'?[['Masalah','Foto masalah']]:t==='patrol'?[['Studio 1','Dokumentasi wajib Studio 1'],['Studio 2','Dokumentasi wajib Studio 2'],['Studio 3','Dokumentasi wajib Studio 3'],['Studio 4','Dokumentasi wajib Studio 4']]:[['Foto','Foto dokumentasi']],AR=[],ARN=0;
+function repForm(t,rec,after){var c=T[t],d=rec?(rec.data||{}):(t==='issue'?{priority:'Sedang'}:{}),PH=[],rid=uuid(),team=[],GR=t==='work'?[['Sebelum','Foto Sebelum (Before)'],['Sesudah','Foto Sesudah (After)']]:t==='ac'?[]:t==='issue'?[['Masalah','Foto masalah']]:t==='patrol'?[['Studio 1','Dokumentasi wajib Studio 1'],['Studio 2','Dokumentasi wajib Studio 2'],['Studio 3','Dokumentasi wajib Studio 3'],['Studio 4','Dokumentasi wajib Studio 4']]:[['Foto','Foto dokumentasi']],AR=[],ARN=0;
  var mk=t==='meter'?((rec&&d.kind)||'Gabungan'):'';
  var go2=function(){
   var h='<h3>'+(rec?'Edit '+esc(rec.id):(t==='issue'?'Laporkan masalah yang perlu diperbaiki':'Buat '+c.label))+'</h3><form id="rfm"><div class="row2">'+c.f.map(function(f){return '<div'+(f[5]?' data-k="'+f[5]+'"':'')+(f[2]==='textarea'||f[0]==='kind'?' class="full"':'')+'>'+fld(f,d[f[0]]!=null?d[f[0]]:(f[0]==='date'?new Date(now()+7*36e5).toISOString().slice(0,10):f[0]==='time'?new Date(now()+7*36e5).toISOString().slice(11,16):''))+'</div>'}).join('')+'</div>';
@@ -1147,15 +1155,15 @@ function repForm(t,rec,after){var c=T[t],d=rec?rec.data:(t==='issue'?{priority:'
     [].forEach.call(acs.children,function(el,i){var id=+el.dataset.r,sv=el.querySelector('.as').value,loc=sv==='Lainnya'?el.querySelector('.ao').value.trim():sv,tp=el.querySelector('.at').value.trim(),cd=el.querySelector('.ac').value,hp=PH.some(function(p){return p.rid===id});
      if(cd){if(!loc||loc==='Lainnya'){if(!er)er='Nama area baris ke-'+(i+1)+' belum diisi.';return}
       if(seen[loc.toLowerCase()]){if(!er)er='Area '+loc+' terisi lebih dari satu kali.';return}
-      seen[loc.toLowerCase()]=1;rs.push({location:loc,unit:el.querySelector('.au').value,roomTemp:'',cond:cd,note:el.querySelector('.an').value.trim()});rids[id]=loc;return}
+      seen[loc.toLowerCase()]=1;rs.push({location:loc,unit:el.querySelector('.au').value,roomTemp:'',cond:cd,note:el.querySelector('.an').value.trim(),err:el.querySelector('.ae').checked});rids[id]=loc;return}
      if(tp===''){if(hp&&!er)er='Area '+(loc||('ke-'+(i+1)))+' punya foto tetapi suhunya kosong. Isi suhu atau hapus fotonya.';return}
      if(!loc||loc==='Lainnya'){if(!er)er='Nama area baris ke-'+(i+1)+' belum diisi.';return}
      if(isNaN(+tp)||+tp<-10||+tp>80){if(!er)er='Suhu '+loc+' harus berupa angka -10 sampai 80.';return}
      if(seen[loc.toLowerCase()]){if(!er)er='Area '+loc+' terisi lebih dari satu kali.';return}
-     seen[loc.toLowerCase()]=1;rs.push({location:loc,unit:el.querySelector('.au').value,roomTemp:tp,note:el.querySelector('.an').value.trim()});rids[id]=loc});
+     seen[loc.toLowerCase()]=1;rs.push({location:loc,unit:el.querySelector('.au').value,roomTemp:tp,note:el.querySelector('.an').value.trim(),err:el.querySelector('.ae').checked});rids[id]=loc});
     if(!er&&!rs.length)er='Isi suhu atau pilih Studio kosong / Tidak ada show minimal untuk satu area.';
     if(er){$('re').textContent=er;return}
-    data.rows=rs;PH=PH.filter(function(p){return rids[p.rid]!=null});PH.forEach(function(p){p.kind=rids[p.rid]});
+    data.rows=rs;var ce=rs.filter(function(x){return x.err}).map(function(x){return x.location});if(ce.length)toast('Perhatian: AC error di '+ce.join(', '),1);PH=PH.filter(function(p){return rids[p.rid]!=null});PH.forEach(function(p){p.kind=rids[p.rid]});
     var nw=new Date(now()+7*36e5).toISOString();data.date=rec&&d.date?d.date:nw.slice(0,10);data.time=rec&&d.time?d.time:nw.slice(11,16)}
    if(c.team)data.team=[].map.call(document.querySelectorAll('#tm input:checked'),function(i){return i.value});
    if(c.items&&[].some.call(document.querySelectorAll('.irow'),function(r){return !unitVal(r)})){$('re').textContent='Isi satuan barang (untuk "Lainnya", ketik satuannya).';return}
@@ -1186,7 +1194,7 @@ function uForm(u){var n=!u;u=u||{};modal('<h3>'+(n?'Akun baru':'Edit akun')+'</h
 function vAudit(){var pg=1;(function load(){api('audit',{page:pg}).then(function(r){$('view').innerHTML='<h2>Audit Log</h2><div class="scroll cards"><table class="rt"><tr><th>Ringkasan</th><th>Waktu</th><th>Pengguna</th><th>Aksi</th><th>Kategori</th><th>Record</th></tr>'+r.items.map(function(x){return '<tr><td class="sm">'+esc(x.summary||x.action)+'</td><td data-l="Waktu">'+dt(x.at)+'</td><td data-l="Pengguna">'+esc(x.userName)+' ('+x.role+')</td><td data-l="Aksi">'+esc(x.action)+'</td><td data-l="Kategori">'+esc(x.category)+'</td><td data-l="Record">'+esc(x.recordId)+'</td></tr>'}).join('')+'</table></div><div class="pg"><button class="btn sec" id="ap"'+(pg<2?' disabled':'')+'>‹</button> Hal. '+pg+' / '+Math.max(1,Math.ceil(r.total/r.size))+' <button class="btn sec" id="an"'+(pg*r.size>=r.total?' disabled':'')+'>›</button></div>';
   $('ap').onclick=function(){pg--;load()};$('an').onclick=function(){pg++;load()}}).catch(err)})()}
 function vSet(){Promise.all([api('dashboard'),api('ac_cfg_get')]).then(function(r){var c=r[1];$('view').innerHTML='<h2>Pengaturan Sistem</h2><div class="card"><b>Integrasi</b><p>Google Apps Script: terhubung<br>Google Spreadsheet: terhubung (dashboard berhasil membaca data)<br>Zona waktu: Asia/Jakarta</p><p>Pengelolaan akun ada di menu Manajemen Pengguna. Ganti password lewat tombol Profil.</p></div>'+
- '<div class="card" style="margin-top:14px"><b>Standar Suhu AC</b><p>Dipakai untuk status otomatis pada Daily Monitoring AC: di dalam batas = \u2713 APPROVED, di atas batas atas = \u26A0 TOO-WARM, di bawah batas bawah = \u26A0 TOO-COLD. Hanya Admin yang dapat mengubah. Bawaan: '+c.def.min+' - '+c.def.max+' \u00B0C.</p><form id="acf"><div class="row2"><div><label>Batas bawah (\u00B0C)</label><input id="acmin" type="number" step="0.1" min="-10" max="80" inputmode="decimal" required value="'+c.min+'"></div><div><label>Batas atas (\u00B0C)</label><input id="acmax" type="number" step="0.1" min="-10" max="80" inputmode="decimal" required value="'+c.max+'"></div></div><div class="merr" id="ace"></div><p><button class="btn">Simpan standar</button></p></form></div>';
+ '<div class="card" style="margin-top:14px"><b>Standar Suhu AC</b><p>Dipakai untuk status otomatis pada Daily Monitoring AC: di dalam batas = \u2713 APPROVED, di atas batas atas = \u26A0 PANAS, di bawah batas bawah = \u26A0 DINGIN. Hanya Admin yang dapat mengubah. Bawaan: '+c.def.min+' - '+c.def.max+' \u00B0C.</p><form id="acf"><div class="row2"><div><label>Batas bawah (\u00B0C)</label><input id="acmin" type="number" step="0.1" min="-10" max="80" inputmode="decimal" required value="'+c.min+'"></div><div><label>Batas atas (\u00B0C)</label><input id="acmax" type="number" step="0.1" min="-10" max="80" inputmode="decimal" required value="'+c.max+'"></div></div><div class="merr" id="ace"></div><p><button class="btn">Simpan standar</button></p></form></div>';
  $('acf').onsubmit=function(e){e.preventDefault();$('ace').textContent='';api('ac_cfg_save',{min:$('acmin').value,max:$('acmax').value}).then(function(x){toast('Standar suhu AC disimpan: '+x.min+' - '+x.max+' \u00B0C.')}).catch(function(x){$('ace').textContent=x.message})}}).catch(err)}
 
 /* ---- notifikasi: polling ringan (45 dtk, berhenti saat tab tersembunyi) memakai endpoint yang sudah ada.

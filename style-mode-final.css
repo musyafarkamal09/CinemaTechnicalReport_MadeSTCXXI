@@ -1,0 +1,131 @@
+/* STC XXI Technical Report - lapisan final (frontend saja):
+   pemilih mode segmen, font Inter yang jelas di semua mode, warna hero dan banner ATS
+   mengikuti mode, tabel terbaca di semua mode, indikator AC error, dan tombol Download. */
+
+:root{
+  --font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --serif:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+
+/* ---------- 1. Font: satu keluarga teks yang jelas di semua mode ---------- */
+#app,#app *,#modal,#modal *,#nsheet,#nsheet *,#npanel,#npanel *,#toast,#login,#login *,#tabs,#tabs *{
+  font-family:var(--font) !important;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+#app h1,#app h2,#app h3,#app #ptitle,#modal h3,#modal h2,#nsheet h2,
+#app .dx-top h1,#app .dx-top h2,#app .dh-t h1,#app .ph-t h1,#phero h1{
+  font-weight:700 !important;letter-spacing:-.015em !important;
+}
+#app .card b,#app .dq h2,#app .sh h2,#modal b,#app .tk b,#app .film>div>b{font-weight:700 !important}
+
+/* ---------- 2. Warna per mode (token) ---------- */
+:root[data-theme="dark"]{
+  --hero-a:linear-gradient(120deg,#0e3324 0%,#082117 55%,#04140d 100%);
+  --hero-ink:#f4f8f5;--hero-sub:#cfe2d6;--hero-ic:rgba(237,203,122,.10);--hero-ic-bd:rgba(237,203,122,.45);--hero-gold:#edcb7a;
+  --hero-img-op:.55;
+  --tb-bg:#04140f;--tb-ovl:linear-gradient(90deg,rgba(3,18,15,.97) 0%,rgba(3,18,15,.80) 42%,rgba(3,18,15,.45) 75%,rgba(3,18,15,.60) 100%);
+  --tb-ink:#f4f8f5;--tb-sub:#d6e6dc;--tb-gold:#edcb7a;--tb-bd:rgba(225,196,118,.6);
+  --tbl-ink:#eef4f0;--tbl-th:#b2c5ba;--tbl-bd:#2a3f33;
+  --err-bg:#361512;--err-ink:#ffb3ab;--err-bd:#ff8a80;
+}
+:root[data-theme="glass"]{
+  --hero-a:linear-gradient(120deg,rgba(20,15,10,.66) 0%,rgba(20,15,10,.50) 60%,rgba(20,15,10,.40) 100%);
+  --hero-ink:#ffffff;--hero-sub:#f1ebe0;--hero-ic:rgba(237,203,122,.18);--hero-ic-bd:rgba(246,221,152,.6);--hero-gold:#f6dd98;
+  --hero-img-op:.6;
+  --tb-bg:rgba(20,15,10,.55);--tb-ovl:linear-gradient(90deg,rgba(12,9,6,.86) 0%,rgba(12,9,6,.66) 45%,rgba(12,9,6,.40) 80%,rgba(12,9,6,.55) 100%);
+  --tb-ink:#ffffff;--tb-sub:#f1ebe0;--tb-gold:#f6dd98;--tb-bd:rgba(246,221,152,.55);
+  --tbl-ink:#ffffff;--tbl-th:rgba(255,255,255,.82);--tbl-bd:rgba(255,255,255,.22);
+  --err-bg:rgba(255,120,110,.22);--err-ink:#ffd0ca;--err-bd:#ffb3ab;
+}
+:root[data-theme="light"]{
+  --hero-a:linear-gradient(120deg,#fbf6ea 0%,#f6edd7 60%,#efe2bf 100%);
+  --hero-ink:#0b1c14;--hero-sub:#2c4137;--hero-ic:#fffdf6;--hero-ic-bd:#c9a86a;--hero-gold:#7a5514;
+  --hero-img-op:.22;
+  --tb-bg:#f6edd7;--tb-ovl:linear-gradient(90deg,rgba(251,246,234,.97) 0%,rgba(251,246,234,.90) 42%,rgba(251,246,234,.62) 75%,rgba(251,246,234,.55) 100%);
+  --tb-ink:#0b1c14;--tb-sub:#2c4137;--tb-gold:#7a5514;--tb-bd:#c9a86a;
+  --tbl-ink:#0b1c14;--tbl-th:#2c4137;--tbl-bd:#cfd9d3;
+  --err-bg:#fdeceb;--err-ink:#8c1d17;--err-bd:#b3261e;
+}
+
+/* ---------- 3. Pemilih mode (segmen) di header, pengganti tombol satu-klik ---------- */
+#app #main>header .mseg{
+  display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:999px;
+  background:var(--head-btn);border:1px solid var(--head-bd);flex:0 0 auto;
+}
+#app #main>header .mseg button{
+  appearance:none;border:0;background:transparent;color:var(--head-fg);cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 11px;border-radius:999px;
+  font:600 13px/1 var(--font);white-space:nowrap;transition:background .15s ease,color .15s ease;
+}
+#app #main>header .mseg button .ic{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+#app #main>header .mseg button:hover{background:var(--g100)}
+#app #main>header .mseg button.on,#app #main>header .mseg button[aria-checked="true"]{
+  background:linear-gradient(135deg,#edcb7a,#c89b48);color:#03110e;
+}
+#app #main>header .mseg button:focus-visible{outline:2px solid var(--gold-hi);outline-offset:2px}
+@media(max-width:720px){
+  #app #main>header .mseg button span{display:none}
+  #app #main>header .mseg button{padding:0 10px;min-width:36px;justify-content:center}
+}
+@media(max-width:380px){#app #main>header .mseg{display:none}}
+
+/* ---------- 4. Hero halaman (contoh: Advance Ticket Sales) mengikuti mode ---------- */
+#phero,#phero.ph-a,#phero.ph-b,#phero.ph-g,#phero.ph-w{background:var(--hero-a) !important;color:var(--hero-ink) !important;border:1px solid var(--tb-bd)}
+#phero::after{background:repeating-linear-gradient(135deg,rgba(128,128,128,.06) 0 2px,transparent 2px 24px) !important}
+#phero .ph-t h1{color:var(--hero-ink) !important}
+#phero .ph-t p{color:var(--hero-sub) !important;opacity:1 !important}
+#phero .ph-t i{background:var(--hero-ic) !important;border:1px solid var(--hero-ic-bd) !important;color:var(--hero-gold) !important}
+#phero .ph-t i .ic,#phero .ph-t i svg{stroke:currentColor !important;color:var(--hero-gold) !important}
+#phero .ph-img{opacity:var(--hero-img-op)}
+#phero .ph-img img{filter:none}
+
+/* ---------- 5. Banner ATS di dashboard (slide) mengikuti mode ---------- */
+:root[data-theme] .dsl-s.sc-c{background:var(--tb-bg) !important}
+:root[data-theme] .dsl-s.sc-c::before{background:var(--tb-ovl) !important}
+:root[data-theme] .dsl-s.sc-c .dsl-x>small{color:var(--tb-gold) !important}
+:root[data-theme] .dsl-s.sc-c .dsl-x>b{color:var(--tb-ink) !important;text-shadow:none !important}
+:root[data-theme] .dsl-s.sc-c .dsl-x>span{color:var(--tb-sub) !important}
+:root[data-theme] .dsl-s.sc-c .dsl-im{border-color:var(--tb-bd) !important}
+
+/* ---------- 6. Tabel dan teks di dalam modal/halaman: selalu terbaca ---------- */
+:root[data-theme] #modal table,:root[data-theme] #view table,:root[data-theme] #modal td,:root[data-theme] #view td{color:var(--tbl-ink) !important}
+:root[data-theme] #modal th,:root[data-theme] #view th{color:var(--tbl-th) !important}
+:root[data-theme] #modal table,:root[data-theme] #view table{background:transparent}
+:root[data-theme] #modal th,:root[data-theme] #modal td,:root[data-theme] #view th,:root[data-theme] #view td{border-color:var(--tbl-bd) !important}
+:root[data-theme] #modal .mt td,:root[data-theme] #modal .mt th{color:var(--tbl-ink) !important}
+:root[data-theme] #modal p,:root[data-theme] #modal li,:root[data-theme] #modal small,:root[data-theme] #modal span,:root[data-theme] #view p,:root[data-theme] #view li{color:var(--txt)}
+:root[data-theme] #modal small,:root[data-theme] #view small{color:var(--mut) !important}
+
+/* ---------- 7. Daily Monitoring AC: AC Eror ---------- */
+.aerr{display:inline-flex;align-items:center;gap:8px;margin:2px 0 8px;padding:8px 12px;border-radius:12px;
+  border:1px solid var(--bd2);background:var(--g50);color:var(--ink);font-weight:600;font-size:14px;cursor:pointer;min-height:44px}
+.aerr input{width:18px;height:18px;min-height:0;margin:0;accent-color:#c0392b;cursor:pointer}
+.aerr:has(input:checked){border-color:var(--err-bd);background:var(--err-bg);color:var(--err-ink)}
+.ts-err{background:var(--err-bg);color:var(--err-ink);border:1px solid var(--err-bd);border-radius:999px;padding:2px 9px;font-weight:700;font-size:12px}
+.ac-errbox,.dac-alert{margin:0 0 12px;padding:10px 14px;border-radius:12px;background:var(--err-bg);color:var(--err-ink);
+  border:1px solid var(--err-bd);font-weight:600;font-size:14px;line-height:1.5}
+.ac-errbox b,.dac-alert b{font-weight:800}
+.dac-c.err{border-color:var(--err-bd) !important;background:var(--err-bg) !important;color:var(--err-ink) !important}
+.dac-c.err b::after{content:" ⚠";color:var(--err-ink)}
+
+/* ---------- 8. Tombol Download tunggal -> pilihan PDF / Excel ---------- */
+.dlw{position:relative;display:inline-block}
+.dlw>.btn{min-width:130px}
+.dlw .dlm{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:240px;display:flex;flex-direction:column;gap:4px;padding:6px;
+  border-radius:14px;background:var(--card);border:1px solid var(--bd2);box-shadow:var(--sh2);backdrop-filter:var(--card-blur);-webkit-backdrop-filter:var(--card-blur)}
+.dlw .dlm.hidden{display:none !important}
+.dlw .dlm button{appearance:none;text-align:left;background:transparent;border:0;border-radius:10px;padding:11px 12px;min-height:44px;
+  color:var(--ink);font:600 14px/1.2 var(--font);cursor:pointer}
+.dlw .dlm button:hover,.dlw .dlm button:focus-visible{background:var(--g100);outline:none}
+.zipbar .dlw{margin-left:auto}
+
+/* ---------- 9. Grafik meteran: kontras di setiap mode ---------- */
+#mchart{background:var(--card) !important;border-color:var(--bd2) !important}
+#mchart svg text{font-family:var(--font) !important}
+#mchart .ctx{fill:var(--mut) !important;font-weight:600}
+#mchart .ctt{fill:var(--ink) !important}
+#mchart .cts{fill:var(--txt) !important}
+#mchart .cgr{stroke:var(--bd2) !important;opacity:.7}
+#mchart .cax{stroke:var(--bd2) !important}
+.mlb{color:var(--ink) !important;border-color:var(--bd2) !important;font-weight:600}
+.mlb i{box-shadow:0 0 0 1px rgba(128,128,128,.25)}

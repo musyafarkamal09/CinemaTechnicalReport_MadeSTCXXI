@@ -28,13 +28,25 @@
   var kvDel = function (k) { return tx('readwrite', function (s) { return s.delete(k); }); };
 
   function phSave(form) {
-    var key = form.dataset.draftKey;
-    if (!key || !form._getPh) return;
+    var key = form.dataset.draftKey, owner = window.draftOwner && window.draftOwner();
+    if (!key || !owner || !form._getPh) return;
     var list = form._getPh().map(function (p) {
       return { rid: p.rid, kind: p.kind, mime: p.mime, b64: p.b64, capturedAt: p.capturedAt };
     });
-    (list.length ? kvPut(key + '_photos', list) : kvDel(key + '_photos')).catch(function () {});
+    (list.length ? kvPut(key + '_photos', { owner: owner, list: list }) : kvDel(key + '_photos')).catch(function () {});
   }
+
+  /* hapus draf foto milik kunci 'guest' (versi lama) dari IndexedDB */
+  window.draftPurgeGuestDb = function () {
+    db().then(function (d) {
+      var t = d.transaction(STORE, 'readwrite'), s = t.objectStore(STORE), c = s.openCursor();
+      c.onsuccess = function () {
+        var cur = c.result; if (!cur) return;
+        if (String(cur.key).indexOf('stc_draft_v1_guest_') === 0) cur.delete();
+        cur.continue();
+      };
+    }).catch(function () {});
+  };
 
   function thumb(p, i) {
     return '<div><img src="' + p.url + '" alt=""><button type="button" class="x" data-i="' + i + '">×</button></div>';
@@ -43,7 +55,11 @@
   window.draftPhotosRestore = function (form) {
     var key = form.dataset.draftKey;
     if (!key || !form._setPh) return;
-    kvGet(key + '_photos').then(function (list) {
+    var owner = window.draftOwner && window.draftOwner();
+    kvGet(key + '_photos').then(function (d) {
+      /* hanya dipulihkan bila draf ini milik akun yang sedang login */
+      if (!d || !owner || d.owner !== owner) return;
+      var list = d.list;
       if (!Array.isArray(list) || !list.length) return;
       form._setPh(list.map(function (p) {
         return { rid: p.rid, kind: p.kind, mime: p.mime, b64: p.b64, capturedAt: p.capturedAt, url: 'data:' + p.mime + ';base64,' + p.b64 };
