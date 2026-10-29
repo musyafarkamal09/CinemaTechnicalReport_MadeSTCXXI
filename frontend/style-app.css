@@ -3093,10 +3093,12 @@ html body #app .dsl-s.sc-c .dsl-x>b{font-size:clamp(22px,2.6vw,34px) !important;
   flex:0 0 auto !important;object-fit:cover !important;border-radius:12px !important;
 }
 
-/* 5. Mode Kaca: kartu dashboard digelapkan sedikit agar seluruh teks jelas */
-:root[data-theme="glass"]{--card:rgba(10,8,6,.66);--card2:rgba(10,8,6,.60)}
+/* 5. Mode Kaca: satu warna kartu untuk dashboard dan kategori laporan (seirama), cukup gelap agar teks jelas */
+:root[data-theme="glass"]{--card:rgba(10,8,6,.74);--card2:rgba(10,8,6,.74)}
 :root[data-theme="glass"] #app .dx-sec,:root[data-theme="glass"] #app .card,:root[data-theme="glass"] #app .dx-k,
 :root[data-theme="glass"] #app .dx-q,:root[data-theme="glass"] #app .tk,:root[data-theme="glass"] #app .dstu-card{
-  background:rgba(10,8,6,.62) !important;
+  background:rgba(10,8,6,.74) !important;
 }
-:root[data-theme="glass"] #app .dx-col .tk{background:rgba(10,8,6,.66) !important}
+/* Poster ATS: menutupi border kartu di atas, bawah, dan kiri agar benar-benar penuh sampai tepi */
+.dx-col .tk .tk-poster{margin:-1px 0 -1px -1px !important;width:calc(100% + 1px) !important;height:calc(100% + 2px) !important}
+:root[data-theme="glass"]{--film-card:rgba(10,8,6,.74)}
