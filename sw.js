@@ -4,24 +4,12 @@ importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js');
    selalu mendapat versi terbaru; cache hanya dipakai saat jaringan tidak tersedia.
    Permintaan API (Apps Script, lintas domain, POST) tidak pernah disentuh.
    Saat merilis versi baru, naikkan CACHE_VERSION. */
-var CACHE_VERSION = 'stc-tr-v21';
+var CACHE_VERSION = 'stc-tr-v23';
 var CACHE = CACHE_VERSION;
 var SHELL = [
   './',
   './index.html',
-  './style.css',
-  './style-polish.css',
-  './style-dash.css',
-  './style-dash2.css',
-  './style-reference.css',
-  './style-redesign.css',
-  './style-sidebar.css',
-  './style-ux.css',
-  './style-compact.css',
-  './style-final.css',
-  './style-harmoni.css',
-  './style-mode-final.css',
-  './style-final-fix.css',
+  './style-app.css',
   './app.js',
   './sidebar.js',
   './ux.js',
