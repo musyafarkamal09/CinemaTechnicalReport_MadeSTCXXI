@@ -129,3 +129,89 @@
 #mchart .cax{stroke:var(--bd2) !important}
 .mlb{color:var(--ink) !important;border-color:var(--bd2) !important;font-weight:600}
 .mlb i{box-shadow:0 0 0 1px rgba(128,128,128,.25)}
+
+/* ---------- 10. Mode Kaca: tabel laporan & chip status harus terbaca di atas foto ---------- */
+:root[data-theme="glass"] #view .scroll.cards{
+  background:rgba(12,9,6,.68) !important;
+  -webkit-backdrop-filter:blur(18px) saturate(1.1);backdrop-filter:blur(18px) saturate(1.1);
+  border:1px solid rgba(255,255,255,.18) !important;border-radius:16px;
+}
+:root[data-theme="glass"] #view table.rt th{color:rgba(255,255,255,.95) !important;text-shadow:0 1px 2px rgba(0,0,0,.7);font-weight:700}
+:root[data-theme="glass"] #view table.rt td{color:#ffffff !important;text-shadow:0 1px 3px rgba(0,0,0,.75)}
+:root[data-theme="glass"] #view table.rt td[data-l="Pelapor"],:root[data-theme="glass"] #view table.rt td.sm{color:rgba(255,255,255,.92) !important}
+:root[data-theme="glass"] #view table.rt tr{border-color:rgba(255,255,255,.16) !important}
+:root[data-theme="glass"] .st{
+  background:rgba(8,6,4,.82) !important;color:#ffffff !important;border:1px solid rgba(255,255,255,.4) !important;
+  text-shadow:none;font-weight:700;
+}
+:root[data-theme="glass"] .st.ts-ok,:root[data-theme="glass"] .st.st-Completed,:root[data-theme="glass"] .st.st-Selesai{color:#a8f5c8 !important;border-color:#a8f5c8 !important}
+:root[data-theme="glass"] .st.ts-warm,:root[data-theme="glass"] .st.ts-cold,:root[data-theme="glass"] .st.ts-na{color:#ffb3ab !important;border-color:#ffb3ab !important}
+:root[data-theme="glass"] .st.st-In-Progress,:root[data-theme="glass"] .st.st-Pending,:root[data-theme="glass"] .st.st-Open{color:#ffd98a !important;border-color:#ffd98a !important}
+:root[data-theme="glass"] .dlw .dlm{background:rgba(12,9,6,.92) !important;border-color:rgba(255,255,255,.22) !important}
+:root[data-theme="glass"] .dlw .dlm button{color:#ffffff !important}
+
+/* ---------- 11. Iklan (slide sorotan), poster ATS, dan info film mengikuti mode ---------- */
+:root[data-theme="dark"]{
+  --ad-bg:linear-gradient(180deg,#0e1d16,#0a1511);
+  --ad-ovl:linear-gradient(90deg,rgba(6,12,9,.94) 0%,rgba(6,12,9,.78) 42%,rgba(6,12,9,.28) 80%,rgba(6,12,9,.10) 100%);
+  --ad-ink:#f4f8f5;--ad-sub:#d6e6dc;--ad-gold:#edcb7a;--ad-bd:rgba(225,196,118,.38);
+  --poster-bg:#0b1410;
+  --film-card:var(--card);--film-ink:#eef4f0;--film-sub:#c4d6cb;
+  --cdl-bg:rgba(201,162,77,.12);--cdl-bd:rgba(225,196,118,.40);--cdl-lab:#edcb7a;--cdl-cell:rgba(0,0,0,.38);--cdl-ink:#f4f8f5;
+  --cdx-ink:#ffb3ab;--cdx-bg:rgba(255,120,110,.14);
+}
+:root[data-theme="glass"]{
+  --ad-bg:rgba(14,11,8,.60);
+  --ad-ovl:linear-gradient(90deg,rgba(10,8,6,.90) 0%,rgba(10,8,6,.72) 45%,rgba(10,8,6,.40) 80%,rgba(10,8,6,.50) 100%);
+  --ad-ink:#ffffff;--ad-sub:#f1ebe0;--ad-gold:#f6dd98;--ad-bd:rgba(246,221,152,.55);
+  --poster-bg:#0a0806;
+  --film-card:rgba(12,9,6,.66);--film-ink:#ffffff;--film-sub:#f1ebe0;
+  --cdl-bg:rgba(246,221,152,.14);--cdl-bd:rgba(246,221,152,.58);--cdl-lab:#f6dd98;--cdl-cell:rgba(8,6,4,.72);--cdl-ink:#ffffff;
+  --cdx-ink:#ffd0ca;--cdx-bg:rgba(255,120,110,.22);
+}
+:root[data-theme="light"]{
+  --ad-bg:linear-gradient(180deg,#fffdf6,#f6edd7);
+  --ad-ovl:linear-gradient(90deg,rgba(255,253,246,.97) 0%,rgba(255,253,246,.88) 45%,rgba(255,253,246,.45) 80%,rgba(255,253,246,.25) 100%);
+  --ad-ink:#0b1c14;--ad-sub:#2c4137;--ad-gold:#7a5514;--ad-bd:#c9a86a;
+  --poster-bg:#efe6d0;
+  --film-card:#ffffff;--film-ink:#0b1c14;--film-sub:#3a4f45;
+  --cdl-bg:#fbf3df;--cdl-bd:#c9a86a;--cdl-lab:#7a5514;--cdl-cell:#ffffff;--cdl-ink:#0b1c14;
+  --cdx-ink:#8c1d17;--cdx-bg:#fdeceb;
+}
+
+/* Iklan: latar dan teks mengikuti mode (sc-a memakai foto auditorium hanya sebagai lapisan di bawah gradasi) */
+:root[data-theme] #app .dsl-s{background:var(--ad-bg) !important;border-color:var(--ad-bd) !important}
+:root[data-theme] #app .dsl-s.sc-a::before{
+  background:var(--ad-ovl),url("img/auditorium.jpg") center 92%/cover no-repeat !important;
+}
+:root[data-theme] #app .dsl-s .dsl-x>small{color:var(--ad-gold) !important}
+:root[data-theme] #app .dsl-s .dsl-x>b{color:var(--ad-ink) !important;text-shadow:none !important}
+:root[data-theme] #app .dsl-s .dsl-x>span{color:var(--ad-sub) !important}
+:root[data-theme] #app .dsl-s.sc-a .dsl-x>small{color:var(--ad-gold) !important}
+:root[data-theme] #app .dsl-s.sc-a .dsl-x>b{color:var(--ad-ink) !important}
+:root[data-theme] #app .dsl-s.sc-a .dsl-x>span{color:var(--ad-sub) !important}
+:root[data-theme] #app .dsl-s.sc-a .dsl-x{text-shadow:none !important}
+:root[data-theme="light"] #app .dsl-s.sc-a .dsl-x{text-shadow:none !important}
+
+/* Poster ATS: seluruh poster terlihat (tidak terpotong), ukuran sedikit lebih besar, latar sesuai mode */
+#view .grid>.card.film>img,#view .grid>.card.film>.noimg,.film img,.film .noimg,.tk-poster{
+  object-fit:contain !important;background:var(--poster-bg) !important;padding:4px;box-sizing:border-box;
+  border:1px solid var(--bd2) !important;
+}
+#view .grid>.card.film{grid-template-columns:minmax(132px,160px) minmax(0,1fr) !important;gap:20px !important}
+#view .grid>.card.film>img{width:100%;height:auto;aspect-ratio:2/3}
+@media(max-width:520px){#view .grid>.card.film{grid-template-columns:118px minmax(0,1fr) !important}}
+
+/* Info film (judul, keterangan, status) */
+#view .card.film{background:var(--film-card) !important}
+#view .card.film>div>b{color:var(--film-ink) !important;text-shadow:none}
+#view .card.film>div>small{color:var(--film-sub) !important}
+:root[data-theme="glass"] #view .card.film{-webkit-backdrop-filter:blur(18px) saturate(1.1);backdrop-filter:blur(18px) saturate(1.1);border:1px solid rgba(255,255,255,.18) !important}
+
+/* Bagian bawah film: hitung mundur tayang & hapus otomatis, tombol aksi */
+#view .card.film .cdl{background:var(--cdl-bg) !important;border:1px solid var(--cdl-bd) !important;border-radius:var(--r-m,12px);color:var(--cdl-ink) !important}
+#view .card.film .cdl>small{color:var(--cdl-lab) !important;font-weight:700;text-shadow:none}
+#view .card.film .cd span{background:var(--cdl-cell) !important;color:var(--cdl-ink) !important;border:1px solid var(--cdl-bd)}
+#view .card.film .cd span b{color:var(--cdl-ink) !important}
+#view .card.film .cdx{color:var(--cdx-ink) !important;background:var(--cdx-bg) !important;border-radius:10px;padding:6px 10px;font-weight:700;font-size:13px}
+#view .card.film .macts .btn.sec{color:var(--film-ink) !important}
