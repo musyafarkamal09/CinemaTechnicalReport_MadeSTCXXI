@@ -1,0 +1,58 @@
+/* STC XXI Technical Report - lapisan perbaikan terakhir (frontend saja).
+   1. Iklan slide dashboard mengikuti tema (Gelap, Kaca, Terang), termasuk tombol dan titik navigasi.
+   2. Poster ATS di slide dibuat besar dan jelas, mengisi kolom gambarnya.
+   3. Tombol "Unggah TTD Pembuat" di Laporan Film tidak keluar dari kolom.
+   4. Pilihan Download (Excel/PDF) sejajar dan rapi di semua kategori. */
+
+/* ---------- 1. Iklan slide: navigasi dan titik mengikuti tema ---------- */
+:root[data-theme] #app .dsl-s{background:var(--ad-bg) !important;border-color:var(--ad-bd) !important}
+:root[data-theme] #app .dsl-b{
+  background:rgba(6,12,9,.55) !important;border:1px solid rgba(237,203,122,.35) !important;color:#ffffff !important;
+}
+:root[data-theme] #app .dsl-b:hover,:root[data-theme] #app .dsl-b:focus-visible{background:rgba(6,12,9,.8) !important;border-color:var(--ad-gold) !important}
+:root[data-theme="glass"] #app .dsl-b{background:rgba(12,9,6,.62) !important;border-color:rgba(246,221,152,.55) !important}
+:root[data-theme="light"] #app .dsl-b{background:#fffdf6 !important;border:1px solid #c9a86a !important;color:#0b1c14 !important;box-shadow:0 2px 8px rgba(90,60,10,.15)}
+:root[data-theme="light"] #app .dsl-b:hover,:root[data-theme="light"] #app .dsl-b:focus-visible{background:#f6edd7 !important;border-color:#7a5514 !important}
+:root[data-theme="light"] #app .dsl-d button{background:rgba(11,28,20,.28) !important}
+:root[data-theme="light"] #app .dsl-d button.on{background:#7a5514 !important}
+:root[data-theme="glass"] #app .dsl-d button{background:rgba(255,255,255,.4) !important}
+:root[data-theme="glass"] #app .dsl-d button.on{background:#f6dd98 !important}
+
+/* ---------- 2. Poster ATS di slide: besar, jelas, mengisi kolom gambar ---------- */
+html body #app .dsl-s.sc-c{
+  display:flex !important;flex-direction:row !important;align-items:center !important;justify-content:flex-start !important;
+  gap:clamp(18px,2.6vw,36px) !important;min-height:0 !important;padding:clamp(20px,2.4vw,30px) clamp(22px,3vw,44px) !important;
+}
+html body #app .dsl-s.sc-c .dsl-im{
+  position:relative !important;top:auto !important;right:auto !important;left:auto !important;bottom:auto !important;
+  transform:none !important;order:2 !important;flex:0 0 auto !important;
+  width:clamp(150px,16vw,210px) !important;height:auto !important;max-height:none !important;aspect-ratio:2/3 !important;
+  object-fit:cover !important;border-radius:14px !important;border:1px solid var(--ad-bd) !important;
+  box-shadow:0 22px 48px -18px rgba(0,0,0,.55) !important;margin:0 !important;
+}
+html body #app .dsl-s.sc-c .dsl-x{order:1 !important;flex:1 1 auto !important;min-width:0 !important;max-width:none !important;width:auto !important;position:relative;z-index:1}
+html body #app .dsl-s.sc-c .dsl-x>b{font-size:clamp(22px,2.6vw,34px) !important;line-height:1.15 !important}
+@media(max-width:560px){
+  html body #app .dsl-s.sc-c{gap:14px !important;padding:16px 16px 40px !important}
+  html body #app .dsl-s.sc-c .dsl-im{width:118px !important;border-radius:10px !important}
+  html body #app .dsl-s.sc-c .dsl-x>b{font-size:18px !important}
+}
+
+/* ---------- 3. Filter Laporan Film: tombol TTD tidak keluar dari kolom ---------- */
+.filmbar>label[for="frsigfile"]{
+  display:flex !important;align-items:center !important;justify-content:center !important;text-align:center !important;
+  white-space:normal !important;line-height:1.25 !important;min-width:0 !important;max-width:100% !important;
+  width:100% !important;box-sizing:border-box !important;padding:10px 12px !important;min-height:44px !important;
+  overflow:hidden !important;overflow-wrap:anywhere !important;
+}
+
+/* ---------- 4. Menu Download (Excel / PDF): sejajar dan rapi di semua kategori ---------- */
+.dlw .dlm{
+  box-sizing:border-box !important;min-width:240px !important;width:max-content !important;max-width:min(92vw,320px) !important;
+  padding:6px !important;align-items:stretch !important;
+}
+.dlw .dlm button{
+  display:flex !important;align-items:center !important;justify-content:flex-start !important;
+  width:100% !important;box-sizing:border-box !important;margin:0 !important;align-self:stretch !important;
+  text-align:left !important;white-space:nowrap !important;
+}
