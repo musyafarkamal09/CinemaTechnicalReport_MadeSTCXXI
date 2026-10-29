@@ -3068,13 +3068,17 @@ html body #app .dsl-s.sc-c .dsl-x>b{font-size:clamp(22px,2.6vw,34px) !important;
 /* 4. Poster ATS di kartu dashboard: poster memanjang ke bawah di kolom kiri (seluruh tinggi kartu),
       judul, keterangan, tanggal, dan countdown tetap di kolom kanan */
 .dx-col .tk{
-  display:grid !important;grid-template-columns:140px minmax(0,1fr) !important;
-  grid-template-rows:auto auto !important;column-gap:16px !important;row-gap:10px !important;align-items:start !important;
+  display:grid !important;grid-template-columns:150px minmax(0,1fr) !important;
+  grid-template-rows:auto auto !important;column-gap:0 !important;row-gap:0 !important;align-items:start !important;
 }
+.dx-col .tk{padding:0 !important;overflow:hidden}
 .dx-col .tk .tk-poster{
   grid-column:1;grid-row:1 / span 2;width:100% !important;height:100% !important;min-height:100%;
-  align-self:stretch !important;flex:none !important;object-fit:cover !important;border-radius:12px !important;
+  align-self:stretch !important;flex:none !important;object-fit:cover !important;
+  border-radius:0 !important;margin:0 !important;box-shadow:none !important;border:0 !important;
 }
+.dx-col .tk .tl{padding:16px 18px 6px 0 !important}
+.dx-col .tk .tr{padding:14px 16px 16px !important}
 .dx-col .tk .tl{grid-column:2;grid-row:1;min-width:0}
 .dx-col .tk .tr{
   grid-column:2;grid-row:2;width:auto !important;border-left:0 !important;border-top:2px dashed var(--gold-100);
@@ -3088,3 +3092,11 @@ html body #app .dsl-s.sc-c .dsl-x>b{font-size:clamp(22px,2.6vw,34px) !important;
   width:clamp(118px,13vw,150px) !important;height:auto !important;aspect-ratio:2/3 !important;
   flex:0 0 auto !important;object-fit:cover !important;border-radius:12px !important;
 }
+
+/* 5. Mode Kaca: kartu dashboard digelapkan sedikit agar seluruh teks jelas */
+:root[data-theme="glass"]{--card:rgba(10,8,6,.66);--card2:rgba(10,8,6,.60)}
+:root[data-theme="glass"] #app .dx-sec,:root[data-theme="glass"] #app .card,:root[data-theme="glass"] #app .dx-k,
+:root[data-theme="glass"] #app .dx-q,:root[data-theme="glass"] #app .tk,:root[data-theme="glass"] #app .dstu-card{
+  background:rgba(10,8,6,.62) !important;
+}
+:root[data-theme="glass"] #app .dx-col .tk{background:rgba(10,8,6,.66) !important}
