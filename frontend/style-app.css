@@ -3065,18 +3065,23 @@ html body #app .dsl-s.sc-c .dsl-x>b{font-size:clamp(22px,2.6vw,34px) !important;
 }
 :root[data-theme="glass"] .mnote{color:rgba(255,255,255,.86) !important}
 
-/* 4. Poster ATS di kartu dashboard: kolom gambar tetap dan seragam, teks di samping, stub tiket di bawah */
+/* 4. Poster ATS di kartu dashboard: poster memanjang ke bawah di kolom kiri (seluruh tinggi kartu),
+      judul, keterangan, tanggal, dan countdown tetap di kolom kanan */
 .dx-col .tk{
-  display:grid !important;grid-template-columns:118px minmax(0,1fr) !important;gap:12px 14px !important;align-items:start !important;
+  display:grid !important;grid-template-columns:140px minmax(0,1fr) !important;
+  grid-template-rows:auto auto !important;column-gap:16px !important;row-gap:10px !important;align-items:start !important;
 }
 .dx-col .tk .tk-poster{
-  grid-column:1;grid-row:1;width:118px !important;height:auto !important;aspect-ratio:2/3 !important;
-  flex:none !important;object-fit:cover !important;border-radius:12px !important;
+  grid-column:1;grid-row:1 / span 2;width:100% !important;height:100% !important;min-height:100%;
+  align-self:stretch !important;flex:none !important;object-fit:cover !important;border-radius:12px !important;
 }
 .dx-col .tk .tl{grid-column:2;grid-row:1;min-width:0}
 .dx-col .tk .tr{
-  grid-column:1/-1;grid-row:2;width:auto !important;border-left:0 !important;border-top:2px dashed var(--gold-100);
-  border-radius:0 0 var(--r-m) var(--r-m);flex-direction:row;flex-wrap:wrap;justify-content:space-between;align-items:center;
+  grid-column:2;grid-row:2;width:auto !important;border-left:0 !important;border-top:2px dashed var(--gold-100);
+  border-radius:0 0 var(--r-m) var(--r-m);flex-direction:column;justify-content:center;
+}
+@media(max-width:520px){
+  .dx-col .tk{grid-template-columns:112px minmax(0,1fr) !important;column-gap:12px !important}
 }
 /* Di luar dashboard (halaman ATS), poster tetap berukuran seragam */
 .tk .tk-poster{
