@@ -1,0 +1,526 @@
+/* STC XXI Technical Report - tampilan gaya Figma (dua mode: Terang & Gelap).
+   Dimuat paling akhir, setelah style-app.css, sehingga berlaku untuk SEMUA kategori.
+   Prinsip: monokrom, tanpa gradien, tanpa bayangan pada kartu/tombol, sudut membulat besar,
+   tombol pill, aksen pastel (lime, lilac, krem) hanya sebagai blok warna kecil.
+   Kaca (glass) dihapus; data-theme="glass" dipetakan ke gelap di mode.js. */
+
+:root,
+:root[data-theme=light] {
+  --accent-ink: #1f1d3d;
+  --accent-bg: #dceeb1;
+  --accent: #1f1d3d;
+  --accent-soft: #efeef7;
+  --surface-dk: #111111;
+  --bg: #ffffff;
+  --card: #ffffff;
+  --card2: #f5f5f5;
+  --row2: #fafafa;
+  --bd: #e6e6e6;
+  --bd2: #cfcfcf;
+  --ink: #000000;
+  --txt: #000000;
+  --mut: #6b6b6b;
+  --ph: #9a9a9a;
+  --lbl: #1a1a1a;
+  --g50: #f5f5f5;
+  --g100: #ececec;
+  --g200: #dedede;
+  --dis: #f0f0f0;
+  --gt: #000000;
+  --gt2: #000000;
+  --gold: #1f1d3d;
+  --gold-hi: #1f1d3d;
+  --gold-lo: #1f1d3d;
+  --gold-50: #efeef7;
+  --gold-100: #c5b0f4;
+  --brass: var(--gold);
+  --brass-l: var(--gold-100);
+  --brass-d: var(--gold-lo);
+  --brass-50: var(--gold-50);
+  --moss-950: #000000;
+  --moss-900: #000000;
+  --moss-800: #000000;
+  --moss-700: #000000;
+  --moss-600: #000000;
+  --moss-500: #000000;
+  --ok: #1f6b3a;
+  --ok-bg: #c8e6cd;
+  --ok-hi: #1f6b3a;
+  --warn: #7a5200;
+  --warn-bg: #f4ecd6;
+  --red: #a4262b;
+  --red-bg: #efd4d4;
+  --info: #1f1d3d;
+  --info-bg: #c5b0f4;
+  --r-s: 12px;
+  --r-m: 16px;
+  --r-l: 24px;
+  --sh0: none;
+  --sh1: none;
+  --sh2: none;
+  --font: "Inter", "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --serif: var(--font);
+  color-scheme: light;
+}
+
+:root[data-theme=dark] {
+  --accent-ink: #dceeb1;
+  --accent-bg: #dceeb1;
+  --accent: #dceeb1;
+  --accent-soft: #1d2418;
+  --surface-dk: #161616;
+  --bg: #0a0a0a;
+  --card: #141414;
+  --card2: #1c1c1c;
+  --row2: #181818;
+  --bd: #2a2a2a;
+  --bd2: #3a3a3a;
+  --ink: #ffffff;
+  --txt: #f5f5f5;
+  --mut: #a3a3a3;
+  --ph: #6b6b6b;
+  --lbl: #e5e5e5;
+  --g50: #1a1a1a;
+  --g100: #242424;
+  --g200: #333333;
+  --dis: #1a1a1a;
+  --gt: #ffffff;
+  --gt2: #dceeb1;
+  --gold: #dceeb1;
+  --gold-hi: #dceeb1;
+  --gold-lo: #dceeb1;
+  --gold-50: #1d2418;
+  --gold-100: #dceeb1;
+  --ok: #c8e6cd;
+  --ok-bg: #1d2a20;
+  --ok-hi: #c8e6cd;
+  --warn: #f4ecd6;
+  --warn-bg: #2a2416;
+  --red: #efd4d4;
+  --red-bg: #2c1616;
+  --info: #c5b0f4;
+  --info-bg: #1f1a2e;
+  color-scheme: dark;
+}
+
+/* latar datar: hapus gradien dekoratif */
+html, body,
+:root[data-theme=dark] body,
+:root body {
+  background: var(--bg) !important;
+  background-image: none !important;
+  background-attachment: scroll !important;
+  color: var(--txt);
+  font-family: var(--font);
+}
+
+/* tanpa bayangan dan kilau pada komponen; fokus tetap terlihat */
+*, *::before, *::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* tombol: pill, tanpa gradien, target sentuh minimal 44px */
+.btn, :root[data-theme=dark] .btn, :root .btn {
+  background: var(--ink) !important;
+  color: var(--bg) !important;
+  border: 1px solid var(--ink) !important;
+  border-radius: 999px !important;
+  min-height: 44px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.btn:hover, :root[data-theme=dark] .btn:hover { background: #262626 !important; border-color: #262626 !important; }
+:root[data-theme=dark] .btn { background: var(--gold) !important; color: #000 !important; border-color: var(--gold) !important; }
+:root[data-theme=dark] .btn:hover { background: #cde39a !important; border-color: #cde39a !important; }
+.btn.sec, :root[data-theme=dark] .btn.sec, :root .btn.sec {
+  background: var(--bg) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--bd2) !important;
+}
+.btn.sec:hover { background: var(--g100) !important; border-color: var(--ink) !important; }
+.btn.danger { background: var(--red-bg) !important; color: var(--red) !important; border-color: var(--red-bg) !important; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* kartu dan panel: sudut membulat, garis tipis, tanpa bayangan */
+.card, .kpi, .dx-k, .mbox, #mbox, .lbox, .dsr-b, .dsr-r {
+  border-radius: var(--r-m);
+}
+.mbox, #mbox { background: var(--card); border: 1px solid var(--bd); }
+input, select, textarea {
+  border-radius: 12px;
+  min-height: 44px;
+  border: 1px solid var(--bd2);
+  background: var(--bg);
+  color: var(--txt);
+  font-family: var(--font);
+}
+input:focus, select:focus, textarea:focus { border-color: var(--ink); }
+
+/* header & sidebar: datar */
+#main > header, #side { background: var(--bg) !important; border-color: var(--bd) !important; }
+#nav a.on, #nav a[aria-current="page"] {
+  background: var(--ink) !important;
+  color: var(--bg) !important;
+  border-radius: 999px;
+}
+#nav a.on i, #nav a.on .ic { color: var(--bg); }
+:root[data-theme=dark] #nav a.on { background: var(--gold) !important; color: #000 !important; }
+:root[data-theme=dark] #nav a.on i, :root[data-theme=dark] #nav a.on .ic { color: #000; }
+
+/* mode: dua tombol segmen, aktif = hitam (terang) / lime (gelap) */
+.mseg { border-radius: 999px; border: 1px solid var(--bd2); background: var(--bg); }
+.mseg button { min-height: 40px; min-width: 44px; border-radius: 999px; }
+.mseg button.on { background: var(--ink) !important; color: var(--bg) !important; }
+:root[data-theme=dark] .mseg button.on { background: var(--gold) !important; color: #000 !important; }
+
+/* ================= modul DCP & Daily Film Testing ================= */
+.mdc-top { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin: 4px 0 16px; }
+.mdc-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; flex: 1; min-width: 0; }
+.mdc-kpi { background: var(--card); border: 1px solid var(--bd); border-radius: var(--r-m); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+.mdc-kpi small { color: var(--mut); font-size: 13px; }
+.mdc-kpi b { font-size: 28px; font-weight: 700; color: var(--ink); line-height: 1.1; }
+.mdc-kpi.ok { background: var(--ok-bg); border-color: transparent; }
+.mdc-kpi.warn { background: var(--warn-bg); border-color: transparent; }
+.mdc-kpi.bad { background: var(--red-bg); border-color: transparent; }
+.mdc-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.mdc-alert { border-radius: var(--r-m); padding: 14px 16px; margin: 0 0 14px; background: var(--warn-bg); color: var(--txt); }
+.mdc-alert.bad { background: var(--red-bg); }
+.mdc-alert ul { margin: 8px 0 0; padding-left: 18px; }
+.mdc-alert li { margin: 4px 0; }
+.mdc-filter { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.mdc-filter input { flex: 1 1 240px; }
+.mdc-filter select { flex: 0 1 180px; }
+.mdc-tbl { overflow-x: auto; border: 1px solid var(--bd); border-radius: var(--r-m); background: var(--card); }
+.mdc-tbl table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.mdc-tbl th, .mdc-tbl td { padding: 12px; text-align: left; border-bottom: 1px solid var(--bd); vertical-align: middle; }
+.mdc-tbl th { color: var(--mut); font-weight: 600; font-size: 13px; }
+.mdc-tbl tbody tr { cursor: pointer; }
+.mdc-tbl tbody tr:hover, .mdc-tbl tbody tr:focus-visible { background: var(--row2); }
+.mdc-empty { text-align: center; color: var(--mut); padding: 28px !important; }
+.mdc-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+.mdc-st { display: inline-flex; align-items: center; min-height: 26px; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; background: var(--g100); color: var(--txt); margin: 2px 4px 2px 0; }
+.mdc-st.mdc-selesai, .mdc-st.mdc-ok, .mdc-st.mdc-ft-passed { background: var(--ok-bg); color: var(--ok); }
+.mdc-st.mdc-bermasalah, .mdc-st.mdc-bad, .mdc-st.mdc-ft-failed, .mdc-st.mdc-rusak { background: var(--red-bg); color: var(--red); }
+.mdc-st.mdc-diproses, .mdc-st.mdc-warn, .mdc-st.mdc-ft-retest, .mdc-st.mdc-tidak-ada { background: var(--warn-bg); color: var(--warn); }
+.mdc-st.mdc-info { background: var(--info-bg); color: var(--info); }
+.mdc-st.mdc-na, .mdc-st.mdc-tidak-diperlukan { background: var(--g100); color: var(--mut); }
+.mdc-st.mdc-lengkap { background: var(--ok-bg); color: var(--ok); }
+.mdc-link { background: none; border: 0; padding: 4px 0; color: var(--ink); text-decoration: underline; cursor: pointer; font: inherit; min-height: 44px; }
+.mdc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px 16px; margin: 12px 0; }
+.mdc-grid small { display: block; color: var(--mut); font-size: 12.5px; margin-bottom: 2px; }
+.mdc-grid b { font-weight: 600; word-break: break-word; }
+.mdc-chk { list-style: none; padding: 0; margin: 0; }
+.mdc-chk li { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--bd); }
+.mdc-chk li span { flex: 1 1 160px; }
+.mdc-chk em { flex-basis: 100%; color: var(--mut); font-style: normal; font-size: 14px; }
+.mdc-tl { padding-left: 18px; margin: 8px 0; }
+.mdc-tl li { margin: 6px 0; }
+.mdc-tl li.warn { color: var(--warn); font-weight: 600; }
+.mdc-ph { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin: 8px 0; }
+.mdc-ph figure { margin: 0; }
+.mdc-ph img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--r-s); background: var(--g100); display: block; }
+.mdc-ph figcaption { font-size: 12px; color: var(--mut); margin-top: 4px; }
+.mdc-up { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px dashed var(--bd2); cursor: pointer; margin: 8px 0; }
+.mdc-up input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.mdc-foot { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.mdc-form label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; margin-bottom: 12px; color: var(--lbl); }
+.mdc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.mdc-fs { border: 1px solid var(--bd); border-radius: var(--r-m); padding: 12px; margin: 0 0 14px; }
+.mdc-fs legend { padding: 0 6px; font-weight: 600; }
+.mdc-kr { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center; padding: 6px 0; }
+.mdc-kr > span { font-weight: 600; }
+.mdc-ck { display: grid; grid-template-columns: 1fr; gap: 6px; padding: 8px 0; border-bottom: 1px solid var(--bd); }
+.mdc-ck > span { font-size: 14px; }
+.mdc-seg { display: inline-flex; border: 1px solid var(--bd2); border-radius: 999px; padding: 3px; gap: 2px; width: max-content; }
+.mdc-seg label { flex-direction: row; margin: 0; }
+.mdc-seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.mdc-seg span { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; min-width: 56px; padding: 0 12px; border-radius: 999px; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--mut); }
+.mdc-seg input:checked + span { background: var(--ink); color: var(--bg); }
+.mdc-seg input:focus-visible + span { outline: 2px solid var(--ink); outline-offset: 2px; }
+:root[data-theme=dark] .mdc-seg input:checked + span { background: var(--gold); color: #000; }
+.mdc-ket { min-height: 44px; }
+.mdc-chkbox { flex-direction: row !important; align-items: center; gap: 8px !important; }
+.mdc-chkbox input { width: 20px; height: 20px; min-height: 0; }
+.mdc-note { color: var(--mut); font-size: 13.5px; margin: 6px 0 12px; }
+.mdc-err { color: var(--red); font-size: 14px; min-height: 1em; margin: 4px 0; }
+
+/* layar sempit: satu kolom, tanpa scroll horizontal */
+@media (max-width: 640px) {
+  .mdc-row, .mdc-kr { grid-template-columns: 1fr; }
+  .mdc-kpi b { font-size: 24px; }
+  .mdc-tbl th:nth-child(2), .mdc-tbl td:nth-child(2) { display: none; }
+  .mdc-filter select { flex: 1 1 140px; }
+}
+
+/* ===== penimpa dengan spesifisitas tinggi (aturan lama memakai :not() dan selector ID) ===== */
+#app .btn, #app .btn:not(.sec), #app .btn:hover, #app .btn:not(.sec):hover,
+:root[data-theme=dark] #app .btn, :root[data-theme=dark] #app .btn:not(.sec),
+:root[data-theme=dark] #app .btn:not(.sec):hover, #login .btn, :root[data-theme=dark] #login .btn {
+  background: var(--ink) !important;
+  background-image: none !important;
+  color: var(--bg) !important;
+  border: 1px solid var(--ink) !important;
+  border-radius: 999px !important;
+}
+#app .btn:hover { background: #262626 !important; border-color: #262626 !important; }
+:root[data-theme=dark] #app .btn, :root[data-theme=dark] #app .btn:not(.sec), :root[data-theme=dark] #app .btn:not(.sec):hover {
+  background: var(--gold) !important; color: #000 !important; border-color: var(--gold) !important;
+}
+:root[data-theme=dark] #app .btn:hover { background: #cde39a !important; border-color: #cde39a !important; }
+#app .btn.sec, :root[data-theme=dark] #app .btn.sec, #app .sact .btn.sec {
+  background: var(--bg) !important; color: var(--ink) !important; border: 1px solid var(--bd2) !important;
+}
+#app .btn.sec:hover, :root[data-theme=dark] #app .btn.sec:hover { background: var(--g100) !important; border-color: var(--ink) !important; }
+
+/* banner halaman: datar, tanpa gradien, teks mengikuti mode */
+#app #phero, #app #phero.ph-a, #app #phero.ph-b, #app #phero.ph-g, #app #phero.ph-w {
+  background: var(--card) !important;
+  background-image: none !important;
+  border: 1px solid var(--bd);
+  color: var(--ink);
+  border-radius: var(--r-l);
+}
+#app #phero::after { display: none !important; }
+#app #phero h1, #app #phero p, #app #phero .ph-t i { color: var(--ink) !important; }
+#app #phero .ph-t i { background: var(--g100); border-radius: 999px; }
+#app #phero .ph-t i .ic { stroke: var(--ink); }
+
+/* layar sempit: KPI dan tombol bertumpuk; kolom sekunder disembunyikan */
+@media (max-width: 640px) {
+  .mdc-top { flex-direction: column; align-items: stretch; }
+  .mdc-acts { width: 100%; }
+  .mdc-acts .btn { flex: 1 1 0; }
+  .mdc-kpis { grid-template-columns: repeat(2, 1fr); }
+  .mdc-tbl th:nth-child(5), .mdc-tbl td:nth-child(5),
+  .mdc-tbl th:nth-child(6), .mdc-tbl td:nth-child(6) { display: none; }
+  .mdc-tbl.ft th:nth-child(4), .mdc-tbl.ft td:nth-child(4), .mdc-tbl.ft th:nth-child(5), .mdc-tbl.ft td:nth-child(5) { display: none; }
+}
+
+/* penimpa tombol dengan spesifisitas setara aturan lama (:root[data-theme] #app .btn:not(.sec) !important) */
+:root[data-theme] #app .btn, :root[data-theme] #modal .btn,
+:root[data-theme] #app .btn:not(.sec), :root[data-theme] #modal .btn:not(.sec),
+:root[data-theme] #app .btn:not(.sec):hover, :root[data-theme] #modal .btn:not(.sec):hover {
+  background: var(--ink) !important; background-image: none !important; color: var(--bg) !important;
+  border: 1px solid var(--ink) !important; border-radius: 999px !important;
+}
+:root[data-theme=dark] #app .btn:not(.sec), :root[data-theme=dark] #modal .btn:not(.sec),
+:root[data-theme=dark] #app .btn, :root[data-theme=dark] #modal .btn {
+  background: var(--gold) !important; background-image: none !important; color: #000 !important; border-color: var(--gold) !important;
+}
+:root[data-theme=dark] #app .btn:not(.sec):hover, :root[data-theme=dark] #modal .btn:not(.sec):hover {
+  background: #cde39a !important; border-color: #cde39a !important;
+}
+
+/* ===== sidebar: terang di mode Terang, hitam di mode Gelap (menimpa --side-bg dan gradien lama) ===== */
+:root[data-theme] #app #side {
+  background: var(--bg) !important;
+  color: var(--txt) !important;
+  border-right: 1px solid var(--bd) !important;
+}
+:root[data-theme] #app #side .brand b, :root[data-theme] #app #side .brand small { color: var(--txt) !important; }
+:root[data-theme] #app #side .brand small { color: var(--mut) !important; }
+:root[data-theme] #app #side .ng { color: var(--mut) !important; }
+:root[data-theme] #app #side #nav a { color: var(--txt) !important; background: transparent !important; }
+:root[data-theme] #app #side #nav a i, :root[data-theme] #app #side #nav a .ic { color: var(--txt) !important; stroke: currentColor; }
+:root[data-theme] #app #side #nav a.on { background: var(--ink) !important; color: var(--bg) !important; border-color: transparent !important; }
+:root[data-theme] #app #side #nav a.on i, :root[data-theme] #app #side #nav a.on .ic { color: var(--bg) !important; }
+:root[data-theme=dark] #app #side #nav a.on { background: var(--gold) !important; color: #000 !important; }
+:root[data-theme=dark] #app #side #nav a.on i, :root[data-theme=dark] #app #side #nav a.on .ic { color: #000 !important; }
+:root[data-theme] #app #side .ssrch { background: var(--card2) !important; border: 1px solid var(--bd) !important; color: var(--txt) !important; }
+:root[data-theme] #app #side .ssrch input { color: var(--txt) !important; background: transparent !important; }
+:root[data-theme] #app #side .ssrch input::placeholder { color: var(--mut) !important; }
+/* chip aktif (latar aksen) selalu berteks gelap di mode Gelap */
+:root[data-theme=dark] #app .dsl-tabs button.on, :root[data-theme=dark] #app [class*=tabs] button.on { color: #000 !important; }
+
+/* =====================================================================
+   SISTEM DESAIN LINEAR (menggantikan arah Figma). Dua mode: Terang & Gelap.
+   Sumber: Linear DESIGN.md. Dokumen itu hanya mendefinisikan mode gelap;
+   mode Terang diturunkan dari token yang sama (latar putih, teks hitam, aksen lavender).
+   Blok ini dimuat paling akhir, sehingga menimpa nilai sebelumnya.
+   ===================================================================== */
+:root,
+:root[data-theme=light] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --card: #ffffff;
+  --card2: #f6f7f7;
+  --row2: #fafafb;
+  --bd: #e6e8eb;
+  --bd2: #d0d6e0;
+  --ink: #000000;
+  --txt: #1c1d20;
+  --mut: #62666d;
+  --ph: #8a8f98;
+  --lbl: #1c1d20;
+  --g50: #f6f7f7;
+  --g100: #eef0f2;
+  --g200: #e0e3e8;
+  --dis: #f0f1f3;
+  --gt: #1c1d20;
+  --gt2: #5e6ad2;
+  --accent: #2f5d46;
+  --accent-bg: #2f5d46;
+  --accent-ink: #2f5d46;
+  --accent-line: #c8a25a;
+  --accent-soft: #eceefc;
+  --surface-dk: #0f1011;
+  --gold: #c8a25a;
+  --gold-hi: #828fff;
+  --gold-lo: #5e69d1;
+  --gold-50: #eceefc;
+  --gold-100: #d6daf7;
+  --brass: var(--gold);
+  --brass-l: var(--gold-100);
+  --brass-d: var(--gold-lo);
+  --brass-50: var(--gold-50);
+  --ok: #1d7f3a;
+  --ok-bg: #e4f5ea;
+  --ok-hi: #27a644;
+  --warn: #8a5a00;
+  --warn-bg: #fbf1dc;
+  --red: #b3261e;
+  --red-bg: #fbe7e6;
+  --info: #5e6ad2;
+  --info-bg: #eceefc;
+  --r-s: 6px;
+  --r-m: 12px;
+  --r-l: 16px;
+  --font: "Inter", "SF Pro Display", -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+  --serif: var(--font);
+}
+:root[data-theme=dark] {
+  color-scheme: dark;
+  --bg: #010102;
+  --card: #0f1011;
+  --card2: #141516;
+  --row2: #18191a;
+  --bd: #23252a;
+  --bd2: #34343a;
+  --ink: #f7f8f8;
+  --txt: #d0d6e0;
+  --mut: #8a8f98;
+  --ph: #62666d;
+  --lbl: #d0d6e0;
+  --g50: #141516;
+  --g100: #191a1b;
+  --g200: #23252a;
+  --dis: #141516;
+  --gt: #f7f8f8;
+  --gt2: #828fff;
+  --accent: #3d7356;
+  --accent-bg: #3d7356;
+  --accent-ink: #d8b56a;
+  --accent-line: #c8a25a;
+  --accent-soft: #1b1d33;
+  --surface-dk: #0f1011;
+  --gold: #d8b56a;
+  --gold-hi: #828fff;
+  --gold-lo: #5e69d1;
+  --gold-50: #1b1d33;
+  --gold-100: #5e6ad2;
+  --ok: #27a644;
+  --ok-bg: #0f2a18;
+  --ok-hi: #27a644;
+  --warn: #f5c451;
+  --warn-bg: #2b2412;
+  --red: #ff8a80;
+  --red-bg: #2c1614;
+  --info: #828fff;
+  --info-bg: #1b1d33;
+}
+
+/* radius & tipografi: kartu 12px, tombol 8px, pill hanya untuk chip & status */
+:root .card, :root .kpi, :root .dx-k, :root #phero { border-radius: var(--r-m) !important; }
+#app #phero { border-radius: var(--r-l) !important; }
+h1, h2, h3 { letter-spacing: -0.02em; font-weight: 600; }
+#app h1 { letter-spacing: -0.03em; }
+
+/* tombol primer: lavender, teks putih, 8px. Sekunder: surface-1 dengan hairline. */
+:root[data-theme] #app .btn, :root[data-theme] #modal .btn,
+:root[data-theme] #app .btn:not(.sec), :root[data-theme] #modal .btn:not(.sec),
+:root[data-theme=dark] #app .btn:not(.sec), :root[data-theme=dark] #modal .btn:not(.sec),
+:root[data-theme=dark] #app .btn, :root[data-theme=dark] #modal .btn,
+#login .btn, #login #lbtn {
+  background: #2f5d46 !important; background-image: none !important; color: #ffffff !important;
+  border: 1px solid #c8a25a !important; border-radius: 8px !important; font-weight: 500; min-height: 40px;
+}
+:root[data-theme] #app .btn:hover, :root[data-theme] #modal .btn:hover,
+:root[data-theme] #app .btn:not(.sec):hover, :root[data-theme] #modal .btn:not(.sec):hover,
+:root[data-theme=dark] #app .btn:not(.sec):hover, :root[data-theme=dark] #modal .btn:not(.sec):hover {
+  background: #d8b56a !important; border-color: #d8b56a !important; color: #ffffff !important;
+}
+:root[data-theme] #app .btn.sec, :root[data-theme] #modal .btn.sec,
+:root[data-theme=dark] #app .btn.sec, :root[data-theme=dark] #modal .btn.sec,
+:root[data-theme] #app .sact .btn.sec {
+  background: var(--card) !important; color: var(--ink) !important; border: 1px solid var(--bd2) !important; border-radius: 8px !important;
+}
+:root[data-theme] #app .btn.sec:hover, :root[data-theme] #modal .btn.sec:hover {
+  background: var(--card2) !important; border-color: var(--bd2) !important;
+}
+/* navigasi aktif & segmen mode: lift permukaan, bukan blok warna penuh */
+:root[data-theme] #app #side #nav a.on, :root[data-theme=dark] #app #side #nav a.on {
+  background: var(--card2) !important; color: var(--ink) !important; border: 1px solid var(--bd) !important; border-radius: 8px !important;
+}
+:root[data-theme] #app #side #nav a.on i, :root[data-theme] #app #side #nav a.on .ic,
+:root[data-theme=dark] #app #side #nav a.on i, :root[data-theme=dark] #app #side #nav a.on .ic { color: #2f5d46 !important; }
+:root[data-theme] #app .mseg button.on, :root[data-theme=dark] #app .mseg button.on {
+  background: var(--card2) !important; color: var(--ink) !important;
+}
+:root[data-theme] #app .dsl-tabs button.on, :root[data-theme=dark] #app .dsl-tabs button.on,
+:root[data-theme] #app [class*=tabs] button.on, :root[data-theme=dark] #app [class*=tabs] button.on {
+  background: #c8a25a !important; color: #ffffff !important; border-color: #c8a25a !important;
+}
+:root[data-theme] .mdc-seg input:checked + span { background: #2f5d46 !important; color: #ffffff !important; }
+
+/* ===== cetak: hanya isi halaman, tanpa navigasi dan tombol ===== */
+.mdc-perm { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 8px 0; }
+.mdc-perm label { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; font-size: 14px; }
+.mdc-perm input { width: 18px; height: 18px; min-height: 0; }
+@media print {
+  #side, #tabs, #nsheet, #npanel, #toast, header, #phero, .mdc-acts, .mdc-foot, .mdc-filter, .mdc-up, #cp, .mseg, .clk, .uhead { display: none !important; }
+  #app, #main, #view { display: block !important; background: #fff !important; color: #000 !important; }
+  .mdc-tbl, .mdc-kpi, .mdc-alert { border-color: #999 !important; background: #fff !important; color: #000 !important; }
+  .mdc-tbl tbody tr { cursor: default; }
+}
+
+/* =====================================================================
+   CAMPURAN DESAIN: 70% Linear (dasar permukaan gelap, ladder, hairline),
+   20% IBM Carbon (sudut hampir persegi, judul Plex Sans berbobot 300, permukaan terang abu-abu),
+   identitas Cinema XXI (hijau lumut sebagai isi, gold untuk garis dan fokus).
+   ===================================================================== */
+:root, :root[data-theme=light] {
+  --bg: #ffffff; --card: #ffffff; --card2: #f4f4f4; --row2: #f9f9f9;
+  --bd: #e0e0e0; --bd2: #c6c6c6;
+  --ink: #161616; --txt: #161616; --mut: #525252; --ph: #8c8c8c; --lbl: #161616;
+  --gt: #161616; --gt2: #2f5d46;
+  --accent-bg: #2f5d46; --accent: #2f5d46; --accent-ink: #2f5d46; --accent-line: #c8a25a;
+  --r-s: 4px; --r-m: 8px; --r-l: 12px;
+  --display: "IBM Plex Sans", "Inter", system-ui, sans-serif;
+}
+:root[data-theme=dark] {
+  --accent-bg: #3d7356; --accent: #3d7356; --accent-ink: #d8b56a; --accent-line: #c8a25a;
+  --r-s: 4px; --r-m: 8px; --r-l: 12px;
+  --display: "IBM Plex Sans", "Inter", system-ui, sans-serif;
+}
+/* judul: Plex Sans 300 untuk ukuran besar (signature IBM), 400–500 untuk judul kecil */
+#app h1, .lhero h1, .lbox h2, .ph-t h1, .dh-t h1, .ds .n, .dc-k b, .dsr strong {
+  font-family: var(--display) !important; font-weight: 300 !important; letter-spacing: -0.02em;
+}
+#app h2, #app h3 { font-family: var(--display); font-weight: 400; letter-spacing: 0; }
+/* tombol: 6px, teks 500; kartu, input, tabel: 4–8px */
+:root[data-theme] #app .btn, :root[data-theme] #modal .btn, #login .btn, #login #lbtn { border-radius: 6px !important; }
+:root[data-theme] #app .mdc-tbl, :root[data-theme] #app .mdc-kpi, :root[data-theme] #app .mdc-alert,
+:root[data-theme] #app .mdc-fs { border-radius: 8px; }
+input, select, textarea { border-radius: 4px !important; }
+.mdc-pdel { margin-top: 4px; min-height: 36px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--bd2); background: var(--card); color: var(--red); font-size: 13px; cursor: pointer; width: 100%; }
+.mdc-pdel:hover { background: var(--red-bg); }
+/* sapaan dashboard: Plex Sans 300 (signature IBM), lebih spesifik dari aturan lama */
+html body #app .dx-top h1, html body #app .dh-t h1, html body #app #phero h1 {
+  font-family: var(--display) !important; font-weight: 300 !important; letter-spacing: -0.02em !important;
+}

@@ -3,17 +3,16 @@
    Pemilih berupa kontrol segmen [data-mode] di header. Pilihan disimpan di perangkat (localStorage).
    Warna grafik meteran ikut diganti sesuai mode agar tetap terbaca. */
 (function () {
-  var MODES = ['dark', 'glass', 'light'];
-  var NAMES = { dark: 'Gelap', glass: 'Kaca', light: 'Terang' };
-  var META = { dark: '#0a1511', glass: '#120e0a', light: '#ffffff' };
+  var MODES = ['dark', 'light'];
+  var NAMES = { dark: 'Gelap', light: 'Terang' };
+  var META = { dark: '#0a0a0a', light: '#ffffff' };
   // Warna seri grafik per mode: kontras cukup di latar gelap, kaca, dan terang.
   var CHART = {
-    dark:  { listrik: '#e1c476', wbp: '#6fd0a0', genset: '#b99cf0', air: '#7cc4ff' },
-    glass: { listrik: '#ffd98a', wbp: '#9fe6bd', genset: '#d7c2ff', air: '#9fd3ff' },
-    light: { listrik: '#8a5a00', wbp: '#17703f', genset: '#6a3fb0', air: '#1a5aa5' }
+    dark:  { listrik: '#dceeb1', wbp: '#c5b0f4', genset: '#f3c9b6', air: '#c8e6cd' },
+    light: { listrik: '#1f1d3d', wbp: '#6a4fb0', genset: '#b5562f', air: '#2f6f4a' }
   };
 
-  function valid(t) { return MODES.indexOf(t) >= 0 ? t : 'dark'; }
+  function valid(t) { if (t === 'glass') t = 'dark'; return MODES.indexOf(t) >= 0 ? t : 'dark'; }
   function current() { return valid(document.documentElement.getAttribute('data-theme')); }
 
   function paintChart(t) {
