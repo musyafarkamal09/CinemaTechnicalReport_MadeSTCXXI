@@ -273,10 +273,6 @@
       var h = '<div class="mdc-top"><div class="mdc-kpis">' + kpi('Dites hari ini', d.hariIni, '') + kpi('PASSED', d.passed, 'ok') +
         kpi('FAILED', d.failed, d.failed ? 'bad' : '') + kpi('RETEST', d.retest, d.retest ? 'warn' : '') + '</div>' +
         '<div class="mdc-acts">' + (canWrite() ? '<button type="button" class="btn" id="ftnew">+ Input Testing</button>' : '') + '</div></div>';
-      if ((d.belumDites || []).length) {
-        h += '<div class="mdc-alert"><b>Film aktif belum dites hari ini (' + d.belumDites.length + ')</b><ul>' +
-          d.belumDites.slice(0, 8).map(function (f) { return '<li>' + q(f.title) + '</li>'; }).join('') + '</ul></div>';
-      }
       if ((d.perluTindakan || []).length) {
         h += '<div class="mdc-alert bad"><b>Perlu tindakan / tes ulang (' + d.perluTindakan.length + ')</b><ul>' +
           d.perluTindakan.map(function (t) { return '<li><button type="button" class="mdc-link" data-ft-open="' + q(t.id) + '">' + q(t.film) + ' · ' + q(t.id) + '</button> ' + stFt(t.status) + '</li>'; }).join('') + '</ul></div>';
