@@ -94,7 +94,7 @@
         kpi('DCP Keluar', d.totalKeluar, '') + kpi('DCP Masuk', d.totalMasuk, '') +
         kpi('Belum kembali', d.belumKembali, d.belumKembali ? 'warn' : '') +
         kpi('Diproses', d.dalamProses, '') + kpi('Bermasalah', d.bermasalah, d.bermasalah ? 'bad' : '') + '</div>' +
-        '<div class="mdc-acts">' + (canWrite() ? '<button type="button" class="btn" data-dcp-new="KELUAR">+ DCP Keluar</button><button type="button" class="btn sec" data-dcp-new="MASUK">+ DCP Masuk</button>' : '') + '<button type="button" class="btn sec" id="dcpprint">Cetak</button>' + (curU().role === 'ADMIN' ? '<button type="button" class="btn sec" id="dcpadm">Izin &amp; pengingat</button>' : '') + '</div></div>';
+        '<div class="mdc-acts">' + (canWrite() ? '<div class="mdc-tg" role="radiogroup" aria-label="Jenis laporan"><label><input type="radio" name="dcpjt" value="KELUAR" checked><span>DCP Keluar</span></label><label><input type="radio" name="dcpjt" value="MASUK"><span>DCP Masuk</span></label></div><button type="button" class="btn" id="dcpnew">+ Input laporan</button>' : '') + dlMenu('dcp') + (curU().role === 'ADMIN' ? '<button type="button" class="btn sec" id="dcpadm">Izin &amp; pengingat</button>' : '') + '</div></div>';
       if (over) {
         h += '<div class="mdc-alert" role="alert"><b>' + over + ' DCP belum kembali lebih dari ' + d.batasHari + ' hari</b><ul>' +
           d.overdue.slice(0, 6).map(function (o) { return '<li>' + q(o.film) + ' · ' + q(o.kodeDisk) + ' · keluar ' + q(o.tanggal) + '</li>'; }).join('') + '</ul></div>';
@@ -117,8 +117,9 @@
     $('dcpq').oninput = function (e) { DST.q = e.target.value; clearTimeout(t); t = setTimeout(vDcp, 350); };
     $('dcpj').onchange = function (e) { DST.jenis = e.target.value; vDcp(); };
     $('dcps').onchange = function (e) { DST.status = e.target.value; vDcp(); };
-    document.querySelectorAll('[data-dcp-new]').forEach(function (b) { b.onclick = function () { dcpForm(b.dataset.dcpNew, null); }; });
-    $('dcpprint').onclick = function () { window.print(); };
+    if ($('dcpnew')) $('dcpnew').onclick = function () { var c = document.querySelector('input[name=dcpjt]:checked'); dcpForm(c ? c.value : 'KELUAR', null); };
+    $('dcpxl').onclick = function () { dcpExport('xlsx'); };
+    $('dcppdf').onclick = function () { dcpExport('pdf'); };
     if ($('dcpadm')) $('dcpadm').onclick = function () { permAdmin(); };
     document.querySelectorAll('[data-dcp-open]').forEach(function (r) {
       r.onclick = function () { dcpDetail(r.dataset.dcpOpen); };
@@ -146,6 +147,71 @@
     });
   }
 
+  /* ---------- unduh Excel & PDF: elemen dan pola sama dengan laporan lain (menu Download) ---------- */
+  function dlMenu(k) {
+    return '<div class="dlw"><button type="button" class="btn sec" data-dlt aria-haspopup="menu" aria-expanded="false">Download</button>' +
+      '<div class="dlm hidden" role="menu"><button type="button" role="menuitem" id="' + k + 'xl">Excel (.xlsx)</button>' +
+      '<button type="button" role="menuitem" id="' + k + 'pdf">PDF (.pdf)</button></div></div>';
+  }
+  function sv(v) { return v == null ? '' : String(v); }
+  function needLib(pdf) {
+    var ok = pdf ? !!(window.jspdf && window.jspdf.jsPDF) : typeof XLSX !== 'undefined';
+    if (!ok) toast('Library ' + (pdf ? 'PDF' : 'Excel') + ' belum termuat. Periksa koneksi internet lalu muat ulang halaman.', 1);
+    return ok;
+  }
+  function recSave(title, pairs, tables, fmt, file) {
+    var pdf = fmt === 'pdf';
+    if (!needLib(pdf)) return;
+    pairs = pairs.map(function (p) { return [sv(p[0]), sv(p[1])]; });
+    if (pdf) {
+      var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+      doc.setFontSize(14); doc.text(title, 14, 16);
+      doc.autoTable({ startY: 22, body: pairs, theme: 'grid', margin: { left: 14, right: 14 }, styles: { fontSize: 9, cellPadding: 2, overflow: 'linebreak' }, columnStyles: { 0: { cellWidth: 50, fontStyle: 'bold' } } });
+      tables.forEach(function (t) {
+        doc.autoTable({ startY: doc.lastAutoTable.finalY + 8, head: [t.head], body: t.rows, theme: 'grid', margin: { left: 14, right: 14 }, styles: { fontSize: 9, cellPadding: 2, overflow: 'linebreak' }, headStyles: { fillColor: [47, 93, 70], textColor: 255 } });
+      });
+      doc.save(file + '.pdf');
+    } else {
+      var aoa = [[title + ' - STC XXI Technical Report'], []].concat(pairs, [[]]);
+      tables.forEach(function (t) { aoa = aoa.concat([t.head], t.rows, [[]]); });
+      var ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!cols'] = [{ wch: 26 }, { wch: 36 }, { wch: 18 }, { wch: 40 }, { wch: 14 }];
+      var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Laporan');
+      XLSX.writeFile(wb, file + '.xlsx');
+    }
+  }
+  function dcpExport(fmt) {
+    api('dcp_list', { q: DST.q, jenis: DST.jenis, status: DST.status }).then(function (rows) {
+      if (!rows.length) { toast('Tidak ada data untuk diunduh.', 1); return; }
+      var head = ['ID', 'Jenis', 'Tanggal', 'Jam', 'Film', 'Kode disk', 'PH', 'Format', 'Status', 'Kelengkapan', 'Penyerah', 'Penerima', 'Tujuan'];
+      var body = rows.map(function (x) {
+        return [x.id, x.jenis === 'KELUAR' ? 'Keluar' : 'Masuk', x.tanggal, x.jam, x.film, x.kodeDisk, x.ph, x.format, x.status, x.incomplete ? 'Belum lengkap' : 'Lengkap', x.penyerah, x.penerima, x.tujuan].map(sv);
+      });
+      recSave('Laporan DCP Management', [['Jumlah laporan', rows.length], ['Tanggal cetak', jkt()]], [{ head: head, rows: body }], fmt, 'Laporan_DCP_STCXXI_' + jkt());
+    }).catch(function (e) { toast(e.message, 1); });
+  }
+  function ftExport(fmt) {
+    api('ft_list', { q: FST.q, status: FST.status, studio: FST.studio }).then(function (rows) {
+      if (!rows.length) { toast('Tidak ada data untuk diunduh.', 1); return; }
+      var head = ['ID', 'Tanggal', 'Jam', 'Film', 'Studio', 'Format', 'Server', 'Proyektor', 'Tester', 'Hasil'];
+      var body = rows.map(function (x) { return [x.id, x.tanggal, x.jam, x.film, x.studio, x.format, x.server, x.projector, x.tester, x.status].map(sv); });
+      recSave('Laporan Daily Film Testing', [['Jumlah laporan', rows.length], ['Tanggal cetak', jkt()]], [{ head: head, rows: body }], fmt, 'Laporan_Testing_STCXXI_' + jkt());
+    }).catch(function (e) { toast(e.message, 1); });
+  }
+  function dcpOneExport(x, fmt) {
+    var pairs = [['ID', x.id], ['Jenis', x.jenis === 'KELUAR' ? 'DCP Keluar' : 'DCP Masuk'], ['Tanggal', x.tanggal + ' ' + x.jam], ['Film', x.film], ['Kode disk', x.kodeDisk], ['PH', x.ph], ['Format', x.format || '-'], ['Penyerah', x.penyerah], ['Penerima', x.penerima], ['Tujuan / asal', x.tujuan], ['Status', x.status], ['Keterangan', x.keterangan || '-'], ['Diverifikasi', x.verifiedAt ? (x.verifiedBy + ' · ' + dt(x.verifiedAt)) : 'Belum']];
+    var tables = [{ head: ['Komponen', 'Status', 'Keterangan'], rows: (x.kelengkapan || []).map(function (k) { return [k.name, k.status, k.note || '-'].map(sv); }) }];
+    recSave('DCP ' + (x.jenis === 'KELUAR' ? 'Keluar' : 'Masuk') + ' ' + x.id, pairs, tables, fmt, 'DCP_' + x.id);
+  }
+  function ftOneExport(L, items, fmt) {
+    var pairs = [['ID', L.id], ['Tanggal', L.tanggal + ' ' + L.jam], ['Judul film', L.film], ['Studio', L.studio], ['Format', L.format], ['Server', L.server], ['Proyektor', L.projector], ['Tester', L.tester], ['Hasil', L.status], ['Masalah', L.masalah || '-'], ['Tindakan', L.tindakan || '-'], ['Catatan teknisi', L.catatanTeknisi || '-']];
+    var tables = [{ head: ['Item', 'Hasil', 'Keterangan'], rows: (L.checklist || []).map(function (c) {
+      var it = (items || []).filter(function (i) { return i.id === c.id; })[0];
+      return [it ? it.label : c.id, c.val || '-', c.ket || '-'].map(sv);
+    }) }];
+    recSave('Daily Film Testing ' + L.id, pairs, tables, fmt, 'Testing_' + L.id);
+  }
+
   function dcpDetail(id) {
     api('dcp_get', { id: id }).then(function (r) {
       var x = r.transaksi, kel = x.kelengkapan || [];
@@ -167,12 +233,14 @@
         return '<figure><img loading="lazy" data-fid="' + q(p.fotoId) + '" data-fk="dcp" alt="' + q(p.kind) + '"><figcaption>' + q(p.kind) + '</figcaption>' + (can('photo') ? '<button type="button" class="mdc-pdel" data-pdel="' + q(p.fotoId) + '" data-pk="dcp" data-id="' + q(x.id) + '" aria-label="Hapus foto ' + q(p.kind) + '">Hapus</button>' : '') + '</figure>';
       }).join('') + '</div>';
       if (canWrite()) h += '<label class="mdc-up">Tambah foto<input type="file" accept="image/*" multiple id="dcpph"></label>';
-      h += '<div class="mdc-foot">' + (can('verify') && !x.verifiedAt ? '<button type="button" class="btn" id="dcpver">Verifikasi</button>' : '') + (canWrite() ? '<button type="button" class="btn sec" id="dcpedit">Ubah</button>' : '') +
+      h += '<div class="mdc-foot">' + dlMenu('mdc') + (can('verify') && !x.verifiedAt ? '<button type="button" class="btn" id="dcpver">Verifikasi</button>' : '') + (canWrite() ? '<button type="button" class="btn sec" id="dcpedit">Ubah</button>' : '') +
         (x.jenis === 'KELUAR' && !x.masukId && canWrite() ? '<button type="button" class="btn sec" id="dcpin">Catat DCP Masuk</button>' : '') +
         (canDel() ? '<button type="button" class="btn danger" id="dcpdel">Hapus</button>' : '') + '</div>';
       modal(h);
       bindPhotoDel();
       loadPhotos();
+      if ($('mdcxl')) $('mdcxl').onclick = function () { dcpOneExport(x, 'xlsx'); };
+      if ($('mdcpdf')) $('mdcpdf').onclick = function () { dcpOneExport(x, 'pdf'); };
       if ($('dcpph')) $('dcpph').onchange = function (e) { sendPhotos(x.id, e.target.files, 'Foto DCP', 'dcp_photo_save', function () { dcpDetail(x.id); }); };
       if ($('dcpedit')) $('dcpedit').onclick = function () { dcpForm(x.jenis, x); };
       if ($('dcpver')) $('dcpver').onclick = function () { api('dcp_verify_save', { id: x.id }).then(function () { toast('DCP diverifikasi'); dcpDetail(x.id); }).catch(function (e) { toast(e.message, 1); }); };
@@ -191,12 +259,15 @@
       var lk = keluarRef || null;
       var h = '<h2>' + (row ? 'Ubah ' : '') + (jenis === 'KELUAR' ? 'DCP Keluar' : 'DCP Masuk') + '</h2>' +
         '<form id="dcpf" class="mdc-form" novalidate>' +
+        '<div class="mdc-sec">Jadwal</div>' +
         '<div class="mdc-row"><label>Tanggal<input name="tanggal" type="date" required value="' + q(x.tanggal || jkt()) + '"></label>' +
         '<label>Jam<input name="jam" type="time" required value="' + q(x.jam || jam()) + '"></label></div>' +
+        '<div class="mdc-sec">Film dan disk</div>' +
         '<label>Film<input name="film" required maxlength="200" value="' + q(x.film || (lk && lk.film) || '') + '"></label>' +
         '<div class="mdc-row"><label>Kode disk<input name="kodeDisk" required maxlength="60" value="' + q(x.kodeDisk || (lk && lk.kodeDisk) || '') + '"></label>' +
         '<label>Format<select name="format">' + FMT_DCP.map(function (f) { return '<option' + ((x.format || '') === f ? ' selected' : '') + '>' + f + '</option>'; }).join('') + '</select></label></div>' +
         '<label>PH (Production House)<input name="ph" required maxlength="160" value="' + q(x.ph || '') + '"></label>' +
+        '<div class="mdc-sec">Pihak</div>' +
         '<div class="mdc-row"><label>' + (jenis === 'KELUAR' ? 'Penyerah (Tim Teknikal)' : 'Penyerah (dari PH / Penerima)') + '<input name="penyerah" required maxlength="120" value="' + q(x.penyerah || '') + '"></label>' +
         '<label>' + (jenis === 'KELUAR' ? 'Penerima' : 'Penerima (Tim Teknikal)') + '<input name="penerima" required maxlength="120" value="' + q(x.penerima || '') + '"></label></div>' +
         '<label>' + (jenis === 'KELUAR' ? 'Tujuan' : 'Asal') + '<input name="tujuan" required maxlength="200" value="' + q(x.tujuan || '') + '"></label>' +
@@ -206,8 +277,10 @@
             KOMP_ST.map(function (s) { return '<option' + (c.status === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select>' +
             '<input name="kn' + i + '" maxlength="300" placeholder="Keterangan (wajib jika Tidak Ada / Rusak)" value="' + q(c.note || '') + '" aria-label="Keterangan ' + q(n) + '"></div>';
         }).join('') + '</fieldset>' +
+        '<div class="mdc-sec">Catatan dan foto</div>' +
         '<label>Keterangan umum<textarea name="keterangan" maxlength="2000" rows="2">' + q(x.keterangan || '') + '</textarea></label>' +
         '<label>Status<select name="status">' + STAT_DCP.map(function (s) { return '<option' + ((x.status || 'Diproses') === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></label>' +
+        '<label>Foto (opsional, JPG/PNG/WebP)<input type="file" accept="image/*" multiple id="dcpfoto"></label>' +
         '<p class="mdc-err" id="dcperr" role="alert"></p>' +
         '<div class="mdc-foot"><button type="button" class="btn sec" id="dcpx">Batal</button><button type="submit" class="btn" id="dcpok">Simpan</button></div></form>';
       modal(h);
@@ -228,7 +301,10 @@
         err.textContent = '';
         $('dcpok').disabled = true;
         api('dcp_save', p).then(function (id) {
-          closeM(); toast('DCP tersimpan'); vDcp(); dcpDetail(id);
+          var pf = $('dcpfoto') && $('dcpfoto').files;
+          closeM(); toast('DCP tersimpan'); vDcp();
+          if (pf && pf.length) sendPhotos(id, pf, 'Foto DCP', 'dcp_photo_save', function () { dcpDetail(id); });
+          else dcpDetail(id);
         }).catch(function (er) { $('dcpok').disabled = false; err.textContent = er.message; });
       };
     });
@@ -272,7 +348,7 @@
       var d = r[0], list = r[1] || [];
       var h = '<div class="mdc-top"><div class="mdc-kpis">' + kpi('Dites hari ini', d.hariIni, '') + kpi('PASSED', d.passed, 'ok') +
         kpi('FAILED', d.failed, d.failed ? 'bad' : '') + kpi('RETEST', d.retest, d.retest ? 'warn' : '') + '</div>' +
-        '<div class="mdc-acts">' + (canWrite() ? '<button type="button" class="btn" id="ftnew">+ Input Testing</button>' : '') + '</div></div>';
+        '<div class="mdc-acts">' + (canWrite() ? '<button type="button" class="btn" id="ftnew">+ Input Testing</button>' : '') + dlMenu('ft') + '</div></div>';
       if ((d.perluTindakan || []).length) {
         h += '<div class="mdc-alert bad"><b>Perlu tindakan / tes ulang (' + d.perluTindakan.length + ')</b><ul>' +
           d.perluTindakan.map(function (t) { return '<li><button type="button" class="mdc-link" data-ft-open="' + q(t.id) + '">' + q(t.film) + ' · ' + q(t.id) + '</button> ' + stFt(t.status) + '</li>'; }).join('') + '</ul></div>';
@@ -290,6 +366,8 @@
       $('fts').onchange = function (e) { FST.status = e.target.value; vFt(); };
       $('ftstu').onchange = function (e) { FST.studio = e.target.value; vFt(); };
       if ($('ftnew')) $('ftnew').onclick = function () { ftForm(null, null); };
+      $('ftxl').onclick = function () { ftExport('xlsx'); };
+      $('ftpdf').onclick = function () { ftExport('pdf'); };
       document.querySelectorAll('[data-ft-open]').forEach(function (rw) {
         rw.onclick = function () { ftDetail(rw.dataset.ftOpen); };
         rw.onkeydown = function (e) { if (e.key === 'Enter') ftDetail(rw.dataset.ftOpen); };
@@ -321,7 +399,7 @@
         return '<figure><img loading="lazy" data-fid="' + q(p.fotoId) + '" data-fk="ft" alt="' + q(p.kind) + '"><figcaption>' + q(p.kind) + '</figcaption>' + (can('photo') ? '<button type="button" class="mdc-pdel" data-pdel="' + q(p.fotoId) + '" data-pk="ft" data-id="' + q(L.id) + '" aria-label="Hapus foto ' + q(p.kind) + '">Hapus</button>' : '') + '</figure>';
       }).join('') + '</div>';
       if (canWrite()) h += '<label class="mdc-up">Tambah foto<input type="file" accept="image/*" multiple id="ftph"></label>';
-      h += '<div class="mdc-foot">' +
+      h += '<div class="mdc-foot">' + dlMenu('mdc') +
         (canWrite() && (L.status === 'FAILED' || L.status === 'RETEST') && !r.retestId ? '<button type="button" class="btn" id="ftre">Buat pengetesan ulang</button>' : '') +
         (r.retestId ? '<button type="button" class="btn sec" id="ftgo" data-id="' + q(r.retestId) + '">Lihat pengetesan ulang</button>' : '') +
         (canWrite() && !r.retestId ? '<button type="button" class="btn sec" id="ftedit">Ubah</button>' : '') +
@@ -329,6 +407,8 @@
       modal(h);
       bindPhotoDel();
       loadPhotos();
+      if ($('mdcxl')) $('mdcxl').onclick = function () { ftOneExport(L, items, 'xlsx'); };
+      if ($('mdcpdf')) $('mdcpdf').onclick = function () { ftOneExport(L, items, 'pdf'); };
       if ($('ftph')) $('ftph').onchange = function (e) { sendPhotos(L.id, e.target.files, 'Dokumentasi', 'ft_photo_save', function () { ftDetail(L.id); }); };
       if ($('ftre')) $('ftre').onclick = function () { ftForm(null, L); };
       if ($('ftgo')) $('ftgo').onclick = function () { ftDetail($('ftgo').dataset.id); };
@@ -350,6 +430,7 @@
       var h = '<h2>' + (row ? 'Ubah laporan' : parent ? 'Pengetesan ulang' : 'Input Testing') + '</h2>' +
         (parent ? '<p class="mdc-note">Pengetesan ulang untuk <b class="mdc-mono">' + q(parent.id) + '</b>. Laporan lama tetap tersimpan sebagai riwayat.</p>' : '') +
         '<form id="ftf" class="mdc-form" novalidate>' +
+        '<div class="mdc-sec">Jadwal dan lokasi</div>' +
         '<div class="mdc-row"><label>Tanggal<input name="tanggal" type="date" required value="' + q(x.tanggal || (parent && parent.tanggal) || jkt()) + '"></label>' +
         '<label>Jam<input name="jam" type="time" required value="' + q(x.jam || jam()) + '"></label></div>' +
         '<label>Judul film<input name="film" required maxlength="200" value="' + q(x.film || (parent && parent.film) || '') + '"></label>' +
@@ -357,6 +438,7 @@
         '<label>Format<select name="format">' + FMT_FT.map(function (f) { return '<option' + ((x.format || (parent && parent.format) || '2D') === f ? ' selected' : '') + '>' + f + '</option>'; }).join('') + '</select></label></div>' +
         '<div class="mdc-row"><label>Server<input name="server" maxlength="80" value="' + q(x.server || (parent && parent.server) || '') + '"></label>' +
         '<label>Proyektor<input name="projector" maxlength="80" value="' + q(x.projector || (parent && parent.projector) || '') + '"></label></div>' +
+        '<div class="mdc-sec">Pengetes</div>' +
         '<label>Tester<input name="tester" required maxlength="120" value="' + q(x.tester || (curU() && curU().name) || '') + '"></label>';
       groups.forEach(function (g) {
         h += '<fieldset class="mdc-fs"><legend>' + q(g.name) + '</legend>';
@@ -369,11 +451,13 @@
         });
         h += '</fieldset>';
       });
+      h += '<div class="mdc-sec">Catatan dan foto</div>';
       h += '<label>Deskripsi masalah (wajib jika ada FAIL)<textarea name="masalah" maxlength="2000" rows="2">' + q(x.masalah || '') + '</textarea></label>' +
         '<label>Tindakan perbaikan (wajib jika ada FAIL)<textarea name="tindakan" maxlength="2000" rows="2">' + q(x.tindakan || '') + '</textarea></label>' +
         '<label>Catatan teknisi<textarea name="catatanTeknisi" maxlength="2000" rows="2">' + q(x.catatanTeknisi || '') + '</textarea></label>' +
         '<label class="mdc-chkbox"><input type="checkbox" name="retest"' + (x.status === 'RETEST' ? ' checked' : '') + '> Perlu pengetesan ulang (hasil RETEST)</label>' +
         '<p class="mdc-note">Hasil dihitung otomatis: ada item FAIL = FAILED; tanpa FAIL dan ditandai tes ulang = RETEST; selain itu = PASSED.</p>' +
+        '<label>Foto (opsional, JPG/PNG/WebP)<input type="file" accept="image/*" multiple id="ftfoto"></label>' +
         '<p class="mdc-err" id="ftferr" role="alert"></p>' +
         '<div class="mdc-foot"><button type="button" class="btn sec" id="ftx">Batal</button><button type="submit" class="btn" id="ftok">Simpan</button></div></form>';
       modal(h);
@@ -407,7 +491,12 @@
           masalah: f.masalah.value.trim(), tindakan: f.tindakan.value.trim(), catatanTeknisi: f.catatanTeknisi.value.trim(),
           retest: !!f.retest.checked, parentId: parent ? parent.id : ''
         };
-        api('ft_save', p).then(function (id) { closeM(); toast('Testing tersimpan'); vFt(); ftDetail(id); })
+        api('ft_save', p).then(function (id) {
+          var pf = $('ftfoto') && $('ftfoto').files;
+          closeM(); toast('Testing tersimpan'); vFt();
+          if (pf && pf.length) sendPhotos(id, pf, 'Dokumentasi', 'ft_photo_save', function () { ftDetail(id); });
+          else ftDetail(id);
+        })
           .catch(function (er) { $('ftok').disabled = false; err.textContent = er.message; });
       };
     });

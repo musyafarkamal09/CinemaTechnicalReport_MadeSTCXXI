@@ -307,6 +307,14 @@ html body h1, html body h2, html body h3 { font-family: var(--display); color: v
 :root[data-theme] #app .dx-k.day .n { color: var(--ink) !important; }
 :root[data-theme] #app .dx-k.day .dx-ki { background: var(--accent-soft) !important; color: var(--accent) !important; }
 
+:root[data-theme] #app .btn:focus, :root[data-theme] #app .btn:active,
+:root[data-theme] #modal .btn:focus, :root[data-theme] #modal .btn:active {
+  background: var(--accent-bg) !important; background-image: none !important; color: var(--accent-ink) !important; border-color: var(--accent-bg) !important;
+}
+:root[data-theme] #app .btn.sec:focus, :root[data-theme] #app .btn.sec:active, :root[data-theme] #modal .btn.sec:focus, :root[data-theme] #modal .btn.sec:active {
+  background: var(--card) !important; color: var(--ink) !important; border-color: var(--bd2) !important;
+}
+
 /* ---------- 7. Tombol ---------- */
 :root[data-theme] #app .btn,
 :root[data-theme] #app .btn:not(.sec),
@@ -523,6 +531,80 @@ html body h1, html body h2, html body h3 { font-family: var(--display); color: v
 .mdc-chkbox input { width: 18px; height: 18px; min-height: 0; }
 .mdc-note { color: var(--mut); font-size: 13px; margin: 6px 0 12px; }
 .mdc-err { color: var(--err-ink); font-size: 13px; min-height: 1em; margin: 4px 0; }
+
+/* ---------- 14b. Form input laporan: ringkas dan minimalis (hanya tampilan; field tetap sama) ---------- */
+#modal:has(.mdc-form) { max-width: 640px; width: calc(100% - 32px); padding: 24px !important; }
+#modal:has(.mdc-form) > h2 { font-size: 20px; font-weight: 400; letter-spacing: -0.01em; margin: 0 0 16px; }
+:root[data-theme] #modal .mdc-form label {
+  gap: 6px; font-size: 12px; font-weight: 500; color: var(--mut) !important; margin-bottom: 14px; letter-spacing: .005em;
+}
+:root[data-theme] #modal .mdc-form input:not([type=checkbox]):not([type=radio]),
+:root[data-theme] #modal .mdc-form select, :root[data-theme] #modal .mdc-form textarea {
+  font-size: 14px; color: var(--ink) !important;
+}
+:root[data-theme] #modal .mdc-form textarea { min-height: 64px; resize: vertical; }
+.mdc-row { gap: 0 14px; }
+.mdc-row label { min-width: 0; }
+:root[data-theme] #modal .mdc-fs {
+  border: 0 !important; border-top: 1px solid var(--bd) !important; border-radius: 0 !important;
+  background: transparent !important; padding: 14px 0 0 !important; margin: 6px 0 16px !important;
+}
+:root[data-theme] #modal .mdc-fs legend {
+  font-size: 12px; font-weight: 500; color: var(--mut); padding: 0; margin-bottom: 4px; text-transform: none;
+}
+.mdc-ck { grid-template-columns: 1fr auto; align-items: center; gap: 6px 12px; padding: 10px 0; border-bottom: 1px solid var(--bd); }
+.mdc-ck:last-child { border-bottom: 0; }
+.mdc-ck > span { font-size: 14px; color: var(--ink); }
+.mdc-ck .mdc-ket { grid-column: 1 / -1; }
+.mdc-seg { gap: 4px; padding: 0; border: 0; }
+.mdc-seg span { min-width: 52px; min-height: 32px; font-size: 12px; font-weight: 500; border: 1px solid var(--bd2); border-radius: var(--r-s); color: var(--mut); background: var(--card); }
+.mdc-seg input:checked + span { background: var(--accent-bg) !important; color: var(--accent-ink) !important; border-color: var(--accent-bg) !important; }
+.mdc-kr { grid-template-columns: 1fr 120px; gap: 6px 12px; padding: 10px 0; border-bottom: 1px solid var(--bd); }
+.mdc-kr:last-child { border-bottom: 0; }
+.mdc-kr > span { font-size: 14px; font-weight: 400; color: var(--ink); }
+.mdc-kr input { grid-column: 1 / -1; }
+.mdc-chkbox { font-size: 13px; color: var(--lbl); margin: 4px 0 12px; }
+.mdc-note { font-size: 12px; margin: 0 0 12px; }
+.mdc-foot { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--bd); }
+#modal:has(.mdc-form) .mdc-foot .btn { min-width: 96px; }
+@media (max-width: 640px) {
+  .mdc-row { grid-template-columns: 1fr; }
+  .mdc-kr { grid-template-columns: 1fr; }
+  #modal:has(.mdc-form) { padding: 20px !important; }
+}
+
+/* judul bagian form dan input foto */
+#modal .mdc-sec {
+  display: block; font-size: 13px; font-weight: 600; color: var(--ink);
+  margin: 22px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--bd);
+}
+#modal .mdc-sec:first-of-type { margin-top: 0; }
+:root[data-theme] #modal .mdc-form input[type=file] {
+  min-height: 0; padding: 10px 12px; border: 1px dashed var(--bd2) !important; background: var(--card2) !important;
+  font-size: 13px; color: var(--mut) !important; cursor: pointer; width: 100%;
+}
+:root[data-theme] #modal .mdc-form input[type=file]::file-selector-button {
+  margin-right: 12px; padding: 6px 12px; border: 1px solid var(--bd2); border-radius: var(--r-s);
+  background: var(--card); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer;
+}
+
+/* toggle jenis laporan DCP (Keluar | Masuk), gaya pil seperti toggle tema */
+:root[data-theme] #app .mdc-tg {
+  display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--bd2); border-radius: 999px; background: var(--card2);
+}
+:root[data-theme] #app .mdc-tg label { position: relative; margin: 0; }
+:root[data-theme] #app .mdc-tg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+:root[data-theme] #app .mdc-tg span {
+  display: inline-flex; align-items: center; min-height: 32px; padding: 0 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500; color: var(--mut); cursor: pointer; margin: 0;
+}
+:root[data-theme] #app .mdc-tg input:checked + span { background: var(--accent-bg); color: var(--accent-ink); }
+:root[data-theme] #app .mdc-tg input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* menu Download (Excel/PDF) harus selalu di atas bar navigasi bawah di smartphone */
+:root[data-theme] #app #view { z-index: auto !important; }
+.dlw .dlm { z-index: 80 !important; }
+@media (max-width: 640px) { .dlw .dlm { left: 0 !important; right: auto !important; min-width: 200px; top: auto !important; bottom: calc(100% + 6px) !important; } }
 
 /* ---------- 15. Responsif (tanpa scroll horizontal di layar sempit) ---------- */
 @media (max-width: 640px) {

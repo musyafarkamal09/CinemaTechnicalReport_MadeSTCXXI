@@ -152,13 +152,14 @@ function openMenu(){$('side').classList.add('open');$('shade').classList.add('op
 /* ---- tombol "+" (buat laporan) di tengah navigasi bawah ---- */
 IC.search='<svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
 var NEWBTN='<a data-p="new" class="pl" role="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Buat laporan baru"><span class="pl-b" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><em>Buat</em></a>';
-var NEWI={ADMIN:[['work','Laporan Pekerjaan','Pekerjaan teknis harian'],['meter','Laporan Meteran','Listrik & air'],['ac','Daily Monitoring AC','Suhu & kondisi AC'],['purchase','Laporan Pembelian','Barang & jasa'],['issue','Perlu Diperbaiki','Lapor kerusakan'],['patrol','Inspeksi & Patroli Studio','Catat hasil patroli']],
+var NEWI={ADMIN:[['work','Laporan Pekerjaan','Pekerjaan teknis harian'],['meter','Laporan Meteran','Listrik & air'],['ac','Daily Monitoring AC','Suhu & kondisi AC'],['purchase','Laporan Pembelian','Barang & jasa'],['issue','Perlu Diperbaiki','Lapor kerusakan'],['patrol','Inspeksi & Patroli Studio','Catat hasil patroli'],['dcpk','DCP Keluar','Catat pengiriman DCP','dcp'],['dcpm','DCP Masuk','Catat pengembalian DCP','dcp'],['ftest','Input Testing','Pengetesan harian film']],
  REPORTER:[['issue','Perlu Diperbaiki','Lapor kerusakan']],
  GUIDE_SECURITY:[['patrol','Inspeksi & Patroli Studio','Catat hasil patroli']]};
-var NEWCREATE={work:'ra',meter:'ra',ac:'ra',purchase:'ra',issue:'ra',patrol:'ra'};
+var NEWCREATE={work:'ra',meter:'ra',ac:'ra',purchase:'ra',issue:'ra',patrol:'ra',ftest:'ftnew'};
+var NEWDCP={dcpk:'KELUAR',dcpm:'MASUK'};
 function newOpen(){
- var list=(NEWI[U.role]||NEWI.ADMIN).filter(function(x){var m=MENU.filter(function(q){return q[0]===x[0]})[0];return m&&can(m)});
- $('nsgrid').innerHTML=list.map(function(x,i){return '<button type="button" class="nsi" style="--i:'+i+'" data-p="'+x[0]+'"><i>'+(IC[x[0]]||'')+'</i><b>'+esc(x[1])+'</b><small>'+esc(x[2])+'</small></button>'}).join('');
+ var list=(NEWI[U.role]||NEWI.ADMIN).filter(function(x){var m=MENU.filter(function(q){return q[0]===(x[3]||x[0])})[0];return m&&can(m)});
+ $('nsgrid').innerHTML=list.map(function(x,i){return '<button type="button" class="nsi" style="--i:'+i+'" data-p="'+x[0]+'"><i>'+(IC[x[3]||x[0]]||'')+'</i><b>'+esc(x[1])+'</b><small>'+esc(x[2])+'</small></button>'}).join('');
  $('nsheet').classList.remove('hidden');
  var t=document.querySelector('#tabs a[data-p=new]');if(t)t.setAttribute('aria-expanded','true');
  }
@@ -168,7 +169,13 @@ function newClose(){
 }
 function toggleNew(){if($('nsheet').classList.contains('hidden'))newOpen();else newClose()}
 function newCreate(p){
- newClose();go(p);
+ newClose();
+ if(NEWDCP[p]){ /* DCP Keluar/Masuk: buka modul DCP lalu pilih jenis di toggle, lalu klik Input */
+  go('dcp');var k=0;
+  (function wait(){var r=document.querySelector('input[name=dcpjt][value='+NEWDCP[p]+']'),b=document.getElementById('dcpnew');if(r&&b){r.checked=true;b.click();return}if(++k<60)setTimeout(wait,100)})();
+  return;
+ }
+ go(p);
  var id=NEWCREATE[p]||'ra',tries=0;
  (function wait(){var b=document.getElementById(id);if(b){b.click();return}if(++tries<50)setTimeout(wait,100)})();
 }
