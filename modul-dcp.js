@@ -598,5 +598,5 @@
     });
   }
   /* helper bersama untuk modul Pelaporan DCP (pelaporan.js) */
-  S.pel = { photoBox: photoBox, photoBind: photoBind, sendPhotos: sendPhotos, loadPhotos: loadPhotos, canWrite: canWrite, loadMyPerm: loadMyPerm };
+  S.pel = { photoBox: photoBox, photoBind: photoBind, sendPhotos: sendPhotos, loadPhotos: loadPhotos, canWrite: canWrite, loadMyPerm: loadMyPerm, dlMenu: dlMenu, recSave: recSave, jkt: jkt, KOMP_DEF: KOMP_DEF };
 })();

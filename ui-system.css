@@ -785,3 +785,8 @@ html:root[data-theme] #app #phero { width: 100% !important; margin-inline: 0 !im
   .pel-dl dt { margin-top: 6px; }
   .pel-acts .btn { flex: 1 1 auto; }
 }
+.pel-kel { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; }
+.pel-kel li { font-size: 13px; color: var(--ink); overflow-wrap: anywhere; }
+.pel-kel li.bad { color: var(--err-ink); }
+.pel-kel li.ok b { font-weight: 500; }
+.pel-kelnote { color: var(--mut); }
