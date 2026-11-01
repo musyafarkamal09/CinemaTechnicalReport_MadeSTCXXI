@@ -280,6 +280,11 @@
     return o + '<option value="' + LAIN + '"' + (isLain ? ' selected' : '') + '>' + LAIN + '</option>';
   }
   function lainVal(sel) { return sel && OUTLET.indexOf(sel) < 0 ? sel : ''; }
+  /* outlet asal pengirim: outlet XXI selain STC, XPDC, atau nama lain */
+  var ASAL_OPTS = OUTLET.filter(function (o) { return o !== OUTLET_SAYA; }).concat(['XPDC']);
+  function asalOpts(sel) {
+    return ASAL_OPTS.concat([LAIN]).map(function (x) { return '<option value="' + q(x) + '"' + (sel === x ? ' selected' : '') + '>' + q(x === LAIN ? 'Lainnya' : x) + '</option>'; }).join('');
+  }
   /* checklist kelengkapan (sama dengan DCP Management): centang = lengkap, isi keterangan bila tidak ada/rusak */
   function kelFieldset(rec) {
     var list = (rec && rec.kelengkapan && rec.kelengkapan.length) ? rec.kelengkapan : KOMP.map(function (n) { return { name: n, status: 'Lengkap', note: '' }; });
@@ -332,8 +337,10 @@
         '<label class="pel-lain" id="plLainT"' + (lainVal(defTujuan) || defTujuan === LAIN ? '' : ' hidden') + '>Nama outlet tujuan lain<input name="outletTujuanLain" maxlength="120" value="' + q(lainVal(defTujuan)) + '"></label>';
     }
     if (masuk) {
-      h += '<div class="mdc-grid"><label>Datang dari (asal DCP)<input name="asalDari" required maxlength="200" value="' + q(rec ? rec.asalDari : '') + '" placeholder="mis. XPDC, Pekanbaru Xchange XXI"></label>' +
-        '<label>Nama pengirim<input name="namaPengirim" required maxlength="120" value="' + q(rec ? rec.namaPengirim : '') + '" placeholder="mis. Budi"></label></div>';
+      var asalSel = rec && rec.asalDari && ASAL_OPTS.indexOf(rec.asalDari) < 0 ? LAIN : (rec ? rec.asalDari : '');
+      h += '<div class="mdc-grid"><label>Outlet asal pengirim<select name="asalDari" required><option value="">Pilih outlet asal</option>' + asalOpts(asalSel) + '</select></label>' +
+        '<label>Nama pengirim<input name="namaPengirim" required maxlength="120" value="' + q(rec ? rec.namaPengirim : '') + '" placeholder="mis. Budi"></label></div>' +
+        '<label class="pel-lain" id="plLainA"' + (asalSel === LAIN ? '' : ' hidden') + '>Nama outlet asal lain<input name="asalLain" maxlength="200" value="' + q(rec && asalSel === LAIN ? rec.asalDari : '') + '"></label>';
     }
     h += '<p class="mdc-note" id="plInfo"></p>' +
       '<div class="pel-auto"><span>Tanggal & waktu: otomatis saat disimpan</span><span>Pelapor: ' + q(me().fullName || '-') + '</span></div>' +
@@ -363,9 +370,11 @@
     }
     function syncLain() {
       var tw = $('plLainT'); if (tw) tw.hidden = !f.outletTujuan || f.outletTujuan.value !== LAIN;
+      var la = $('plLainA'); if (la) la.hidden = !f.asalDari || f.asalDari.value !== LAIN;
     }
     f.kodeDisk.oninput = sync;
     if (f.outletTujuan) f.outletTujuan.onchange = syncLain;
+    if (f.asalDari) f.asalDari.onchange = syncLain;
     sync();
 
     $('plcancel').onclick = function () { if (kd && groupOf(kd)) openDetail(kd); else closeM(); };
@@ -386,9 +395,9 @@
         body.penerima = f.penerima.value.trim();
       }
       if (masuk) {
-        body.asalDari = f.asalDari.value.trim();
+        body.asalDari = f.asalDari.value === LAIN ? f.asalLain.value.trim() : f.asalDari.value;
         body.namaPengirim = f.namaPengirim.value.trim();
-        if (!body.asalDari || !body.namaPengirim) { toast('Isi asal DCP dan nama pengirim.', 1); return; }
+        if (!body.asalDari || !body.namaPengirim) { toast('Pilih outlet asal pengirim dan isi nama pengirim.', 1); return; }
       }
       body.kelengkapan = kelRead(f);
       var bad = body.kelengkapan.filter(function (c) { return (c.status === 'Tidak Ada' || c.status === 'Rusak') && !c.note; });
