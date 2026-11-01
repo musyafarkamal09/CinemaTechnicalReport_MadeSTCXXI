@@ -305,9 +305,9 @@
   /* pilihan jenis DCP; checklist baru tampil setelah jenis dipilih */
   function jenisBlock(rec) {
     var sel = rec ? (rec.jenisDcp || 'Besar') : '';
-    var radios = '<div class="mdc-tg" role="radiogroup" aria-label="Jenis DCP">' +
+    var radios = '<div class="pel-jlist" role="radiogroup" aria-label="Jenis DCP">' +
       [['Besar', 'DCP Besar', 'HDD, USB, Kabel Power, Adaptor'], ['Kecil', 'DCP Kecil', 'HDD, USB']].map(function (o) {
-        return '<label><input type="radio" name="jenisDcp" value="' + o[0] + '"' + (sel === o[0] ? ' checked' : '') + '><span>' + o[1] + ' <small>(' + o[2] + ')</small></span></label>';
+        return '<label class="mdc-cbx"><input type="radio" name="jenisDcp" value="' + o[0] + '"' + (sel === o[0] ? ' checked' : '') + '><span><b>' + o[1] + '</b> <small>(' + o[2] + ')</small></span></label>';
       }).join('') + '</div>';
     return '<fieldset class="mdc-fs pel-jenis"><legend>Jenis DCP</legend>' + radios + '</fieldset>' +
       '<div id="plKel">' + (sel ? kelFieldset(rec, sel) : '<p class="mdc-note">Pilih jenis DCP untuk menampilkan checklist kelengkapan.</p>') + '</div>';

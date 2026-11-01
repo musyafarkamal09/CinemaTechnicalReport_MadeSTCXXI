@@ -798,3 +798,8 @@ html:root[data-theme] #app #phero { width: 100% !important; margin-inline: 0 !im
 .pel-loc { display: grid; gap: 4px; align-content: start; font-size: 14px; }
 .pel-loc span { font-size: 13px; opacity: .75; }
 .pel-loc b { font-weight: 600; }
+
+/* pilihan jenis DCP (radio) di dalam modal: ukuran dan jarak seperti checklist */
+#modal .mdc-form .pel-jlist { display: flex; flex-direction: column; gap: 10px; margin: 6px 0 12px; }
+#modal .mdc-form .pel-jlist label.mdc-cbx input[type=radio] { width: 20px; height: 20px; min-height: 20px; margin: 0; flex: 0 0 auto; accent-color: var(--accent-bg); }
+#modal .mdc-form .pel-jlist small { color: var(--muted, #6b6b6b); }
