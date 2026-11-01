@@ -9,6 +9,10 @@
   var OUTLET = ['Sukaramai Trade Center XXI', 'Pekanbaru Xchange XXI', 'Ciputra Seraya XXI', 'SKA XXI'];
   var LAIN = 'Lainnya';
   var KOMP = P.KOMP_DEF;
+  /* DCP Besar: HDD, USB, Kabel Power, Adaptor. DCP Kecil: HDD, USB. */
+  var KOMP_BESAR = ['HDD', 'USB', 'Kabel Power', 'Adaptor'];
+  var KOMP_KECIL = ['HDD', 'USB'];
+  function komp(j) { return j === 'Kecil' ? KOMP_KECIL : KOMP_BESAR; }
   /* nama outlet tempat aplikasi ini dipakai (sama dengan judul di sidebar) */
   var OUTLET_SAYA = 'Sukaramai Trade Center XXI';
   var STATUS = ['Draft', 'Tervalidasi', 'Lama'];
@@ -72,14 +76,14 @@
   function plExport(fmt) {
     var rows = ROWS.filter(match);
     if (!rows.length) { toast('Tidak ada data untuk diunduh.', 1); return; }
-    var head = ['ID', 'Jenis', 'Tanggal', 'Jam', 'Kode disk', 'Judul film', 'PH', 'Outlet', 'Outlet tujuan', 'Penerima', 'Pelapor', 'Datang dari', 'Pengirim', 'Kelengkapan', 'Status validasi', 'Divalidasi oleh', 'Catatan'];
+    var head = ['ID', 'Jenis', 'Tanggal', 'Jam', 'Kode disk', 'Judul film', 'PH', 'Outlet', 'Outlet tujuan', 'Penerima', 'Pelapor', 'Datang dari', 'Pengirim', 'Kelengkapan', 'Status validasi', 'Divalidasi oleh', 'Catatan', 'Jenis DCP'];
     var body = rows.map(function (r) {
       var kel = (r.kelengkapan || []).map(function (c) { return c.name + ': ' + c.status + (c.note ? ' (' + c.note + ')' : ''); }).join('; ');
-      return [r.id, r.jenis === 'KELUAR' ? 'Keluar' : 'Masuk', r.tanggal, r.jam, r.kodeDisk, r.film, r.ph, r.outlet, r.jenis === 'KELUAR' ? (r.outletTujuan || '') : '', r.penerima, r.pelapor, r.asalDari || '', r.namaPengirim || '', kel || 'Tidak diisi (data lama)', statusOf(r), r.verifiedBy || '', r.keterangan]
+      return [r.id, r.jenis === 'KELUAR' ? 'Keluar' : 'Masuk', r.tanggal, r.jam, r.kodeDisk, r.film, r.ph, r.outlet, r.jenis === 'KELUAR' ? (r.outletTujuan || '') : '', r.penerima, r.pelapor, r.asalDari || '', r.namaPengirim || '', kel || 'Tidak diisi (data lama)', statusOf(r), r.verifiedBy || '', r.keterangan, r.jenisDcp || 'Besar']
         .map(function (v) { return v == null ? '' : String(v); });
     });
     /* PDF memakai 12 kolom yang relevan (tanpa ID, jam, pelapor, validator, catatan) agar tabel tetap terbaca di A4 landscape */
-    var PDF_COLS = [1, 2, 3, 4, 5, 7, 8, 11, 12, 9, 13, 14];
+    var PDF_COLS = [1, 2, 3, 4, 5, 7, 8, 11, 12, 9, 13, 14, 17];
     var pick = function (a) { return fmt === 'pdf' ? PDF_COLS.map(function (i) { return a[i]; }) : a; };
     P.recSave('Laporan Pelaporan DCP', [['Jumlah transaksi', rows.length], ['Tanggal cetak', P.jkt()]], [{ head: pick(head), rows: body.map(pick) }], fmt, 'Laporan_Pelaporan_DCP_STCXXI_' + P.jkt());
   }
@@ -173,7 +177,7 @@
     if (masuk) rows += line('Datang dari', q(r.asalDari || '-'));
     rows += line('Pengirim', q(r.namaPengirim || '-'));
     if (!masuk) rows += line('Penerima', q(r.penerima || '-'));
-    if (r.kelengkapan && r.kelengkapan.length) rows += line('Kelengkapan', kelHtml(r.kelengkapan));
+    if (r.kelengkapan && r.kelengkapan.length) rows += line('Jenis DCP', q(r.jenisDcp || 'Besar')) + line('Kelengkapan', kelHtml(r.kelengkapan));
     if (r.keterangan) rows += line('Catatan', q(r.keterangan));
     if (r.verifiedAt) rows += line('Divalidasi', q(r.verifiedBy || '-') + ' · ' + q(dt(r.verifiedAt)));
     if (r.alasanBatal) rows += line('Alasan batal validasi terakhir', q(r.alasanBatal) + ' (' + q(r.batalBy || '-') + ', ' + q(dt(r.batalAt)) + ')');
@@ -288,17 +292,28 @@
     return ASAL_OPTS.concat([LAIN]).map(function (x) { return '<option value="' + q(x) + '"' + (sel === x ? ' selected' : '') + '>' + q(x === LAIN ? 'Lainnya' : x) + '</option>'; }).join('');
   }
   /* checklist kelengkapan (sama dengan DCP Management): centang = lengkap, isi keterangan bila tidak ada/rusak */
-  function kelFieldset(rec) {
-    var list = (rec && rec.kelengkapan && rec.kelengkapan.length) ? rec.kelengkapan : KOMP.map(function (n) { return { name: n, status: 'Lengkap', note: '' }; });
-    return '<fieldset class="mdc-fs pel-kelfs"><legend>Kelengkapan</legend>' + KOMP.map(function (n, i) {
+  function kelFieldset(rec, jenis) {
+    var L = komp(jenis);
+    var list = (rec && rec.kelengkapan && rec.kelengkapan.length) ? rec.kelengkapan : L.map(function (n) { return { name: n, status: 'Lengkap', note: '' }; });
+    return '<fieldset class="mdc-fs pel-kelfs"><legend>Kelengkapan</legend>' + L.map(function (n, i) {
       var c = list.filter(function (k) { return k.name === n; })[0] || { status: 'Lengkap', note: '' };
       var on = c.status === 'Lengkap' || c.status === 'Tidak Diperlukan';
       return '<div class="mdc-kr" data-k="' + i + '"><label class="mdc-cbx"><input type="checkbox" name="kc' + i + '" data-st="' + q(c.status) + '"' + (on ? ' checked' : '') + '> <span>' + q(n) + '</span></label>' +
         '<input name="kn' + i + '" maxlength="300" placeholder="Keterangan, mis. adaptor rusak (wajib jika tidak dicentang)" value="' + q(c.note || '') + '" aria-label="Keterangan ' + q(n) + '"></div>';
     }).join('') + '</fieldset>';
   }
-  function kelRead(f) {
-    return KOMP.map(function (n, i) {
+  /* pilihan jenis DCP; checklist baru tampil setelah jenis dipilih */
+  function jenisBlock(rec) {
+    var sel = rec ? (rec.jenisDcp || 'Besar') : '';
+    var radios = '<div class="mdc-tg" role="radiogroup" aria-label="Jenis DCP">' +
+      [['Besar', 'DCP Besar', 'HDD, USB, Kabel Power, Adaptor'], ['Kecil', 'DCP Kecil', 'HDD, USB']].map(function (o) {
+        return '<label><input type="radio" name="jenisDcp" value="' + o[0] + '"' + (sel === o[0] ? ' checked' : '') + '><span>' + o[1] + ' <small>(' + o[2] + ')</small></span></label>';
+      }).join('') + '</div>';
+    return '<fieldset class="mdc-fs pel-jenis"><legend>Jenis DCP</legend>' + radios + '</fieldset>' +
+      '<div id="plKel">' + (sel ? kelFieldset(rec, sel) : '<p class="mdc-note">Pilih jenis DCP untuk menampilkan checklist kelengkapan.</p>') + '</div>';
+  }
+  function kelRead(f, jenis) {
+    return komp(jenis).map(function (n, i) {
       var cb = f['kc' + i], orig = cb.getAttribute('data-st') || '';
       var st = cb.checked ? (orig === 'Tidak Diperlukan' ? 'Tidak Diperlukan' : 'Lengkap') : (orig === 'Rusak' ? 'Rusak' : 'Tidak Ada');
       return { name: n, status: st, note: f['kn' + i].value.trim() };
@@ -349,7 +364,7 @@
     h += '<p class="mdc-note" id="plInfo"></p>' +
       '<div class="pel-auto"><span>Tanggal & waktu: otomatis saat disimpan</span><span>Pelapor: ' + q(myName()) + '</span></div>' +
       '<label>Catatan<textarea name="keterangan" maxlength="2000" rows="3">' + q(rec ? rec.keterangan : '') + '</textarea></label>' +
-      kelFieldset(rec) + (rec ? '' : P.photoBox('pel')) + '<p class="mdc-err" id="plerr" role="alert"></p>' +
+      jenisBlock(rec) + (rec ? '' : P.photoBox('pel')) + '<p class="mdc-err" id="plerr" role="alert"></p>' +
       '<div class="mdc-foot"><button type="button" class="btn sec" id="plcancel">Batal</button><button type="submit" class="btn" id="plsave">Simpan laporan</button></div></form>';
     modal(h);
     var pb = rec ? null : P.photoBind('pel');
@@ -381,6 +396,9 @@
     if (f.asalDari) f.asalDari.onchange = syncLain;
     sync();
 
+    [].forEach.call(f.querySelectorAll('input[name=jenisDcp]'), function (r) {
+      r.onchange = function () { $('plKel').innerHTML = kelFieldset(rec, r.value); };
+    });
     $('plcancel').onclick = function () { if (kd && groupOf(kd)) openDetail(kd); else closeM(); };
     f.onsubmit = function (e) {
       e.preventDefault();
@@ -405,7 +423,10 @@
         body.namaPengirim = f.namaPengirim.value.trim();
         if (!body.asalDari || !body.namaPengirim) { toast('Pilih outlet asal pengirim dan isi nama pengirim.', 1); return; }
       }
-      body.kelengkapan = kelRead(f);
+      var jsel = f.querySelector('input[name=jenisDcp]:checked');
+      if (!jsel) { $('plerr').textContent = 'Pilih jenis DCP (Besar atau Kecil) terlebih dahulu.'; return; }
+      body.jenisDcp = jsel.value;
+      body.kelengkapan = kelRead(f, body.jenisDcp);
       var bad = body.kelengkapan.filter(function (c) { return (c.status === 'Tidak Ada' || c.status === 'Rusak') && !c.note; });
       if (bad.length) { $('plerr').textContent = 'Isi keterangan untuk: ' + bad.map(function (c) { return c.name; }).join(', ') + '.'; return; }
       $('plerr').textContent = '';
