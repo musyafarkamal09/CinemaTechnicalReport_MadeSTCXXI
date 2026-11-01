@@ -9,6 +9,8 @@
   var OUTLET = ['Sukaramai Trade Center XXI', 'Pekanbaru Xchange XXI', 'Ciputra Seraya XXI', 'SKA XXI'];
   var LAIN = 'Lainnya';
   var KOMP = P.KOMP_DEF;
+  /* nama outlet tempat aplikasi ini dipakai (sama dengan judul di sidebar) */
+  var OUTLET_SAYA = 'Sukaramai Trade Center XXI';
   var STATUS = ['Draft', 'Tervalidasi', 'Lama'];
   var ROWS = [];
   var DST = { q: '', status: '', dari: '', sampai: '' };
@@ -44,13 +46,15 @@
   /* posisi DCP: MASUK terakhir = berada di outlet itu; KELUAR terakhir = dalam perjalanan ke tujuan */
   function posisi(g) {
     var l = g && g.last;
-    if (!l) return { at: false, outlet: '', tujuan: '', txt: '-', cls: '' };
+    if (!l) return { at: false, here: false, outlet: '', tujuan: '', txt: '-', cls: '' };
+    var own = OUTLET_SAYA.toLowerCase();
     if (l.jenis === 'MASUK') {
       var o = l.outlet || l.tujuan || '';
-      return { at: true, outlet: o, tujuan: '', txt: 'Di ' + (o || '-'), cls: 'ok' };
+      if (o.toLowerCase() === own) return { at: true, here: true, outlet: o, tujuan: '', txt: 'Ada di outlet ini', cls: 'warn' };
+      return { at: true, here: false, outlet: o, tujuan: '', txt: 'Sudah dikirim dan diterima oleh ' + o, cls: 'ok' };
     }
     var t = l.outletTujuan || l.tujuan || '';
-    return { at: false, outlet: '', tujuan: t, txt: 'Dalam perjalanan ke ' + (t || '-'), cls: 'warn' };
+    return { at: false, here: false, outlet: '', tujuan: t, txt: 'Sudah dikirim dan diterima oleh ' + (t || '-'), cls: 'ok' };
   }
 
   /* ---------- filter ---------- */
@@ -91,12 +95,12 @@
     var n = { disk: all.length, di: 0, jalan: 0, draft: 0, valid: 0 };
     all.forEach(function (g) {
       var p = posisi(g);
-      if (p.at) n.di++; else n.jalan++;
+      if (p.here) n.di++; else n.jalan++;
       g.hist.forEach(function (r) { if (statusOf(r) === 'Draft') n.draft++; if (statusOf(r) === 'Tervalidasi') n.valid++; });
     });
     var kpi = function (l, x, c) { return '<div class="mdc-kpi ' + (c || '') + '"><small>' + q(l) + '</small><b>' + (Number(x) || 0) + '</b></div>'; };
     var h = '<div class="mdc-top"><div class="mdc-kpis">' +
-      kpi('Kode disk', n.disk) + kpi('Di outlet', n.di) + kpi('Dalam perjalanan', n.jalan, n.jalan ? 'warn' : '') +
+      kpi('Kode disk', n.disk) + kpi('Ada di outlet ini', n.di, n.di ? 'warn' : '') + kpi('Sudah dikirim', n.jalan, n.jalan ? 'ok' : '') +
       kpi('Draft', n.draft, n.draft ? 'warn' : '') + kpi('Tervalidasi', n.valid) + '</div>' +
       '<div class="mdc-acts">' + (enabled ? '<button type="button" class="btn" id="plMasuk">+ Catat DCP Masuk</button><button type="button" class="btn sec" id="plKeluar">+ Catat DCP Keluar</button>' : '') + P.dlMenu('pl') + '</div></div>' +
       '<div class="mdc-filter pel-filter">' +
@@ -121,7 +125,7 @@
       var p = posisi(g), cnt = g.hist.length, valid = g.hist.filter(function (r) { return statusOf(r) === 'Tervalidasi'; }).length;
       var last = g.last;
       return '<tr data-pel-open="' + q(g.kd) + '" tabindex="0"><td class="mdc-mono">' + q(g.kd) + '</td><td>' + q(g.film) + '</td><td>' + q(g.ph) + '</td>' +
-        '<td><span class="mdc-st mdc-' + (p.at ? 'selesai' : 'bermasalah') + '">' + q(p.txt) + '</span></td>' +
+        '<td><span class="mdc-st mdc-' + (p.cls === 'ok' ? 'selesai' : 'warn') + '">' + q(p.txt) + '</span></td>' +
         '<td>' + cnt + ' transaksi · ' + valid + ' tervalidasi</td><td>' + q(last.tanggal) + ' ' + q(last.jam) + '</td></tr>';
     }).join('') : '<tr><td colspan="6" class="mdc-empty">Tidak ada data yang cocok dengan filter.</td></tr>';
   }
@@ -192,7 +196,7 @@
     var enabled = P.canWrite(), p = posisi(g);
     var h = '<h3>Kode disk ' + q(g.kd) + '</h3>' +
       '<p class="mdc-note">' + q(g.film) + ' · PH ' + q(g.ph) + '</p>' +
-      '<div class="pel-sum">Posisi saat ini: <b>' + q(p.txt) + '</b> · ' + g.hist.length + ' transaksi</div>' +
+      '<div class="pel-sum">Posisi saat ini: <span class="mdc-st mdc-' + (p.cls === 'ok' ? 'selesai' : 'warn') + '">' + q(p.txt) + '</span> · ' + g.hist.length + ' transaksi</div>' +
       '<div class="pel-tl" aria-label="Riwayat DCP">' + g.hist.map(function (r) { return nodeHtml(r, enabled); }).join('') + '</div>' +
       '<div class="mdc-foot"><button type="button" class="btn sec" id="plx">Tutup</button>' +
       (enabled ? '<button type="button" class="btn sec" id="plAddM">+ Masuk</button><button type="button" class="btn" id="plAddK">+ Keluar</button>' : '') + '</div>';
