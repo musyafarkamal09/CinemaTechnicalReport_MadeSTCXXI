@@ -533,8 +533,6 @@ html body h1, html body h2, html body h3 { font-family: var(--display); color: v
 .mdc-err { color: var(--err-ink); font-size: 13px; min-height: 1em; margin: 4px 0; }
 
 /* ---------- 14b. Form input laporan: ringkas dan minimalis (hanya tampilan; field tetap sama) ---------- */
-#modal:has(.mdc-form) { max-width: 640px; width: calc(100% - 32px); padding: 24px !important; }
-#modal:has(.mdc-form) > h2 { font-size: 20px; font-weight: 400; letter-spacing: -0.01em; margin: 0 0 16px; }
 :root[data-theme] #modal .mdc-form label {
   gap: 6px; font-size: 12px; font-weight: 500; color: var(--mut) !important; margin-bottom: 14px; letter-spacing: .005em;
 }
@@ -570,7 +568,6 @@ html body h1, html body h2, html body h3 { font-family: var(--display); color: v
 @media (max-width: 640px) {
   .mdc-row { grid-template-columns: 1fr; }
   .mdc-kr { grid-template-columns: 1fr; }
-  #modal:has(.mdc-form) { padding: 20px !important; }
 }
 
 /* judul bagian form dan input foto */
@@ -705,3 +702,17 @@ html:root[data-theme] #login .lbox .hello, html:root[data-theme] #login .lbox sm
   .mdc-kpi, .mdc-tbl, .mdc-fs, :root[data-theme] #app .card { border-color: #999 !important; background: #fff !important; box-shadow: none !important; }
   .mdc-kpi b { color: #000 !important; }
 }
+
+/* ===== 16. Penyesuaian akhir: DCP & Testing, toggle tema, dokumentasi foto ===== */
+/* toolbar input & unduh ditaruh di bawah kolom informasi (KPI) */
+:root[data-theme] #app .mdc-top { flex-direction: column; align-items: stretch; }
+:root[data-theme] #app .mdc-acts { width: 100%; justify-content: flex-start; }
+/* toggle tema: ikon saja, tanpa teks keterangan */
+:root[data-theme] #app #main>header .mseg button span { display: none !important; }
+:root[data-theme] #app #main>header .mseg button { padding: 0 10px; min-width: 36px; justify-content: center; }
+/* blok dokumentasi foto di form DCP & Testing (sama dengan form laporan lain) */
+:root[data-theme] #modal .mdc-ph { margin-top: 4px; }
+:root[data-theme] #modal .mdc-ph .pick { margin: 0 0 8px; }
+:root[data-theme] #modal .mdc-ph .ph { display: flex; flex-wrap: wrap; gap: 8px; }
+:root[data-theme] #modal .mdc-ph .ph > div { width: auto; }
+:root[data-theme] #app .mdc-kpis { flex: none; }

@@ -13,7 +13,7 @@
   var META = null;
   Object.assign(S.DESC, { dcp: 'Catat DCP keluar dan masuk, kelengkapan komponen, dan foto', ftest: 'Pengetesan harian film: checklist PASS/FAIL, status, dan riwayat ulang' });
   S.IC.dcp = '<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M7 15h4"/></svg>';
-  S.IC.ftest = '<svg class="ic" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/><path d="M7.5 15h9"/></svg>';
+  S.IC.ftest = '<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14"/><path d="M10.5 9.5v5l3.5-2.5z"/></svg>';
   var KOMP_DEF = ['HDD', 'USB', 'Kabel Power', 'Adaptor'];
   var KOMP_ST = ['Lengkap', 'Tidak Ada', 'Rusak', 'Tidak Diperlukan'];
   var FMT_DCP = ['2D', '3D', 'ATMOS', '3D-ATMOS', '2D-ATMOS', 'Lainnya'];
@@ -80,6 +80,48 @@
       toast(r.failed ? 'Sebagian foto gagal (' + r.failed + ')' : 'Foto tersimpan (' + r.added + ')', !!r.failed);
       done && done();
     }).catch(function (e) { toast(e.message, 1); });
+  }
+
+  /* ---------- dokumentasi foto di dalam form (galeri + kamera), sama dengan form laporan lain ---------- */
+  var PH_MAX = 30;
+  function photoBox(key) {
+    return '<div class="mdc-sec">Dokumentasi foto</div>' +
+      '<div class="mdc-ph"><div class="pick"><label class="btn sec pk" for="' + key + 'gi">Pilih dari galeri</label>' +
+      '<label class="btn sec pk" for="' + key + 'gc">Ambil dengan kamera</label></div>' +
+      '<input class="vh" type="file" id="' + key + 'gi" accept="image/jpeg,image/png,image/webp" multiple>' +
+      '<input class="vh" type="file" id="' + key + 'gc" accept="image/*" capture="environment">' +
+      '<p class="mdc-note" id="' + key + 'cnt"></p><div class="ph" id="' + key + 'pv"></div></div>';
+  }
+  function photoBind(key) {
+    var files = [];
+    function draw() {
+      var cnt = $(key + 'cnt'), pv = $(key + 'pv');
+      if (cnt) cnt.textContent = 'Foto: ' + files.length + ' / ' + PH_MAX + ' (JPG/PNG/WebP, boleh langsung dari kamera)';
+      if (!pv) return;
+      pv.innerHTML = '';
+      files.forEach(function (f, i) {
+        var d = document.createElement('div'), im = document.createElement('img'), b = document.createElement('button');
+        im.src = URL.createObjectURL(f); im.alt = 'Foto ' + (i + 1);
+        b.type = 'button'; b.className = 'x'; b.setAttribute('aria-label', 'Hapus foto ' + (i + 1)); b.textContent = '×';
+        b.onclick = function () { files.splice(i, 1); draw(); };
+        d.appendChild(im); d.appendChild(b); pv.appendChild(d);
+      });
+    }
+    function add(list) {
+      var arr = Array.prototype.slice.call(list || []), skip = 0;
+      arr.forEach(function (f) {
+        if (!/^image\//.test(f.type || '')) { skip++; return; }
+        if (files.length < PH_MAX) files.push(f); else skip++;
+      });
+      if (skip) toast(skip + ' berkas dilewati (bukan gambar atau melebihi ' + PH_MAX + ' foto).', 1);
+      draw();
+    }
+    ['gi', 'gc'].forEach(function (s) {
+      var el = $(key + s);
+      if (el) el.onchange = function () { add(this.files); this.value = ''; };
+    });
+    draw();
+    return { get: function () { return files.slice(); } };
   }
 
   /* ================= DCP MANAGEMENT ================= */
@@ -257,7 +299,7 @@
       var x = row || {};
       var kel = (x.kelengkapan && x.kelengkapan.length) ? x.kelengkapan : KOMP_DEF.map(function (n) { return { name: n, status: 'Lengkap', note: '' }; });
       var lk = keluarRef || null;
-      var h = '<h2>' + (row ? 'Ubah ' : '') + (jenis === 'KELUAR' ? 'DCP Keluar' : 'DCP Masuk') + '</h2>' +
+      var h = '<h3>' + (row ? 'Ubah ' : '') + (jenis === 'KELUAR' ? 'DCP Keluar' : 'DCP Masuk') + '</h3>' +
         '<form id="dcpf" class="mdc-form" novalidate>' +
         '<div class="mdc-sec">Jadwal</div>' +
         '<div class="mdc-row"><label>Tanggal<input name="tanggal" type="date" required value="' + q(x.tanggal || jkt()) + '"></label>' +
@@ -280,10 +322,11 @@
         '<div class="mdc-sec">Catatan dan foto</div>' +
         '<label>Keterangan umum<textarea name="keterangan" maxlength="2000" rows="2">' + q(x.keterangan || '') + '</textarea></label>' +
         '<label>Status<select name="status">' + STAT_DCP.map(function (s) { return '<option' + ((x.status || 'Diproses') === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></label>' +
-        '<label>Foto (opsional, JPG/PNG/WebP)<input type="file" accept="image/*" multiple id="dcpfoto"></label>' +
+        photoBox('dcp') +
         '<p class="mdc-err" id="dcperr" role="alert"></p>' +
         '<div class="mdc-foot"><button type="button" class="btn sec" id="dcpx">Batal</button><button type="submit" class="btn" id="dcpok">Simpan</button></div></form>';
       modal(h);
+      var ph = photoBind('dcp');
       $('dcpx').onclick = closeM;
       $('dcpf').onsubmit = function (e) {
         e.preventDefault();
@@ -301,7 +344,7 @@
         err.textContent = '';
         $('dcpok').disabled = true;
         api('dcp_save', p).then(function (id) {
-          var pf = $('dcpfoto') && $('dcpfoto').files;
+          var pf = ph.get();
           closeM(); toast('DCP tersimpan'); vDcp();
           if (pf && pf.length) sendPhotos(id, pf, 'Foto DCP', 'dcp_photo_save', function () { dcpDetail(id); });
           else dcpDetail(id);
@@ -427,7 +470,7 @@
       var cur = {};
       (x.checklist || []).forEach(function (c) { cur[c.id] = c; });
       var pre = parent ? (parent.checklist || []) : [];
-      var h = '<h2>' + (row ? 'Ubah laporan' : parent ? 'Pengetesan ulang' : 'Input Testing') + '</h2>' +
+      var h = '<h3>' + (row ? 'Ubah laporan' : parent ? 'Pengetesan ulang' : 'Input Testing') + '</h3>' +
         (parent ? '<p class="mdc-note">Pengetesan ulang untuk <b class="mdc-mono">' + q(parent.id) + '</b>. Laporan lama tetap tersimpan sebagai riwayat.</p>' : '') +
         '<form id="ftf" class="mdc-form" novalidate>' +
         '<div class="mdc-sec">Jadwal dan lokasi</div>' +
@@ -457,10 +500,11 @@
         '<label>Catatan teknisi<textarea name="catatanTeknisi" maxlength="2000" rows="2">' + q(x.catatanTeknisi || '') + '</textarea></label>' +
         '<label class="mdc-chkbox"><input type="checkbox" name="retest"' + (x.status === 'RETEST' ? ' checked' : '') + '> Perlu pengetesan ulang (hasil RETEST)</label>' +
         '<p class="mdc-note">Hasil dihitung otomatis: ada item FAIL = FAILED; tanpa FAIL dan ditandai tes ulang = RETEST; selain itu = PASSED.</p>' +
-        '<label>Foto (opsional, JPG/PNG/WebP)<input type="file" accept="image/*" multiple id="ftfoto"></label>' +
+        photoBox('ft') +
         '<p class="mdc-err" id="ftferr" role="alert"></p>' +
         '<div class="mdc-foot"><button type="button" class="btn sec" id="ftx">Batal</button><button type="submit" class="btn" id="ftok">Simpan</button></div></form>';
       modal(h);
+      var ph = photoBind('ft');
       $('ftx').onclick = closeM;
       var f = $('ftf');
       f.onchange = function (e) {
@@ -492,7 +536,7 @@
           retest: !!f.retest.checked, parentId: parent ? parent.id : ''
         };
         api('ft_save', p).then(function (id) {
-          var pf = $('ftfoto') && $('ftfoto').files;
+          var pf = ph.get();
           closeM(); toast('Testing tersimpan'); vFt();
           if (pf && pf.length) sendPhotos(id, pf, 'Dokumentasi', 'ft_photo_save', function () { ftDetail(id); });
           else ftDetail(id);
