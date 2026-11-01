@@ -136,7 +136,7 @@
         kpi('DCP Keluar', d.totalKeluar, '') + kpi('DCP Masuk', d.totalMasuk, '') +
         kpi('Belum kembali', d.belumKembali, d.belumKembali ? 'warn' : '') +
         kpi('Diproses', d.dalamProses, '') + kpi('Bermasalah', d.bermasalah, d.bermasalah ? 'bad' : '') + '</div>' +
-        '<div class="mdc-acts">' + (canWrite() ? '<div class="mdc-tg" role="radiogroup" aria-label="Jenis laporan"><label><input type="radio" name="dcpjt" value="KELUAR" checked><span>DCP Keluar</span></label><label><input type="radio" name="dcpjt" value="MASUK"><span>DCP Masuk</span></label></div><button type="button" class="btn" id="dcpnew">+ Input laporan</button>' : '') + dlMenu('dcp') + (curU().role === 'ADMIN' ? '<button type="button" class="btn sec" id="dcpadm">Izin &amp; pengingat</button>' : '') + '</div></div>';
+        '<div class="mdc-acts">' + (canWrite() ? '<div class="mdc-tg" role="radiogroup" aria-label="Jenis laporan"><label><input type="radio" name="dcpjt" value="KELUAR" checked><span>DCP Keluar</span></label><label><input type="radio" name="dcpjt" value="MASUK"><span>DCP Masuk</span></label></div><button type="button" class="btn" id="dcpnew">+ Input laporan</button>' : '') + dlMenu('dcp') + '<button type="button" class="btn sec" id="dcprh">Riwayat disk</button>' + (curU().role === 'ADMIN' ? '<button type="button" class="btn sec" id="dcpadm">Izin &amp; pengingat</button>' : '') + '</div></div>';
       if (over) {
         h += '<div class="mdc-alert" role="alert"><b>' + over + ' DCP belum kembali lebih dari ' + d.batasHari + ' hari</b><ul>' +
           d.overdue.slice(0, 6).map(function (o) { return '<li>' + q(o.film) + ' · ' + q(o.kodeDisk) + ' · keluar ' + q(o.tanggal) + '</li>'; }).join('') + '</ul></div>';
@@ -154,8 +154,35 @@
     }).catch(function (e) { v.innerHTML = '<div class="mdc-alert bad" role="alert">' + q(e.message) + '</div>'; });
   };
   function kpi(l, n, cls) { return '<div class="mdc-kpi ' + (cls || '') + '"><small>' + q(l) + '</small><b>' + (Number(n) || 0) + '</b></div>'; }
+  /* riwayat satu kode disk: seluruh perjalanan DCP dari keluar sampai kembali, dibaca dari data DCP yang sudah ada */
+  function riwayatDisk() {
+    modal('<h3>Riwayat disk</h3><form id="rdf" class="mdc-form" novalidate><label>Kode disk<input name="kd" required maxlength="60" placeholder="mis. D-01"></label>' +
+      '<div class="mdc-foot"><button type="button" class="btn sec" id="rdx">Tutup</button><button type="submit" class="btn">Tampilkan</button></div></form><div id="rdout"></div>');
+    $('rdx').onclick = closeM;
+    $('rdf').onsubmit = function (e) {
+      e.preventDefault();
+      var kd = e.target.kd.value.trim();
+      if (!kd) return;
+      api('dcp_list', { q: kd, quiet: true }).then(function (list) {
+        var rows = (list || []).filter(function (r) { return String(r.kodeDisk) === kd; }).sort(function (a, b) {
+          return (String(a.tanggal) + ' ' + String(a.jam)).localeCompare(String(b.tanggal) + ' ' + String(b.jam));
+        });
+        var out = $('rdout');
+        if (!rows.length) { out.innerHTML = '<p class="mdc-note">Belum ada riwayat untuk kode disk ini.</p>'; return; }
+        var last = rows[rows.length - 1];
+        var posisi = (last.jenis === 'KELUAR' && !last.masukId) ? 'Sedang keluar ke ' + (last.tujuan || '-') + ' (belum kembali)' : 'Berada di gudang / sudah kembali';
+        out.innerHTML = '<p><b>Posisi terakhir:</b> ' + q(posisi) + '</p><div class="mdc-tbl"><table><thead><tr><th>Tanggal</th><th>Jenis</th><th>Film</th><th>Tujuan / Asal</th><th>Status</th></tr></thead><tbody>' +
+          rows.map(function (r) {
+            var stat = r.jenis === 'KELUAR' ? (r.masukId ? st('ok', 'Kembali') : st('bad', 'Belum kembali')) : st('ok', 'Kembali');
+            return '<tr><td>' + q(r.tanggal) + ' ' + q(r.jam) + '</td><td>' + (r.jenis === 'KELUAR' ? 'Keluar' : 'Masuk') + '</td><td>' + q(r.film) + '</td><td>' + q(r.tujuan || '-') + '</td><td>' + stat + '</td></tr>';
+          }).join('') + '</tbody></table></div>';
+      }).catch(function (er) { $('rdout').innerHTML = '<p class="mdc-err">' + q(er.message) + '</p>'; });
+    };
+  }
+
   function bindDcp() {
     var t;
+    if ($('dcprh')) $('dcprh').onclick = riwayatDisk;
     $('dcpq').oninput = function (e) { DST.q = e.target.value; clearTimeout(t); t = setTimeout(vDcp, 350); };
     $('dcpj').onchange = function (e) { DST.jenis = e.target.value; vDcp(); };
     $('dcps').onchange = function (e) { DST.status = e.target.value; vDcp(); };
@@ -274,7 +301,7 @@
       h += '<h3>Foto (' + (r.foto || []).length + ')</h3><div class="mdc-ph">' + (r.foto || []).map(function (p) {
         return '<figure><img loading="lazy" data-fid="' + q(p.fotoId) + '" data-fk="dcp" alt="' + q(p.kind) + '"><figcaption>' + q(p.kind) + '</figcaption>' + (can('photo') ? '<button type="button" class="mdc-pdel" data-pdel="' + q(p.fotoId) + '" data-pk="dcp" data-id="' + q(x.id) + '" aria-label="Hapus foto ' + q(p.kind) + '">Hapus</button>' : '') + '</figure>';
       }).join('') + '</div>';
-      if (canWrite()) h += '<label class="mdc-up">Tambah foto<input type="file" accept="image/*" multiple id="dcpph"></label>';
+      if (canWrite()) h += '<div class="mdc-ph-up"><p class="mdc-note">Dokumentasi ' + (x.jenis === 'KELUAR' ? 'DCP Keluar' : 'DCP Masuk') + ': tambah foto dari galeri atau langsung dari kamera.</p><div class="pick"><label class="btn sec pk" for="dcpphg">Pilih dari galeri</label><label class="btn sec pk" for="dcpphc">Ambil dengan kamera</label></div><input class="vh" type="file" id="dcpphg" accept="image/jpeg,image/png,image/webp" multiple><input class="vh" type="file" id="dcpphc" accept="image/*" capture="environment"></div>';
       h += '<div class="mdc-foot">' + dlMenu('mdc') + (can('verify') && !x.verifiedAt ? '<button type="button" class="btn" id="dcpver">Verifikasi</button>' : '') + (canWrite() ? '<button type="button" class="btn sec" id="dcpedit">Ubah</button>' : '') +
         (x.jenis === 'KELUAR' && !x.masukId && canWrite() ? '<button type="button" class="btn sec" id="dcpin">Catat DCP Masuk</button>' : '') +
         (canDel() ? '<button type="button" class="btn danger" id="dcpdel">Hapus</button>' : '') + '</div>';
@@ -283,7 +310,8 @@
       loadPhotos();
       if ($('mdcxl')) $('mdcxl').onclick = function () { dcpOneExport(x, 'xlsx'); };
       if ($('mdcpdf')) $('mdcpdf').onclick = function () { dcpOneExport(x, 'pdf'); };
-      if ($('dcpph')) $('dcpph').onchange = function (e) { sendPhotos(x.id, e.target.files, 'Foto DCP', 'dcp_photo_save', function () { dcpDetail(x.id); }); };
+      var kindPh = x.jenis === 'KELUAR' ? 'Foto DCP Keluar' : 'Foto DCP Masuk';
+      ['dcpphg', 'dcpphc'].forEach(function (id) { if ($(id)) $(id).onchange = function (e) { var fl = Array.prototype.slice.call(e.target.files || []); e.target.value = ''; sendPhotos(x.id, fl, kindPh, 'dcp_photo_save', function () { dcpDetail(x.id); }); }; });
       if ($('dcpedit')) $('dcpedit').onclick = function () { dcpForm(x.jenis, x); };
       if ($('dcpver')) $('dcpver').onclick = function () { api('dcp_verify_save', { id: x.id }).then(function () { toast('DCP diverifikasi'); dcpDetail(x.id); }).catch(function (e) { toast(e.message, 1); }); };
       if ($('dcpin')) $('dcpin').onclick = function () { dcpForm('MASUK', null, x); };
@@ -343,12 +371,19 @@
         if (!kelOk(p.kelengkapan) && !p.keterangan) { p.keterangan = p.kelengkapan.filter(function (c) { return c.status !== 'Lengkap' && c.status !== 'Tidak Diperlukan'; }).map(function (c) { return c.name + ': ' + c.note; }).join('; '); }
         err.textContent = '';
         $('dcpok').disabled = true;
-        api('dcp_save', p).then(function (id) {
+        var doSave = function () { api('dcp_save', p).then(function (id) {
           var pf = ph.get();
           closeM(); toast('DCP tersimpan'); vDcp();
-          if (pf && pf.length) sendPhotos(id, pf, 'Foto DCP', 'dcp_photo_save', function () { dcpDetail(id); });
+          if (pf && pf.length) sendPhotos(id, pf, jenis === 'KELUAR' ? 'Foto DCP Keluar' : 'Foto DCP Masuk', 'dcp_photo_save', function () { dcpDetail(id); });
           else dcpDetail(id);
-        }).catch(function (er) { $('dcpok').disabled = false; err.textContent = er.message; });
+        }).catch(function (er) { $('dcpok').disabled = false; err.textContent = er.message; }); };
+        if (jenis === 'KELUAR' && !x.id) {
+          api('dcp_list', { q: p.kodeDisk, quiet: true }).then(function (list) {
+            var open = (list || []).filter(function (r) { return r.jenis === 'KELUAR' && String(r.kodeDisk) === p.kodeDisk && !r.masukId; });
+            if (open.length) { $('dcpok').disabled = false; err.textContent = 'Kode disk ' + p.kodeDisk + ' masih belum kembali (' + open[0].id + ', film ' + open[0].film + '). Catat DCP Masuk terlebih dahulu.'; return; }
+            doSave();
+          }).catch(function (er) { $('dcpok').disabled = false; err.textContent = er.message; });
+        } else { doSave(); }
       };
     });
   }
