@@ -136,7 +136,12 @@ function go(p){if(soonOf(p)){toast(SOON_MSG);return}if(!MENU.some(function(m){re
  var TBX=tbFor();var TABI=function(k,l,ic,on){return '<a data-p="'+k+'" class="'+(on?'on':'')+'" aria-label="'+l+'"><i>'+ic+'</i>'+l+'</a>'};$('tabs').innerHTML=TABI('dashboard','Beranda',IC.dashboard,p==='dashboard')+'<a data-p="search" aria-label="Cari laporan"><i>'+IC.search+'</i>Cari</a>'+NEWBTN+TABI('ats','ATS',IC.ats,p==='ats')+TABI('menu','Menu',IC.menu,p!=='dashboard'&&p!=='ats');
  $('nav').innerHTML=h;pHero(p);$('ptitle').textContent=(MENU.filter(function(m){return m[0]===p})[0]||[0,''])[1];$('psub').textContent=DESC[p]||'';closeMenu();var v=$('view');v.innerHTML='<div class="sk" style="height:30px;width:240px"></div><div class="sk" style="height:110px;margin-top:18px"></div><div class="sk" style="height:280px;margin-top:18px"></div>';
  /* modul tambahan (modul-dcp.js) dimuat terpisah; bila belum termuat, tampilkan pesan jelas, bukan layar kosong */
- function modOr_(fn,nama){if(typeof window[fn]==='function')return window[fn]();$('view').innerHTML='<div class="mdc-alert bad" role="alert"><b>Modul '+nama+' belum termuat.</b><br>Pastikan berkas modul-dcp.js sudah diunggah ke repo, lalu muat ulang halaman (Ctrl+F5 atau tarik ke bawah di HP).</div>'}
+ function modOr_(fn,nama){
+ if(typeof window[fn]==='function')return window[fn]();
+ /* saat refresh, rute halaman terakhir jalan sebelum modul (modul-dcp.js, pelaporan.js) selesai dimuat: tunggu sampai halaman lengkap */
+ if(document.readyState!=='complete'){$('view').innerHTML='<div class="sk" style="height:120px"></div>';window.addEventListener('load',function(){modOr_(fn,nama)},{once:true});return}
+ $('view').innerHTML='<div class="mdc-alert bad" role="alert"><b>Modul '+nama+' belum termuat.</b><br>Muat ulang halaman (Ctrl+F5 atau tarik ke bawah di HP). Jika tetap, pastikan berkas modul sudah diunggah ke repo.</div>'
+}
 
  ({dashboard:vDash,pengumuman:vAnn,ats:vAts,film:vFilm,dcp:function(){modOr_('vDcp','DCP Management')},ftest:function(){modOr_('vFt','Daily Film Testing')},pel:function(){modOr_('vPel','Pelaporan DCP')},patrol:function(){vRep('patrol')},work:function(){vRep('work')},issue:function(){vRep('issue')},meter:function(){vRep('meter')},ac:function(){vRep('ac')},purchase:function(){vRep('purchase')},glosarium:vGloss,penyimpanan:vStore,pengguna:vUsers,audit:vAudit,pengaturan:vSet})[p]()}
 
