@@ -88,11 +88,8 @@
     }).observe(mbox, { childList: true, subtree: true });
   }
 
-  // Setelah laporan berhasil dikirim, hapus draf teks sekaligus draf foto
-  var _dc = window.draftClear;
-  window.draftClear = function (f) {
-    var k = f && f.dataset && f.dataset.draftKey;
-    _dc(f);
+  // Dipanggil app.js (draftClear) setelah laporan berhasil dikirim: hapus draf foto milik kunci tersebut
+  window.draftPhotosClear = function (k) {
     if (k) kvDel(k + '_photos').catch(function () {});
   };
 })();
