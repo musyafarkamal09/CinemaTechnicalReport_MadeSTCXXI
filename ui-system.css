@@ -737,3 +737,22 @@ html:root[data-theme] #login .lbox .hello, html:root[data-theme] #login .lbox sm
   :root[data-theme] #modal .mdc-ck { grid-template-columns: 1fr; }
   :root[data-theme] #modal .mdc-cb { justify-content: flex-start; }
 }
+/* menu Download selalu di atas filter dan tabel saat dibuka */
+:root[data-theme] #app .dlw { z-index: 20; }
+:root[data-theme] #app .dlw:focus-within { z-index: 300; }
+:root[data-theme] #app .dlw .dlm { z-index: 310 !important; }
+/* grup atas (KPI + toolbar) berada di lapisan sendiri, sehingga menu Download tidak tertutup alert, filter, atau tabel */
+:root[data-theme] #app #view .mdc-top { position: relative; z-index: 30; }
+
+/* ===== 17. Tata letak fluid: seluruh elemen mengisi lebar layar saat zoom in/out ===== */
+html:root[data-theme] #app #view,
+html:root[data-theme] body.sb-off #app #view { max-width: none !important; width: 100% !important; }
+html:root[data-theme] #app #phero,
+html:root[data-theme] body.sb-off #app #phero { max-width: none !important; width: auto; }
+html:root[data-theme] #app .dx { max-width: none !important; width: 100%; }
+html:root[data-theme] #app #view > * { max-width: 100%; box-sizing: border-box; }
+html:root[data-theme] #app .mdc-tbl { width: 100%; }
+html:root[data-theme] #app .mdc-tbl table { min-width: 0; }
+html:root[data-theme] #modal .mbox,
+html:root[data-theme] #modal > div { max-width: min(760px, calc(100vw - 32px)) !important; }
+html:root[data-theme] #app #phero { width: 100% !important; margin-inline: 0 !important; box-sizing: border-box; }
