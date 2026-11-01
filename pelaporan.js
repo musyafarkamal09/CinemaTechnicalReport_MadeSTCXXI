@@ -20,6 +20,7 @@
 
   function q(s) { return esc(s); }
   function me() { return S.getU() || {}; }
+  function myName() { var u = me(); return u.name || u.fullName || u.username || '-'; }
   function isLama(r) { return r.modul !== 'PEL'; }
   function statusOf(r) { return isLama(r) ? 'Lama' : (r.verifiedAt ? 'Tervalidasi' : 'Draft'); }
   function owner(r) { var u = me(); return u.role === 'ADMIN' || String(r.pelaporId) === String(u.userId); }
@@ -169,7 +170,8 @@
       : 'Keluar dari <b>' + q(r.outlet || '-') + '</b> ke <b>' + q(r.outletTujuan || r.tujuan || '-') + '</b>';
     var rows = line('Tanggal & waktu', q(r.tanggal || '-') + ' ' + q(r.jam || '')) +
       line('Pelapor', q(r.pelapor || '-'));
-    if (masuk) rows += line('Datang dari', q(r.asalDari || '-')) + line('Pengirim', q(r.namaPengirim || '-'));
+    if (masuk) rows += line('Datang dari', q(r.asalDari || '-'));
+    rows += line('Pengirim', q(r.namaPengirim || '-'));
     if (!masuk) rows += line('Penerima', q(r.penerima || '-'));
     if (r.kelengkapan && r.kelengkapan.length) rows += line('Kelengkapan', kelHtml(r.kelengkapan));
     if (r.keterangan) rows += line('Catatan', q(r.keterangan));
@@ -329,21 +331,23 @@
       '<div class="mdc-grid"><label>Kode disk<input name="kodeDisk" required maxlength="60" value="' + q(kdVal) + '"' + (rec || g ? ' readonly' : '') + ' placeholder="mis. D-01"></label>' +
       '<label>Judul film<input name="film" maxlength="200" value="' + q(film) + '"' + (g || rec ? ' readonly' : '') + '></label></div>' +
       '<div class="mdc-grid"><label>PH<input name="ph" maxlength="160" value="' + q(ph) + '"' + (g || rec ? ' readonly' : '') + '></label>' +
-      '<div class="pel-loc"><span>' + (masuk ? 'Lokasi DCP masuk (outlet ini)' : 'Outlet asal (posisi DCP saat ini)') + '</span><b id="plLoc">' + q(defOutlet || '-') + '</b></div></div>' +
+      '<div class="pel-loc"><span>' + (masuk ? 'Outlet penerima (outlet ini)' : 'Outlet asal (posisi DCP saat ini)') + '</span><b id="plLoc">' + q(defOutlet || '-') + '</b></div></div>' +
       '<input type="hidden" name="outlet" value="' + q(defOutlet) + '">';
     if (!masuk) {
       h += '<div class="mdc-grid"><label>Outlet tujuan<select name="outletTujuan" required><option value="">Pilih outlet tujuan</option>' + outletOpts(defTujuan) + '</select></label>' +
         '<label>Nama penerima di outlet tujuan<input name="penerima" required maxlength="120" value="' + q(rec ? rec.penerima : '') + '" placeholder="mis. Budi"></label></div>' +
-        '<label class="pel-lain" id="plLainT"' + (lainVal(defTujuan) || defTujuan === LAIN ? '' : ' hidden') + '>Nama outlet tujuan lain<input name="outletTujuanLain" maxlength="120" value="' + q(lainVal(defTujuan)) + '"></label>';
+        '<label class="pel-lain" id="plLainT"' + (lainVal(defTujuan) || defTujuan === LAIN ? '' : ' hidden') + '>Nama outlet tujuan lain<input name="outletTujuanLain" maxlength="120" value="' + q(lainVal(defTujuan)) + '"></label>' +
+        '<div class="mdc-grid"><label>Nama pengirim (di STC)<input name="namaPengirim" required maxlength="120" value="' + q(rec ? rec.namaPengirim : '') + '" placeholder="mis. Budi"></label></div>';
     }
     if (masuk) {
       var asalSel = rec && rec.asalDari && ASAL_OPTS.indexOf(rec.asalDari) < 0 ? LAIN : (rec ? rec.asalDari : '');
       h += '<div class="mdc-grid"><label>Outlet asal pengirim<select name="asalDari" required><option value="">Pilih outlet asal</option>' + asalOpts(asalSel) + '</select></label>' +
         '<label>Nama pengirim<input name="namaPengirim" required maxlength="120" value="' + q(rec ? rec.namaPengirim : '') + '" placeholder="mis. Budi"></label></div>' +
-        '<label class="pel-lain" id="plLainA"' + (asalSel === LAIN ? '' : ' hidden') + '>Nama outlet asal lain<input name="asalLain" maxlength="200" value="' + q(rec && asalSel === LAIN ? rec.asalDari : '') + '"></label>';
+        '<label class="pel-lain" id="plLainA"' + (asalSel === LAIN ? '' : ' hidden') + '>Nama outlet asal lain<input name="asalLain" maxlength="200" value="' + q(rec && asalSel === LAIN ? rec.asalDari : '') + '"></label>' +
+        '<div class="mdc-grid"><div class="pel-loc"><span>Nama penerima (pelapor)</span><b>' + q(rec ? (rec.penerima || '-') : myName()) + '</b></div></div>';
     }
     h += '<p class="mdc-note" id="plInfo"></p>' +
-      '<div class="pel-auto"><span>Tanggal & waktu: otomatis saat disimpan</span><span>Pelapor: ' + q(me().fullName || '-') + '</span></div>' +
+      '<div class="pel-auto"><span>Tanggal & waktu: otomatis saat disimpan</span><span>Pelapor: ' + q(myName()) + '</span></div>' +
       '<label>Catatan<textarea name="keterangan" maxlength="2000" rows="3">' + q(rec ? rec.keterangan : '') + '</textarea></label>' +
       kelFieldset(rec) + (rec ? '' : P.photoBox('pel')) + '<p class="mdc-err" id="plerr" role="alert"></p>' +
       '<div class="mdc-foot"><button type="button" class="btn sec" id="plcancel">Batal</button><button type="submit" class="btn" id="plsave">Simpan laporan</button></div></form>';
@@ -393,6 +397,8 @@
         body.outletTujuan = f.outletTujuan.value;
         body.outletTujuanLain = f.outletTujuanLain ? f.outletTujuanLain.value.trim() : '';
         body.penerima = f.penerima.value.trim();
+        body.namaPengirim = f.namaPengirim.value.trim();
+        if (!body.namaPengirim) { toast('Isi nama pengirim DCP.', 1); return; }
       }
       if (masuk) {
         body.asalDari = f.asalDari.value === LAIN ? f.asalLain.value.trim() : f.asalDari.value;
