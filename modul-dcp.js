@@ -233,11 +233,13 @@
     if (!needLib(pdf)) return;
     pairs = pairs.map(function (p) { return [sv(p[0]), sv(p[1])]; });
     if (pdf) {
-      var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+      var wide = tables.some(function (t) { return t.head.length > 6; });
+      var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: wide ? 'landscape' : 'portrait' });
+      var fs = wide ? 7.5 : 9, pad = wide ? 1.5 : 2;
       doc.setFontSize(14); doc.text(title, 14, 16);
       doc.autoTable({ startY: 22, body: pairs, theme: 'grid', margin: { left: 14, right: 14 }, styles: { fontSize: 9, cellPadding: 2, overflow: 'linebreak' }, columnStyles: { 0: { cellWidth: 50, fontStyle: 'bold' } } });
       tables.forEach(function (t) {
-        doc.autoTable({ startY: doc.lastAutoTable.finalY + 8, head: [t.head], body: t.rows, theme: 'grid', margin: { left: 14, right: 14 }, styles: { fontSize: 9, cellPadding: 2, overflow: 'linebreak' }, headStyles: { fillColor: [47, 93, 70], textColor: 255 } });
+        doc.autoTable({ startY: doc.lastAutoTable.finalY + 8, head: [t.head], body: t.rows, theme: 'grid', margin: { left: 10, right: 10 }, styles: { fontSize: fs, cellPadding: pad, overflow: 'linebreak', valign: 'top' }, headStyles: { fillColor: [47, 93, 70], textColor: 255, fontStyle: 'bold' } });
       });
       doc.save(file + '.pdf');
     } else {

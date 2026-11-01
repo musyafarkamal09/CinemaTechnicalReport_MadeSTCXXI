@@ -71,13 +71,16 @@
   function plExport(fmt) {
     var rows = ROWS.filter(match);
     if (!rows.length) { toast('Tidak ada data untuk diunduh.', 1); return; }
-    var head = ['ID', 'Jenis', 'Tanggal', 'Jam', 'Kode disk', 'Judul film', 'PH', 'Outlet', 'Outlet tujuan', 'Penerima', 'Pelapor', 'Kelengkapan', 'Status validasi', 'Divalidasi oleh', 'Catatan'];
+    var head = ['ID', 'Jenis', 'Tanggal', 'Jam', 'Kode disk', 'Judul film', 'PH', 'Outlet', 'Outlet tujuan', 'Penerima', 'Pelapor', 'Datang dari', 'Pengirim', 'Kelengkapan', 'Status validasi', 'Divalidasi oleh', 'Catatan'];
     var body = rows.map(function (r) {
       var kel = (r.kelengkapan || []).map(function (c) { return c.name + ': ' + c.status + (c.note ? ' (' + c.note + ')' : ''); }).join('; ');
-      return [r.id, r.jenis === 'KELUAR' ? 'Keluar' : 'Masuk', r.tanggal, r.jam, r.kodeDisk, r.film, r.ph, r.outlet, r.jenis === 'KELUAR' ? (r.outletTujuan || '') : '', r.penerima, r.pelapor, kel || 'Tidak diisi (data lama)', statusOf(r), r.verifiedBy || '', r.keterangan]
+      return [r.id, r.jenis === 'KELUAR' ? 'Keluar' : 'Masuk', r.tanggal, r.jam, r.kodeDisk, r.film, r.ph, r.outlet, r.jenis === 'KELUAR' ? (r.outletTujuan || '') : '', r.penerima, r.pelapor, r.asalDari || '', r.namaPengirim || '', kel || 'Tidak diisi (data lama)', statusOf(r), r.verifiedBy || '', r.keterangan]
         .map(function (v) { return v == null ? '' : String(v); });
     });
-    P.recSave('Laporan Pelaporan DCP', [['Jumlah transaksi', rows.length], ['Tanggal cetak', P.jkt()]], [{ head: head, rows: body }], fmt, 'Laporan_Pelaporan_DCP_STCXXI_' + P.jkt());
+    /* PDF memakai 12 kolom yang relevan (tanpa ID, jam, pelapor, validator, catatan) agar tabel tetap terbaca di A4 landscape */
+    var PDF_COLS = [1, 2, 3, 4, 5, 7, 8, 11, 12, 9, 13, 14];
+    var pick = function (a) { return fmt === 'pdf' ? PDF_COLS.map(function (i) { return a[i]; }) : a; };
+    P.recSave('Laporan Pelaporan DCP', [['Jumlah transaksi', rows.length], ['Tanggal cetak', P.jkt()]], [{ head: pick(head), rows: body.map(pick) }], fmt, 'Laporan_Pelaporan_DCP_STCXXI_' + P.jkt());
   }
 
   /* ---------- daftar utama ---------- */
@@ -166,6 +169,7 @@
       : 'Keluar dari <b>' + q(r.outlet || '-') + '</b> ke <b>' + q(r.outletTujuan || r.tujuan || '-') + '</b>';
     var rows = line('Tanggal & waktu', q(r.tanggal || '-') + ' ' + q(r.jam || '')) +
       line('Pelapor', q(r.pelapor || '-'));
+    if (masuk) rows += line('Datang dari', q(r.asalDari || '-')) + line('Pengirim', q(r.namaPengirim || '-'));
     if (!masuk) rows += line('Penerima', q(r.penerima || '-'));
     if (r.kelengkapan && r.kelengkapan.length) rows += line('Kelengkapan', kelHtml(r.kelengkapan));
     if (r.keterangan) rows += line('Catatan', q(r.keterangan));
@@ -310,7 +314,7 @@
     var masuk = jenis === 'MASUK';
     var g = kd ? groupOf(kd) : null;
     var p = posisi(g);
-    var defOutlet = rec ? rec.outlet : (masuk ? (p.tujuan || '') : (p.at ? p.outlet : ''));
+    var defOutlet = masuk ? OUTLET_SAYA : (rec ? rec.outlet : (p.at ? p.outlet : ''));
     var defTujuan = rec ? (rec.outletTujuan || '') : '';
     var film = rec ? rec.film : (g ? g.film : '');
     var ph = rec ? rec.ph : (g ? g.ph : '');
@@ -320,13 +324,16 @@
       '<div class="mdc-grid"><label>Kode disk<input name="kodeDisk" required maxlength="60" value="' + q(kdVal) + '"' + (rec || g ? ' readonly' : '') + ' placeholder="mis. D-01"></label>' +
       '<label>Judul film<input name="film" maxlength="200" value="' + q(film) + '"' + (g || rec ? ' readonly' : '') + '></label></div>' +
       '<div class="mdc-grid"><label>PH<input name="ph" maxlength="160" value="' + q(ph) + '"' + (g || rec ? ' readonly' : '') + '></label>' +
-      '<label>' + (masuk ? 'Outlet (lokasi DCP masuk)' : 'Outlet asal') + '<select name="outlet" required>' +
-      '<option value="">Pilih outlet</option>' + outletOpts(defOutlet) + '</select></label></div>' +
-      '<label class="pel-lain" id="plLainW"' + (lainVal(defOutlet) || defOutlet === LAIN ? '' : ' hidden') + '>Nama outlet lain<input name="outletLain" maxlength="120" value="' + q(lainVal(defOutlet)) + '"></label>';
+      '<div class="pel-loc"><span>' + (masuk ? 'Lokasi DCP masuk (outlet ini)' : 'Outlet asal (posisi DCP saat ini)') + '</span><b id="plLoc">' + q(defOutlet || '-') + '</b></div></div>' +
+      '<input type="hidden" name="outlet" value="' + q(defOutlet) + '">';
     if (!masuk) {
       h += '<div class="mdc-grid"><label>Outlet tujuan<select name="outletTujuan" required><option value="">Pilih outlet tujuan</option>' + outletOpts(defTujuan) + '</select></label>' +
         '<label>Nama penerima di outlet tujuan<input name="penerima" required maxlength="120" value="' + q(rec ? rec.penerima : '') + '" placeholder="mis. Budi"></label></div>' +
         '<label class="pel-lain" id="plLainT"' + (lainVal(defTujuan) || defTujuan === LAIN ? '' : ' hidden') + '>Nama outlet tujuan lain<input name="outletTujuanLain" maxlength="120" value="' + q(lainVal(defTujuan)) + '"></label>';
+    }
+    if (masuk) {
+      h += '<div class="mdc-grid"><label>Datang dari (asal DCP)<input name="asalDari" required maxlength="200" value="' + q(rec ? rec.asalDari : '') + '" placeholder="mis. XPDC, Pekanbaru Xchange XXI"></label>' +
+        '<label>Nama pengirim<input name="namaPengirim" required maxlength="120" value="' + q(rec ? rec.namaPengirim : '') + '" placeholder="mis. Budi"></label></div>';
     }
     h += '<p class="mdc-note" id="plInfo"></p>' +
       '<div class="pel-auto"><span>Tanggal & waktu: otomatis saat disimpan</span><span>Pelapor: ' + q(me().fullName || '-') + '</span></div>' +
@@ -346,21 +353,18 @@
         var info = $('plInfo');
         if (info) {
           if (!gg) info.textContent = masuk ? 'Kode disk baru: isi judul film dan PH.' : 'Kode disk belum pernah dicatat. Catat DCP Masuk terlebih dahulu.';
-          else info.textContent = 'DCP ditemukan: ' + pp.txt + '.' + (masuk && pp.tujuan ? ' Outlet masuk harus ' + pp.tujuan + '.' : '') + (!masuk && pp.at ? ' Outlet asal sesuai posisi saat ini.' : '');
+          else info.textContent = 'DCP ditemukan: ' + pp.txt + '.' + (!masuk && !pp.here ? ' Catat DCP Masuk ke ' + OUTLET_SAYA + ' terlebih dahulu.' : '');
         }
-        if (!f.outlet.value || f.outlet.value === '') {
-          var want = masuk ? pp.tujuan : (pp.at ? pp.outlet : '');
-          if (want) { f.outlet.value = OUTLET.indexOf(want) >= 0 ? want : LAIN; }
-        }
+        var wantO = masuk ? OUTLET_SAYA : (pp.at ? pp.outlet : '');
+        f.outlet.value = wantO;
+        var ol = $('plLoc'); if (ol) ol.textContent = wantO || '-';
       }
       syncLain();
     }
     function syncLain() {
-      var lw = $('plLainW'); if (lw) lw.hidden = f.outlet.value !== LAIN;
       var tw = $('plLainT'); if (tw) tw.hidden = !f.outletTujuan || f.outletTujuan.value !== LAIN;
     }
     f.kodeDisk.oninput = sync;
-    f.outlet.onchange = syncLain;
     if (f.outletTujuan) f.outletTujuan.onchange = syncLain;
     sync();
 
@@ -381,12 +385,17 @@
         body.outletTujuanLain = f.outletTujuanLain ? f.outletTujuanLain.value.trim() : '';
         body.penerima = f.penerima.value.trim();
       }
+      if (masuk) {
+        body.asalDari = f.asalDari.value.trim();
+        body.namaPengirim = f.namaPengirim.value.trim();
+        if (!body.asalDari || !body.namaPengirim) { toast('Isi asal DCP dan nama pengirim.', 1); return; }
+      }
       body.kelengkapan = kelRead(f);
       var bad = body.kelengkapan.filter(function (c) { return (c.status === 'Tidak Ada' || c.status === 'Rusak') && !c.note; });
       if (bad.length) { $('plerr').textContent = 'Isi keterangan untuk: ' + bad.map(function (c) { return c.name; }).join(', ') + '.'; return; }
       $('plerr').textContent = '';
       if (!body.kodeDisk) { toast('Kode disk wajib diisi.', 1); return; }
-      if (!body.outlet) { toast('Pilih outlet.', 1); return; }
+      if (!body.outlet) { toast(masuk ? 'Outlet DCP masuk tidak valid.' : 'DCP belum berada di outlet ini. Catat DCP Masuk terlebih dahulu.', 1); return; }
       if (!masuk && !body.outletTujuan) { toast('Pilih outlet tujuan.', 1); return; }
       var btn = $('plsave'); btn.disabled = true;
       if (saved) body.id = saved.id;

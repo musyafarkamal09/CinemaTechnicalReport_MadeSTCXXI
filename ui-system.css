@@ -742,7 +742,7 @@ html:root[data-theme] #login .lbox .hello, html:root[data-theme] #login .lbox sm
 :root[data-theme] #app .dlw:focus-within { z-index: 300; }
 :root[data-theme] #app .dlw .dlm { z-index: 310 !important; }
 /* grup atas (KPI + toolbar) berada di lapisan sendiri, sehingga menu Download tidak tertutup alert, filter, atau tabel */
-:root[data-theme] #app #view .mdc-top { position: relative; z-index: 30; }
+:root[data-theme] #app #view .mdc-top { position: relative; z-index: 5; }
 
 /* ===== 17. Tata letak fluid: seluruh elemen mengisi lebar layar saat zoom in/out ===== */
 html:root[data-theme] #app #view,
@@ -790,3 +790,11 @@ html:root[data-theme] #app #phero { width: 100% !important; margin-inline: 0 !im
 .pel-kel li.bad { color: var(--err-ink); }
 .pel-kel li.ok b { font-weight: 500; }
 .pel-kelnote { color: var(--mut); }
+
+/* sheet tombol + harus selalu di atas halaman (z 29); tata letak .mdc-top tetap di bawahnya */
+#nsheet .nsh-box { transform: translateX(-50%); }
+
+/* lokasi tetap pada form DCP (outlet dikunci sesuai alur) */
+.pel-loc { display: grid; gap: 4px; align-content: start; font-size: 14px; }
+.pel-loc span { font-size: 13px; opacity: .75; }
+.pel-loc b { font-weight: 600; }
