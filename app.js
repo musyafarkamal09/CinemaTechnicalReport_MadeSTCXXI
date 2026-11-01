@@ -112,7 +112,7 @@ var T={
  patrol:{label:'Inspeksi & Patroli Studio',f:[['date','Tanggal inspeksi','date',1],['time','Jam inspeksi','time',1],['note','Catatan umum','textarea']],studios:1}
 };
 var FS=['Upcoming ATS','ATS Open','Coming Soon','Coming to Theater','Now Showing','Completed'];
-var MENU=[['dashboard','Dashboard',0],['pengumuman','Pengumuman',0],['ats','Advance Ticket Sales',0],['work','Laporan Pekerjaan',0],['patrol','Inspeksi & Patroli Studio',0],['issue','Perlu Diperbaiki',0],['meter','Laporan Meteran',0],['ac','Daily Monitoring AC',0],['purchase','Laporan Pembelian',0],['film','Laporan Film',0],['dcp','DCP Management',0],['ftest','Daily Film Testing',0],['glosarium','Glossarium',0],['penyimpanan','Penyimpanan Data',0],['pengguna','Manajemen Pengguna',1],['audit','Audit Log',1],['pengaturan','Pengaturan Sistem',1]];
+var MENU=[['dashboard','Dashboard',0],['pengumuman','Pengumuman',0],['ats','Advance Ticket Sales',0],['work','Laporan Pekerjaan',0],['patrol','Inspeksi & Patroli Studio',0],['issue','Perlu Diperbaiki',0],['meter','Laporan Meteran',0],['ac','Daily Monitoring AC',0],['purchase','Laporan Pembelian',0],['film','Laporan Film',0],['dcp','DCP Management',0],['ftest','Daily Film Testing',0],['pel','Pelaporan DCP',0],['glosarium','Glossarium',0],['penyimpanan','Penyimpanan Data',0],['pengguna','Manajemen Pengguna',1],['audit','Audit Log',1],['pengaturan','Pengaturan Sistem',1]];
 
 var DESC={patrol:'Checklist inspeksi empat studio, dokumentasi foto, dan informasi tambahan',dashboard:'Ringkasan aktivitas dan informasi terkini',pengumuman:'Informasi internal untuk Tim Teknikal',ats:'Jadwal penjualan tiket dan film mendatang',work:'Pencatatan pekerjaan teknikal dan perawatan',issue:'Laporkan masalah, Teknisi menanggapi sampai selesai',meter:'Meteran listrik dan air dalam satu laporan, akumulasi, dan grafik pemakaian',ac:'Pemantauan harian kondisi dan suhu unit AC',purchase:'Pencatatan pembelian barang dan perlengkapan',pengguna:'Kelola akun dan hak akses',audit:'Riwayat aktivitas sistem',pengaturan:'Status integrasi sistem',film:'Input, pencarian, pengurutan, dan ekspor laporan data film di server'};
 var IC={dashboard:'<svg class="ic" viewBox="0 0 24 24"><path d="M3 13h8V3H3zM13 21h8V11h-8zM13 3v6h8V3zM3 21h8v-6H3z"/></svg>',pengumuman:'<svg class="ic" viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 8a5 5 0 0 1 0 8"/></svg>',ats:'<svg class="ic" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/></svg>',work:'<svg class="ic" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.2-.6-.6-2.2z"/></svg>',meter:'<svg class="ic" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',purchase:'<svg class="ic" viewBox="0 0 24 24"><path d="M6 6h15l-2 9H8zM6 6 5 3H2M9 20h.01M18 20h.01"/></svg>',pengguna:'<svg class="ic" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM21 21v-2a4 4 0 0 0-3-3.9"/></svg>',audit:'<svg class="ic" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h8"/></svg>',pengaturan:'<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>'};
@@ -138,7 +138,7 @@ function go(p){if(soonOf(p)){toast(SOON_MSG);return}if(!MENU.some(function(m){re
  /* modul tambahan (modul-dcp.js) dimuat terpisah; bila belum termuat, tampilkan pesan jelas, bukan layar kosong */
  function modOr_(fn,nama){if(typeof window[fn]==='function')return window[fn]();$('view').innerHTML='<div class="mdc-alert bad" role="alert"><b>Modul '+nama+' belum termuat.</b><br>Pastikan berkas modul-dcp.js sudah diunggah ke repo, lalu muat ulang halaman (Ctrl+F5 atau tarik ke bawah di HP).</div>'}
 
- ({dashboard:vDash,pengumuman:vAnn,ats:vAts,film:vFilm,dcp:function(){modOr_('vDcp','DCP Management')},ftest:function(){modOr_('vFt','Daily Film Testing')},patrol:function(){vRep('patrol')},work:function(){vRep('work')},issue:function(){vRep('issue')},meter:function(){vRep('meter')},ac:function(){vRep('ac')},purchase:function(){vRep('purchase')},glosarium:vGloss,penyimpanan:vStore,pengguna:vUsers,audit:vAudit,pengaturan:vSet})[p]()}
+ ({dashboard:vDash,pengumuman:vAnn,ats:vAts,film:vFilm,dcp:function(){modOr_('vDcp','DCP Management')},ftest:function(){modOr_('vFt','Daily Film Testing')},pel:function(){modOr_('vPel','Pelaporan DCP')},patrol:function(){vRep('patrol')},work:function(){vRep('work')},issue:function(){vRep('issue')},meter:function(){vRep('meter')},ac:function(){vRep('ac')},purchase:function(){vRep('purchase')},glosarium:vGloss,penyimpanan:vStore,pengguna:vUsers,audit:vAudit,pengaturan:vSet})[p]()}
 
 /* ---- banner halaman: foto proyektor dengan potongan berbeda per halaman (hanya tampilan) ---- */
 var PH={pengumuman:['christie','80% 62%','a'],ats:['christie','24% 58%','b'],work:['barco','30% 52%','a'],issue:['christie','14% 40%','w'],meter:['barco','100% 8%','g'],ac:['christie','50% 4%','a'],purchase:['barco','8% 62%','b'],pengguna:['','','a'],audit:['','','b'],pengaturan:['','','g']};
@@ -155,11 +155,12 @@ function openMenu(){$('side').classList.add('open');$('shade').classList.add('op
 /* ---- tombol "+" (buat laporan) di tengah navigasi bawah ---- */
 IC.search='<svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
 var NEWBTN='<a data-p="new" class="pl" role="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Buat laporan baru"><span class="pl-b" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><em>Buat</em></a>';
-var NEWI={ADMIN:[['dcpk','DCP Keluar','Catat pengiriman DCP','dcp'],['dcpm','DCP Masuk','Catat pengembalian DCP','dcp'],['ftest','Input Testing','Pengetesan harian film'],['work','Laporan Pekerjaan','Pekerjaan teknis harian'],['meter','Laporan Meteran','Listrik & air'],['ac','Daily Monitoring AC','Suhu & kondisi AC'],['purchase','Laporan Pembelian','Barang & jasa'],['issue','Perlu Diperbaiki','Lapor kerusakan'],['patrol','Inspeksi & Patroli Studio','Catat hasil patroli']],
+var NEWI={ADMIN:[['dcpk','DCP Keluar','Catat pengiriman DCP','dcp'],['dcpm','DCP Masuk','Catat pengembalian DCP','dcp'],['pelk','Pelaporan DCP Keluar','Tujuan, penerima, dokumentasi','pel'],['pelm','Pelaporan DCP Masuk','Outlet, dokumentasi','pel'],['ftest','Input Testing','Pengetesan harian film'],['work','Laporan Pekerjaan','Pekerjaan teknis harian'],['meter','Laporan Meteran','Listrik & air'],['ac','Daily Monitoring AC','Suhu & kondisi AC'],['purchase','Laporan Pembelian','Barang & jasa'],['issue','Perlu Diperbaiki','Lapor kerusakan'],['patrol','Inspeksi & Patroli Studio','Catat hasil patroli']],
  REPORTER:[['issue','Perlu Diperbaiki','Lapor kerusakan']],
  GUIDE_SECURITY:[['patrol','Inspeksi & Patroli Studio','Catat hasil patroli']]};
 var NEWCREATE={work:'ra',meter:'ra',ac:'ra',purchase:'ra',issue:'ra',patrol:'ra',ftest:'ftnew'};
 var NEWDCP={dcpk:'KELUAR',dcpm:'MASUK'};
+var NEWPEL={pelk:'KELUAR',pelm:'MASUK'};
 function newOpen(){
  var list=(NEWI[U.role]||NEWI.ADMIN).filter(function(x){var m=MENU.filter(function(q){return q[0]===(x[3]||x[0])})[0];return m&&can(m)});
  $('nsgrid').innerHTML=list.map(function(x,i){return '<button type="button" class="nsi" style="--i:'+i+'" data-p="'+x[0]+'"><i>'+(IC[x[3]||x[0]]||'')+'</i><b>'+esc(x[1])+'</b><small>'+esc(x[2])+'</small></button>'}).join('');
@@ -173,6 +174,9 @@ function newClose(){
 function toggleNew(){if($('nsheet').classList.contains('hidden'))newOpen();else newClose()}
 function newCreate(p){
  newClose();
+ if(NEWPEL[p]){ /* Pelaporan DCP: buka modul lalu formulir sesuai jenis */
+  go('pel');if(window.pelOpenForm)window.pelOpenForm(NEWPEL[p]);return;
+ }
  if(NEWDCP[p]){ /* DCP Keluar/Masuk: buka modul DCP lalu pilih jenis di toggle, lalu klik Input */
   go('dcp');var k=0;
   (function wait(){var r=document.querySelector('input[name=dcpjt][value='+NEWDCP[p]+']'),b=document.getElementById('dcpnew');if(r&&b){r.checked=true;b.click();return}if(++k<60)setTimeout(wait,100)})();

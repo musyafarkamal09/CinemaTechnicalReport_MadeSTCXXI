@@ -383,6 +383,20 @@
             if (open.length) { $('dcpok').disabled = false; err.textContent = 'Kode disk ' + p.kodeDisk + ' masih belum kembali (' + open[0].id + ', film ' + open[0].film + '). Catat DCP Masuk terlebih dahulu.'; return; }
             doSave();
           }).catch(function (er) { $('dcpok').disabled = false; err.textContent = er.message; });
+        } else if (jenis === 'MASUK' && !x.id) {
+          api('dcp_list', { q: p.kodeDisk, quiet: true }).then(function (list) {
+            var norm = function (v) { return String(v || '').trim().toLowerCase(); };
+            var cand = (list || []).filter(function (r) { return r.jenis === 'KELUAR' && String(r.kodeDisk) === p.kodeDisk && !r.masukId; })
+              .sort(function (a, b) { return (String(a.tanggal) + ' ' + String(a.jam)).localeCompare(String(b.tanggal) + ' ' + String(b.jam)); });
+            var same = cand.filter(function (r) { return norm(r.film) === norm(p.film); });
+            var fail = function (m) { $('dcpok').disabled = false; err.textContent = m; };
+            if (!cand.length) return fail('Tidak ada DCP Keluar yang belum kembali untuk kode disk ' + p.kodeDisk + '. Catat DCP Keluar terlebih dahulu.');
+            if (!same.length) return fail('Judul film tidak sama dengan DCP Keluar yang terbuka untuk kode disk ' + p.kodeDisk + ' (' + cand[0].film + '). Judul dan kode disk harus sama.');
+            var pick = (lk && lk.id) ? same.filter(function (r) { return r.id === lk.id; })[0] : same[0];
+            if (!pick) return fail('DCP Keluar yang dipilih tidak cocok dengan judul dan kode disk ini.');
+            p.relasiId = pick.id;
+            doSave();
+          }).catch(function (er) { $('dcpok').disabled = false; err.textContent = er.message; });
         } else { doSave(); }
       };
     });
@@ -583,4 +597,6 @@
       };
     });
   }
+  /* helper bersama untuk modul Pelaporan DCP (pelaporan.js) */
+  S.pel = { photoBox: photoBox, photoBind: photoBind, sendPhotos: sendPhotos, loadPhotos: loadPhotos, canWrite: canWrite, loadMyPerm: loadMyPerm };
 })();
