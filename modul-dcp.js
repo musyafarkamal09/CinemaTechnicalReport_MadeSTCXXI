@@ -315,9 +315,9 @@
         '<label>' + (jenis === 'KELUAR' ? 'Tujuan' : 'Asal') + '<input name="tujuan" required maxlength="200" value="' + q(x.tujuan || '') + '"></label>' +
         '<fieldset class="mdc-fs"><legend>Kelengkapan</legend>' + KOMP_DEF.map(function (n, i) {
           var c = kel.filter(function (k) { return k.name === n; })[0] || { status: 'Lengkap', note: '' };
-          return '<div class="mdc-kr" data-k="' + i + '"><span>' + q(n) + '</span><select name="ks' + i + '" aria-label="Status ' + q(n) + '">' +
-            KOMP_ST.map(function (s) { return '<option' + (c.status === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select>' +
-            '<input name="kn' + i + '" maxlength="300" placeholder="Keterangan (wajib jika Tidak Ada / Rusak)" value="' + q(c.note || '') + '" aria-label="Keterangan ' + q(n) + '"></div>';
+          var on = c.status === 'Lengkap' || c.status === 'Tidak Diperlukan';
+          return '<div class="mdc-kr" data-k="' + i + '"><label class="mdc-cbx"><input type="checkbox" name="kc' + i + '" data-st="' + q(c.status) + '"' + (on ? ' checked' : '') + '> <span>' + q(n) + '</span></label>' +
+            '<input name="kn' + i + '" maxlength="300" placeholder="Keterangan, mis. adaptor rusak (wajib jika tidak dicentang)" value="' + q(c.note || '') + '" aria-label="Keterangan ' + q(n) + '"></div>';
         }).join('') + '</fieldset>' +
         '<div class="mdc-sec">Catatan dan foto</div>' +
         '<label>Keterangan umum<textarea name="keterangan" maxlength="2000" rows="2">' + q(x.keterangan || '') + '</textarea></label>' +
@@ -334,13 +334,13 @@
           id: x.id || '', jenis: jenis, tanggal: f.tanggal.value, jam: f.jam.value, film: f.film.value.trim(), kodeDisk: f.kodeDisk.value.trim(),
           format: f.format.value, ph: f.ph.value.trim(), penyerah: f.penyerah.value.trim(), penerima: f.penerima.value.trim(), tujuan: f.tujuan.value.trim(),
           keterangan: f.keterangan.value.trim(), status: f.status.value,
-          kelengkapan: KOMP_DEF.map(function (n, i) { return { name: n, status: f['ks' + i].value, note: f['kn' + i].value.trim() }; })
+          kelengkapan: KOMP_DEF.map(function (n, i) { var cb = f['kc' + i], orig = cb.getAttribute('data-st') || ''; var st = cb.checked ? (orig === 'Tidak Diperlukan' ? 'Tidak Diperlukan' : 'Lengkap') : (orig === 'Rusak' ? 'Rusak' : 'Tidak Ada'); return { name: n, status: st, note: f['kn' + i].value.trim() }; })
         };
         if (lk && lk.id && !x.id) p.relasiId = lk.id;
         var bad = p.kelengkapan.filter(function (c) { return (c.status === 'Tidak Ada' || c.status === 'Rusak') && !c.note; });
         var err = $('dcperr');
         if (bad.length) { err.textContent = 'Isi keterangan untuk: ' + bad.map(function (c) { return c.name; }).join(', ') + '.'; return; }
-        if (!kelOk(p.kelengkapan) && !p.keterangan) { err.textContent = 'Ada komponen tidak lengkap. Isi keterangan umum.'; return; }
+        if (!kelOk(p.kelengkapan) && !p.keterangan) { p.keterangan = p.kelengkapan.filter(function (c) { return c.status !== 'Lengkap' && c.status !== 'Tidak Diperlukan'; }).map(function (c) { return c.name + ': ' + c.note; }).join('; '); }
         err.textContent = '';
         $('dcpok').disabled = true;
         api('dcp_save', p).then(function (id) {
@@ -487,10 +487,12 @@
         h += '<fieldset class="mdc-fs"><legend>' + q(g.name) + '</legend>';
         items.filter(function (it) { return it.grp === g.name; }).forEach(function (it) {
           var c = cur[it.id] || (pre.filter(function (p) { return p.id === it.id; })[0] || {});
-          h += '<div class="mdc-ck" data-id="' + it.id + '"><span>' + q(it.label) + '</span><div class="mdc-seg" role="radiogroup" aria-label="' + q(it.label) + '">' +
-            ['PASS', 'FAIL', 'N/A'].map(function (v) {
-              return '<label><input type="radio" name="v_' + it.id + '" value="' + v + '"' + (c.val === v ? ' checked' : '') + '><span>' + v + '</span></label>';
-            }).join('') + '</div><input class="mdc-ket" name="k_' + it.id + '" maxlength="500" placeholder="Keterangan masalah (wajib jika FAIL)" value="' + q(c.ket || '') + '" aria-label="Keterangan ' + q(it.label) + '"' + (c.val === 'FAIL' ? '' : ' hidden') + '></div>';
+          var pOn = c.val === 'PASS' || !c.val, nOn = c.val === 'N/A';
+          h += '<div class="mdc-ck" data-id="' + it.id + '"><span>' + q(it.label) + '</span>' +
+            '<div class="mdc-cb" role="group" aria-label="Hasil ' + q(it.label) + '">' +
+            '<label class="mdc-cbx"><input type="checkbox" name="p_' + it.id + '"' + (pOn ? ' checked' : '') + '> Lulus</label>' +
+            '<label class="mdc-cbx"><input type="checkbox" name="n_' + it.id + '"' + (nOn ? ' checked' : '') + '> Tidak diuji</label></div>' +
+            '<input class="mdc-ket" name="k_' + it.id + '" maxlength="500" placeholder="Keterangan (opsional; wajib jika gagal)" value="' + q(c.ket || '') + '" aria-label="Keterangan ' + q(it.label) + '"></div>';
         });
         h += '</fieldset>';
       });
@@ -508,20 +510,21 @@
       $('ftx').onclick = closeM;
       var f = $('ftf');
       f.onchange = function (e) {
-        if (e.target.name && e.target.name.indexOf('v_') === 0) {
-          var id = e.target.name.slice(2), ket = f['k_' + id];
-          ket.hidden = e.target.value !== 'FAIL';
+        var nm = e.target.name || '';
+        if (nm.indexOf('p_') === 0 && e.target.checked) f['n_' + nm.slice(2)].checked = false;
+        if (nm.indexOf('n_') === 0 && e.target.checked) f['p_' + nm.slice(2)].checked = false;
+        if (nm.indexOf('p_') === 0 || nm.indexOf('n_') === 0) {
+          var id = nm.slice(2), gagal = !f['p_' + id].checked && !f['n_' + id].checked;
+          f['k_' + id].placeholder = gagal ? 'Keterangan masalah (wajib karena gagal)' : 'Keterangan (opsional)';
         }
       };
       f.onsubmit = function (e) {
         e.preventDefault();
         var err = $('ftferr');
         var chk = items.map(function (it) {
-          var r = f.querySelector('input[name="v_' + it.id + '"]:checked');
-          return { id: it.id, val: r ? r.value : '', ket: f['k_' + it.id].value.trim(), label: it.label };
+          var val = f['p_' + it.id].checked ? 'PASS' : (f['n_' + it.id].checked ? 'N/A' : 'FAIL');
+          return { id: it.id, val: val, ket: f['k_' + it.id].value.trim(), label: it.label };
         });
-        var miss = chk.filter(function (c) { return !c.val; });
-        if (miss.length) { err.textContent = 'Lengkapi hasil untuk: ' + miss.slice(0, 3).map(function (c) { return c.label; }).join(', ') + (miss.length > 3 ? ' dan lainnya' : '') + '.'; return; }
         var fl = chk.filter(function (c) { return c.val === 'FAIL' && !c.ket; });
         if (fl.length) { err.textContent = 'Item FAIL wajib diberi keterangan: ' + fl[0].label + '.'; return; }
         var anyFail = chk.some(function (c) { return c.val === 'FAIL'; });

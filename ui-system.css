@@ -716,3 +716,24 @@ html:root[data-theme] #login .lbox .hello, html:root[data-theme] #login .lbox sm
 :root[data-theme] #modal .mdc-ph .ph { display: flex; flex-wrap: wrap; gap: 8px; }
 :root[data-theme] #modal .mdc-ph .ph > div { width: auto; }
 :root[data-theme] #app .mdc-kpis { flex: none; }
+/* kartu KPI berukuran sesuai isi, tidak ikut meregang mengikuti tinggi kontainer */
+:root[data-theme] #app .mdc-top { flex: none; height: auto; align-items: stretch; }
+:root[data-theme] #app .mdc-kpis { flex: none; height: auto; align-content: start; align-items: start; }
+:root[data-theme] #app .mdc-kpi { align-self: start; min-height: 0; height: auto; }
+/* susunan atas-ke-bawah biasa: KPI, lalu toolbar input & unduh, tanpa celah */
+:root[data-theme] #app .mdc-top { display: block; }
+:root[data-theme] #app .mdc-acts { margin: 14px 0 0; }
+/* kelengkapan DCP & checklist Testing memakai kotak centang + kolom keterangan */
+:root[data-theme] #modal .mdc-form label.mdc-cbx { flex-direction: row; align-items: center; gap: 8px; margin: 0; font-size: 14px; color: var(--ink); cursor: pointer; }
+:root[data-theme] #modal .mdc-form label.mdc-cbx input[type=checkbox] { width: 20px; height: 20px; min-height: 20px; margin: 0; flex: 0 0 auto; accent-color: var(--accent-bg); }
+:root[data-theme] #modal .mdc-kr { grid-template-columns: 1fr; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--bd); }
+:root[data-theme] #modal .mdc-kr:last-child { border-bottom: 0; }
+:root[data-theme] #modal .mdc-ck { grid-template-columns: 1fr auto; align-items: center; gap: 8px 12px; padding: 10px 0; border-bottom: 1px solid var(--bd); }
+:root[data-theme] #modal .mdc-ck:last-child { border-bottom: 0; }
+:root[data-theme] #modal .mdc-ck > span { font-size: 14px; color: var(--ink); }
+:root[data-theme] #modal .mdc-cb { display: flex; gap: 14px; flex-wrap: wrap; justify-content: flex-end; }
+:root[data-theme] #modal .mdc-ck .mdc-ket { grid-column: 1 / -1; }
+@media (max-width: 480px) {
+  :root[data-theme] #modal .mdc-ck { grid-template-columns: 1fr; }
+  :root[data-theme] #modal .mdc-cb { justify-content: flex-start; }
+}
