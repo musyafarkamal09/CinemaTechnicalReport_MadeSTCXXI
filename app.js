@@ -1034,6 +1034,9 @@ if($('rpf'))$('rpf').onsubmit=function(e){e.preventDefault();var b=$('rpb'),fs=[
 /* ---- unduh satu laporan + foto dokumentasi (PDF / Excel), sebagai bukti ---- */
 function dlBlob(b,n){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},4000)}
 function imgNorm(src){return new Promise(function(ok,no){var im=new Image();im.onload=function(){var s=Math.min(1,1100/Math.max(im.width,im.height)),c=document.createElement('canvas'),x;c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);ok({data:c.toDataURL('image/jpeg',.85),w:c.width,h:c.height})};im.onerror=function(){no(new Error('Foto tidak dapat dibaca'))};im.src=src})}
+function fitBox(g,mw,mh){var s=Math.min(mw/g.w,mh/g.h);return {w:g.w*s,h:g.h*s}}
+function fitPx(g,mw,mh){var s=Math.min(mw/g.w,mh/g.h);return {w:Math.round(g.w*s),h:Math.round(g.h*s)}}
+function rowsFor(h){return Math.ceil(h/20)+2}
 function repPhotos(r,prog){var RK={Sebelum:0,Sesudah:1,Masalah:0,Penyelesaian:1},
  ps=(r.photos||[]).map(function(p,i){return {p:p,i:i}}).sort(function(a,b){var x=RK[a.p.kind],y=RK[b.p.kind];x=x==null?5:x;y=y==null?5:y;return x-y||a.i-b.i}).map(function(o){return o.p});
  function one(p){var k='photo:'+p.id;return (IMGC[k]?Promise.resolve(IMGC[k]):api('img',{kind:'photo',id:p.id,quiet:1}).then(function(u){var s=imgSrc(u);if(!s)throw new Error('kosong');IMGC[k]=s;return s})).then(imgNorm).then(function(x){x.p=p;return x},function(){return null})}
@@ -1045,10 +1048,10 @@ function gatherPhotos(items,prog){var jobs=items.filter(function(x){return x.ph&
 function xlsFinish(wb,it,G,fn){var ids=it.filter(function(x){return G.g[x.id]&&G.g[x.id].length});
  if(!ids.length||!window.ExcelJS){XLSX.writeFile(wb,fn);return Promise.resolve()}
  var buf=XLSX.write(wb,{bookType:'xlsx',type:'array'}),e=new ExcelJS.Workbook();
- return e.xlsx.load(buf).then(function(){var ws=e.addWorksheet('Foto Dokumentasi'),row=1,BL=17;ws.columns=[{width:36},{width:62}];
+ return e.xlsx.load(buf).then(function(){var ws=e.addWorksheet('Foto Dokumentasi'),row=1,BL=17;ws.columns=[{width:36},{width:100}];
   ids.forEach(function(x){var im=G.g[x.id];ws.getCell(row,1).value=x.id+' - '+String(x.title||'')+' ('+im.length+' foto)';ws.getCell(row,1).font={bold:true,size:12};row++;
-   im.forEach(function(g,i){var k=Math.min(1,440/g.w,320/g.h),c=ws.getCell(row,1),id;c.value='Foto '+(i+1)+' - '+(g.p.kind||'Foto');c.font={bold:true};c.alignment={vertical:'top',wrapText:true};
-    id=e.addImage({base64:g.data.split(',')[1],extension:'jpeg'});ws.addImage(id,{tl:{col:1,row:row-1},ext:{width:Math.round(g.w*k),height:Math.round(g.h*k)}});row+=BL});row++});
+   im.forEach(function(g,i){var fb=fitPx(g,640,480),c=ws.getCell(row,1),id;c.value='Foto '+(i+1)+' - '+(g.p.kind||'Foto');c.font={bold:true};c.alignment={vertical:'top',wrapText:true};
+    id=e.addImage({base64:g.data.split(',')[1],extension:'jpeg'});ws.addImage(id,{tl:{col:1,row:row-1},ext:{width:fb.w,height:fb.h}});row+=rowsFor(fb.h)});row++});
   return e.xlsx.writeBuffer()}).then(function(b2){dlBlob(new Blob([b2],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),fn)})}
 function repDocData(r){var t=r.type,d=r.data,P=[],TB=[],x=d.diffs||{},pv=d.prevs||{};
  P.push(['No. Laporan',r.id],['Jenis laporan',T[t].label]);
@@ -1065,7 +1068,7 @@ function repDocData(r){var t=r.type,d=r.data,P=[],TB=[],x=d.diffs||{},pv=d.prevs
  if(t==='issue'&&(d.responses||[]).length)TB.push({title:'Tanggapan dan penyelesaian',head:['Waktu','Oleh','Status','Tanggapan'],rows:d.responses.map(function(z){return [dt(z.at),z.by,z.status,z.text]})});
  P.push(['Pelapor',r.reporter],['Dibuat',dt(r.createdAt)],['Diubah',dt(r.updatedAt)]);
  return {P:P,TB:TB}}
-function repPdf(r,imgs){var J=window.jspdf.jsPDF,doc=new J({unit:'mm',format:'a4'}),W=210,H=297,M=14,D=repDocData(r),y=16,cw=88,gap=6,mh=66,ry,k,pc;
+function repPdf(r,imgs){var J=window.jspdf.jsPDF,doc=new J({unit:'mm',format:'a4'}),W=210,H=297,M=14,D=repDocData(r),y=16,cw=88,gap=6,mh=80,ry,k,pc;
  doc.setFont('helvetica','bold');doc.setFontSize(14);doc.text(T[r.type].label+' - STC XXI Technical Report',M,y);
  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('Diekspor: '+exTs()+'  |  Oleh: '+U.name+'  |  Foto dokumentasi: '+imgs.length,M,y+6);
  doc.autoTable({startY:y+10,body:D.P,theme:'grid',margin:{left:M,right:M,top:14,bottom:14},styles:{fontSize:9,cellPadding:2,overflow:'linebreak',valign:'top'},columnStyles:{0:{cellWidth:46,fontStyle:'bold',fillColor:[238,243,240]}}});
@@ -1075,10 +1078,28 @@ function repPdf(r,imgs){var J=window.jspdf.jsPDF,doc=new J({unit:'mm',format:'a4
  doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(0);doc.text('Foto dokumentasi ('+imgs.length+')',M,y);
  if(!imgs.length){doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('Laporan ini tidak memiliki foto dokumentasi.',M,y+6)}
  ry=y+4;
- imgs.forEach(function(g,i){var c=i%2,w=cw,h=w*g.h/g.w,x,cap;if(h>mh){h=mh;w=h*g.w/g.h}
-  if(c===0){if(i>0)ry+=mh+13;if(ry+mh+10>H-14){doc.addPage();ry=16}}
-  x=M+c*(cw+gap);doc.addImage(g.data,'JPEG',x,ry,w,h);doc.setDrawColor(190);doc.setLineWidth(.2);doc.rect(x,ry,w,h);
-  cap='Foto '+(i+1)+' - '+(g.p.kind||'Foto')+(g.p.at?' - '+dt(g.p.at):'');doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(0);doc.text(cap,x,ry+h+4,{maxWidth:cw})});
+ var CW=88,FW=182,MAXH=140,CAPH=7,list=imgs.slice(),i=0;
+ var capOut=function(g,n,x,yy,w){doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(0);doc.text('Foto '+(n+1)+' - '+(g.p.kind||'Foto')+(g.p.at?' - '+dt(g.p.at):''),x,yy,{maxWidth:w})};
+ while(i<list.length){
+  var a=list[i];
+  if(a.w>=a.h){
+   var fl=fitBox(a,FW,MAXH);
+   if(ry+fl.h+CAPH>H-14){doc.addPage();ry=16}
+   doc.addImage(a.data,'JPEG',M,ry,fl.w,fl.h);doc.setDrawColor(190);doc.setLineWidth(.2);doc.rect(M,ry,fl.w,fl.h);
+   capOut(a,i,M,ry+fl.h+4,FW);
+   ry+=fl.h+CAPH+6;i++;continue;
+  }
+  var b=(i+1<list.length&&list[i+1].w<list[i+1].h)?list[i+1]:null;
+  var rowH=Math.max(fitBox(a,CW,MAXH).h,b?fitBox(b,CW,MAXH).h:0);
+  if(ry+rowH+CAPH>H-14){doc.addPage();ry=16}
+  var fa=fitBox(a,CW,rowH);
+  doc.addImage(a.data,'JPEG',M,ry,fa.w,fa.h);doc.setDrawColor(190);doc.setLineWidth(.2);doc.rect(M,ry,fa.w,fa.h);
+  capOut(a,i,M,ry+fa.h+4,CW);
+  if(b){var fb=fitBox(b,CW,rowH),x2=M+CW+6;
+   doc.addImage(b.data,'JPEG',x2,ry,fb.w,fb.h);doc.rect(x2,ry,fb.w,fb.h);
+   capOut(b,i+1,x2,ry+fb.h+4,CW)}
+  ry+=rowH+CAPH+6;i+=b?2:1;
+ }
  pc=doc.getNumberOfPages();for(k=1;k<=pc;k++){doc.setPage(k);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(90);doc.text('No. Laporan '+r.id+'  |  Halaman '+k+' / '+pc,W-M,H-6,{align:'right'});doc.text('STC XXI Technical Report',M,H-6)}
  doc.save('Laporan_'+r.id+'_dengan_foto.pdf')}
 function repXlsx(r,imgs){if(!window.ExcelJS)return Promise.reject(new Error('Library Excel belum termuat. Periksa koneksi internet lalu muat ulang halaman.'));
@@ -1092,10 +1113,10 @@ function repXlsx(r,imgs){if(!window.ExcelJS)return Promise.reject(new Error('Lib
  D.TB.forEach(function(t){ws.addRow([]);ws.addRow([t.title]).font={bold:true,size:11};hd=ws.addRow(t.head);
   hd.eachCell(function(c){c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0C3B2B'}};c.border=bd});
   t.rows.forEach(function(a){var rw=ws.addRow(a.map(function(v){return v==null?'':v}));rw.eachCell(function(c){c.border=bd;c.alignment={vertical:'top',wrapText:true}})})});
- wp=wb.addWorksheet('Foto Dokumentasi');wp.columns=[{width:34},{width:62}];
+ wp=wb.addWorksheet('Foto Dokumentasi');wp.columns=[{width:34},{width:100}];
  wp.addRow(['Foto dokumentasi - '+r.id+' ('+imgs.length+' foto)']).font={bold:true,size:13};
  if(!imgs.length)wp.addRow(['Laporan ini tidak memiliki foto dokumentasi.']);
- imgs.forEach(function(g,i){var s=3+i*BL,k=Math.min(1,440/g.w,320/g.h),w=Math.round(g.w*k),h=Math.round(g.h*k),c=wp.getCell(s,1),id;
+ var nr=3;imgs.forEach(function(g,i){var fb=fitPx(g,640,480),w=fb.w,h=fb.h,s=nr,c=wp.getCell(s,1),id;nr+=rowsFor(h);
   c.value='Foto '+(i+1)+' - '+(g.p.kind||'Foto')+(g.p.at?'\n'+dt(g.p.at):'');c.font={bold:true};c.alignment={vertical:'top',wrapText:true};
   id=wb.addImage({base64:g.data.split(',')[1],extension:'jpeg'});wp.addImage(id,{tl:{col:1,row:s-1},ext:{width:w,height:h}})});
  return wb.xlsx.writeBuffer().then(function(buf){return new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})})}
