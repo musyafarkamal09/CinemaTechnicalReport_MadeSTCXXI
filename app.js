@@ -1288,8 +1288,23 @@ function ntDraw(){var l=NT.list,un=l.filter(function(n){return n.u}).length,b=$(
 function ntRead(k){NT.st.r[k]=1;ntRefresh()}
 function ntGo(n){if(n.id&&(n.p==='work'||n.p==='issue')){go(n.p);detail(n.id,function(){go(n.p)})}else go(n.p)}
 function ntClose(){NT.open=false;$('npanel').classList.add('hidden');$('bell').setAttribute('aria-expanded','false')}
+/* terapkan hasil notifikasi ke state (dipakai jalur gabungan dan jalur lama) */
+function ntApply(key,r){if(!U||NT.key!==key)return;
+ if(r.ann!=null)NT.src.ann=Array.isArray(r.ann)?r.ann:(r.ann.items||[]);
+ if(r.issue!=null)NT.src.issue=Array.isArray(r.issue)?r.issue:(r.issue.items||[]);
+ if(r.work!=null)NT.src.work=Array.isArray(r.work)?r.work:(r.work.items||[]);
+ if(r.ats!=null)ntAts(Array.isArray(r.ats)?r.ats:[]);
+ ntRefresh(true)}
+/* satu panggilan notif_poll (server menggabungkan ann, issue, work, ats). Bila server belum di-deploy ulang, jalur lama dipakai. */
 function ntPoll(){if(!TOKEN||!U||NT.busy||document.hidden)return;NT.busy=1;
- var key=NT.key,rp=U.role==='REPORTER',ad=U.role==='ADMIN',rl=function(t){return api('rep_list',{type:t,q:'',from:'',to:'',status:'',page:1,quiet:1})},
+ var key=NT.key,rp=U.role==='REPORTER',ad=U.role==='ADMIN';
+ if(NT.legacy)return ntPollLegacy(key,rp,ad);
+ api('notif_poll',{quiet:1}).then(function(r){NT.busy=0;ntApply(key,r||{})},function(e){
+  NT.busy=0;
+  if(/Aksi tidak dikenal/.test(e&&e.message||'')){NT.legacy=1;ntPoll()}});
+}
+function ntPollLegacy(key,rp,ad){
+ var rl=function(t){return api('rep_list',{type:t,q:'',from:'',to:'',status:'',page:1,quiet:1})},
   jobs=[['ann',api('ann_list',{quiet:1})],['issue',rl('issue')]];
  if(!rp)jobs.push(['work',rl('work')]);if(!ad)jobs.push(['ats',api('ats_list',{quiet:1})]);
  Promise.all(jobs.map(function(j){return j[1].then(function(r){return [j[0],r]},function(){return null})})).then(function(rs){
