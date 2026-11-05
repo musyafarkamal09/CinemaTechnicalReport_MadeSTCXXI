@@ -1,0 +1,143 @@
+/* Outlet Operation System - lapisan penyempurnaan (CSS biasa, tidak memerlukan build Tailwind).
+   Dimuat setelah tailwind.css dan legacy-modules.css sehingga aturannya menimpa keduanya. */
+
+:root { --oos-vio: #25164f; --oos-acc: #6246d9; --oos-gold: #f5d98b; }
+:root[data-theme=dark] { --oos-vio: #150f2e; }
+
+/* ---------- 1. Detail laporan (modal) ---------- */
+.mbox h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.mbox h3 .mid {
+  display: inline-block; padding: 3px 10px; border-radius: 999px;
+  background: var(--brand-soft); color: var(--brand-ink);
+  font-size: 12px; font-weight: 700; letter-spacing: .02em; line-height: 1.4;
+}
+.mbox table:not(.mt) { width: 100%; border-collapse: collapse; }
+.mbox table:not(.mt) th {
+  width: 36%; padding: 9px 16px 9px 0; text-align: left; vertical-align: top;
+  color: var(--mute); font-size: 13px; font-weight: 600; border-bottom: 1px solid var(--line-soft);
+}
+.mbox table:not(.mt) td {
+  padding: 9px 0; color: var(--ink); font-size: 14px; border-bottom: 1px solid var(--line-soft);
+  word-break: break-word;
+}
+.mbox table:not(.mt) tr:last-child th, .mbox table:not(.mt) tr:last-child td { border-bottom: 0; }
+
+.mbox .mh {
+  margin: 22px 0 8px; font-size: 11.5px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--brand-ink);
+}
+.mt {
+  width: 100%; border-collapse: separate; border-spacing: 0; overflow: hidden;
+  border: 1px solid var(--line); border-radius: 12px; font-size: 13.5px;
+}
+.mt th, .mt td {
+  padding: 10px 14px; text-align: right; white-space: nowrap; color: var(--ink);
+  border-bottom: 1px solid var(--line-soft); font-variant-numeric: tabular-nums;
+}
+.mt th {
+  background: var(--surface-2); color: var(--mute); font-size: 11.5px; font-weight: 700;
+  letter-spacing: .04em; text-transform: uppercase;
+}
+.mt th:first-child, .mt td:first-child { text-align: left; }
+.mt tr:last-child td { border-bottom: 0; }
+.mt .neg { color: var(--err); }
+
+/* Foto dokumentasi: kisi rapi, keterangan waktu tidak terpotong */
+#gal .ph { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+#gal figure { margin: 0; min-width: 0; }
+#gal figure img {
+  width: 100%; aspect-ratio: 4 / 3; object-fit: cover; cursor: zoom-in;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2);
+}
+#gal figcaption { margin-top: 6px; font-size: 12px; line-height: 1.45; color: var(--mute); }
+
+/* ---------- 2. Formulir laporan: lebih ringkas ---------- */
+#rfm .fact {
+  position: sticky; bottom: -20px; z-index: 2; display: flex; gap: 10px;
+  margin: 18px -20px -20px; padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--surface); border-top: 1px solid var(--line);
+  box-shadow: 0 -10px 24px rgba(15, 12, 29, .06);
+}
+#rfm .fact .btn { flex: 1 1 0; min-height: 44px; }
+#rfm .fact .btn.sec { flex: 0 0 auto; }
+#rfm input[type=number] { font-variant-numeric: tabular-nums; }
+/* tombol Sekarang sejajar dengan kolom jam, bukan turun ke baris baru */
+#rfm .row2 > div:has(> .oos-now) { display: grid; grid-template-columns: 1fr auto; align-items: end; column-gap: 8px; }
+#rfm .row2 > div:has(> .oos-now) > label { grid-column: 1 / -1; }
+#rfm .oos-now { margin: 0; min-height: 44px; padding: 0 14px; font-size: 13px; font-weight: 700; }
+#rfm .stc-draft-status { margin: 6px 0; padding: 8px 12px; font-size: 12px; line-height: 1.5; }
+@media (max-width: 640px) {
+  /* 16px mencegah browser iOS memperbesar layar saat kolom diketuk */
+  #modal input:not([type=checkbox]):not([type=radio]):not([type=file]), #modal select, #modal textarea { font-size: 16px; }
+}
+
+/* ---------- 3. Indikator muat: garis progres, kerangka, dan transisi halaman ---------- */
+#oosBeam {
+  position: fixed; left: 0; right: 0; top: 0; height: 2px; z-index: 120;
+  overflow: hidden; opacity: 0; pointer-events: none; transition: opacity .2s ease; background: transparent;
+}
+#oosBeam.on { opacity: 1; }
+#oosBeam::before {
+  content: ''; position: absolute; top: 0; bottom: 0; left: -35%; width: 35%; background: var(--brand);
+  animation: oosProg 1.1s ease-in-out infinite;
+}
+@keyframes oosProg { from { left: -35%; } to { left: 100%; } }
+
+/* layar masuk: tenang, memakai warna dan huruf aplikasi */
+.oos-splash {
+  position: fixed; inset: 0; z-index: 130; display: flex; align-items: center; justify-content: center;
+  background: var(--canvas); color: var(--ink);
+}
+.oos-splash.hidden { display: none; }
+.oos-stage { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 24px; text-align: center; }
+.oos-lens {
+  display: grid; place-items: center; width: 56px; height: 56px; border-radius: 14px;
+  background: #fff; box-shadow: var(--shadow-card);
+}
+.oos-lens img { width: 40px; height: 40px; object-fit: contain; }
+.oos-track { position: relative; width: 180px; height: 2px; overflow: hidden; border-radius: 2px; background: var(--line); }
+.oos-track::before {
+  content: ''; position: absolute; top: 0; bottom: 0; left: -40%; width: 40%; background: var(--brand); border-radius: 2px;
+  animation: oosProg 1.1s ease-in-out infinite;
+}
+.oos-msg { margin: 0; font-size: 14px; font-weight: 600; color: var(--body); }
+.oos-brand { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: .16em; color: var(--mute); }
+
+/* kerangka: abu-abu lembut dengan kilau halus yang bergerak pelan */
+.oos-sk-wrap { display: flex; flex-direction: column; gap: 14px; padding: 4px 0; }
+.oos-sk {
+  display: block; max-width: 100%; border-radius: 8px;
+  background: linear-gradient(90deg, var(--surface-2) 0%, var(--line) 50%, var(--surface-2) 100%);
+  background-size: 200% 100%; animation: oosShim 1.6s ease-in-out infinite;
+}
+@keyframes oosShim { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+.oos-sk-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.oos-sk-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.oos-sk-list { padding: 6px 16px; gap: 0; }
+.oos-sk-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
+.oos-sk-row:last-child { border-bottom: 0; }
+.oos-sk-txt { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.oos-sk-tr { display: grid; grid-template-columns: 1fr 1fr 2fr 1fr; gap: 16px; }
+.oos-sk-tr .oos-sk { width: 100% !important; }
+.oos-sk-kv { display: grid; grid-template-columns: 34% 1fr; gap: 16px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
+.oos-sk-kv .oos-sk { margin: 0; }
+
+/* halaman dan modal masuk dengan lembut, bukan muncul tiba-tiba */
+#view > *, #mbox > *, #rl > * { animation: oosIn .22s cubic-bezier(.2, .7, .2, 1) both; }
+@keyframes oosIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  #oosBeam::before, .oos-track::before, .oos-sk, #view > *, #mbox > *, #rl > * { animation: none !important; }
+}
+
+/* layar kecil: keempat kolom pembacaan meteran muat tanpa digeser */
+@media (max-width: 480px) {
+  .mt th, .mt td { padding: 8px 6px; font-size: 12.5px; }
+  .mt th { white-space: normal; line-height: 1.25; letter-spacing: .02em; }
+  .mt td:first-child { white-space: normal; }
+}
+
+/* salin dari laporan terakhir: satu baris di atas formulir */
+.oos-copy { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 0 0 14px; padding: 10px 12px; border: 1px dashed var(--line-2); border-radius: 12px; }
+.oos-copy .btn { min-height: 40px; }
+.oos-copy small { font-size: 12px; color: var(--mute); line-height: 1.4; }

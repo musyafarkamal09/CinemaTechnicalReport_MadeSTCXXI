@@ -1,4 +1,4 @@
-/* STC XXI Technical Report - tambahan sidebar (hanya perilaku tampilan).
+/* Outlet Operation System - tambahan sidebar (hanya perilaku tampilan).
    1) Kolom "Cari menu" menyaring daftar menu.
    2) Slide Film ATS di dashboard: poster yang sama dipakai sebagai latar kabur agar tidak ada ruang kosong.
    Tidak mengubah fungsi app.js. Hapus file ini + 1 baris <script> untuk menonaktifkan. */

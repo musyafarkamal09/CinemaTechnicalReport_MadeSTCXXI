@@ -1,4 +1,4 @@
-/* STC XXI Technical Report - modul DCP Management & Daily Film Testing (frontend).
+/* Outlet Operation System - modul DCP Management & Daily Film Testing (frontend).
    Dimuat setelah app.js. Memakai helper global: api, modal, closeM, toast, esc, dt, $, curU().
    Semua validasi final ada di server (dcp.gs); klien hanya membantu pengisian. */
 (function () {
@@ -136,7 +136,7 @@
         kpi('DCP Keluar', d.totalKeluar, '') + kpi('DCP Masuk', d.totalMasuk, '') +
         kpi('Belum kembali', d.belumKembali, d.belumKembali ? 'warn' : '') +
         kpi('Diproses', d.dalamProses, '') + kpi('Bermasalah', d.bermasalah, d.bermasalah ? 'bad' : '') + '</div>' +
-        '<div class="mdc-acts">' + (canWrite() ? '<div class="mdc-tg" role="radiogroup" aria-label="Jenis laporan"><label><input type="radio" name="dcpjt" value="KELUAR" checked><span>DCP Keluar</span></label><label><input type="radio" name="dcpjt" value="MASUK"><span>DCP Masuk</span></label></div><button type="button" class="btn" id="dcpnew">+ Input laporan</button>' : '') + dlMenu('dcp') + '<button type="button" class="btn sec" id="dcprh">Riwayat disk</button>' + (curU().role === 'ADMIN' ? '<button type="button" class="btn sec" id="dcpadm">Izin &amp; pengingat</button>' : '') + '</div></div>';
+        '<div class="mdc-acts">' + (canWrite() ? '<div class="mdc-tg" role="radiogroup" aria-label="Jenis laporan"><label><input type="radio" name="dcpjt" value="KELUAR" checked><span>DCP Keluar</span></label><label><input type="radio" name="dcpjt" value="MASUK"><span>DCP Masuk</span></label></div><button type="button" class="btn" id="dcpnew">Tambah DCP</button>' : '') + dlMenu('dcp') + '<button type="button" class="btn sec" id="dcprh">Riwayat disk</button>' + (curU().role === 'ADMIN' ? '<button type="button" class="btn sec" id="dcpadm">Izin &amp; pengingat</button>' : '') + '</div></div>';
       if (over) {
         h += '<div class="mdc-alert" role="alert"><b>' + over + ' DCP belum kembali lebih dari ' + d.batasHari + ' hari</b><ul>' +
           d.overdue.slice(0, 6).map(function (o) { return '<li>' + q(o.film) + ' · ' + q(o.kodeDisk) + ' · keluar ' + q(o.tanggal) + '</li>'; }).join('') + '</ul></div>';
@@ -243,7 +243,7 @@
       });
       doc.save(file + '.pdf');
     } else {
-      var aoa = [[title + ' - STC XXI Technical Report'], []].concat(pairs, [[]]);
+      var aoa = [[title + ' - NOVA'], []].concat(pairs, [[]]);
       tables.forEach(function (t) { aoa = aoa.concat([t.head], t.rows, [[]]); });
       var ws = XLSX.utils.aoa_to_sheet(aoa);
       ws['!cols'] = [{ wch: 26 }, { wch: 36 }, { wch: 18 }, { wch: 40 }, { wch: 14 }];
@@ -442,7 +442,7 @@
       var d = r[0], list = r[1] || [];
       var h = '<div class="mdc-top"><div class="mdc-kpis">' + kpi('Dites hari ini', d.hariIni, '') + kpi('PASSED', d.passed, 'ok') +
         kpi('FAILED', d.failed, d.failed ? 'bad' : '') + kpi('RETEST', d.retest, d.retest ? 'warn' : '') + '</div>' +
-        '<div class="mdc-acts">' + (canWrite() ? '<button type="button" class="btn" id="ftnew">+ Input Testing</button>' : '') + dlMenu('ft') + '</div></div>';
+        '<div class="mdc-acts">' + (canWrite() ? '<button type="button" class="btn" id="ftnew">Mulai film testing</button>' : '') + dlMenu('ft') + '</div></div>';
       if ((d.perluTindakan || []).length) {
         h += '<div class="mdc-alert bad"><b>Perlu tindakan / tes ulang (' + d.perluTindakan.length + ')</b><ul>' +
           d.perluTindakan.map(function (t) { return '<li><button type="button" class="mdc-link" data-ft-open="' + q(t.id) + '">' + q(t.film) + ' · ' + q(t.id) + '</button> ' + stFt(t.status) + '</li>'; }).join('') + '</ul></div>';

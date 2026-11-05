@@ -1,4 +1,4 @@
-/* STC XXI Technical Report - modul Pelaporan DCP (frontend).
+/* Outlet Operation System - modul Pelaporan DCP (frontend).
    Satu DCP = satu data utama (judul, PH, kode disk) dengan riwayat transaksi MASUK dan KELUAR.
    Dimuat setelah modul-dcp.js (memakai helper foto dan izin dari window.STC.pel).
    Validasi, kunci data, dan audit tetap ditegakkan di server (dcp.gs: pel_list, pel_save, pel_validasi). */
@@ -91,7 +91,7 @@
   /* ---------- daftar utama ---------- */
   window.vPel = function () {
     var v = $('view');
-    v.innerHTML = '<div class="sk" style="height:120px"></div>';
+    v.innerHTML = OOS.skel('page');
     Promise.all([api('pel_list', { quiet: true }), P.loadMyPerm()]).then(function (r) {
       ROWS = r[0] || [];
       shell();

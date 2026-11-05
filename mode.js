@@ -1,4 +1,4 @@
-/* STC XXI Technical Report - pemilih mode tampilan (frontend saja).
+/* Outlet Operation System - pemilih mode tampilan (frontend saja).
    Tiga mode: Gelap (bawaan), Kaca (di atas foto), Terang (latar putih).
    Pemilih berupa kontrol segmen [data-mode] di header. Pilihan disimpan di perangkat (localStorage).
    Warna grafik meteran ikut diganti sesuai mode agar tetap terbaca. */

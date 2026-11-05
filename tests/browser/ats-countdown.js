@@ -1,0 +1,38 @@
+// Uji ATS: countdown habis -> kartu hilang tanpa refresh; tetap hilang setelah pindah halaman; poster 2:3 utuh; tanpa overflow.
+const { chromium } = require('playwright');
+const { install, films } = require('./mockapi');
+const BASE = process.env.BASE || 'http://localhost:8765';
+const W = process.argv[2] || 'desktop';
+const VP = { desktop:{width:1440,height:900}, tablet:{width:820,height:1180}, phone:{width:390,height:844} }[W];
+let fail = 0; const ok = (n, c, d) => { console.log((c ? 'PASS ' : 'FAIL ') + n + (d ? ' — ' + d : '')); if (!c) fail++; };
+(async () => {
+  const b = await chromium.launch();
+  const ctx = await b.newContext({ viewport: VP, deviceScaleFactor: 1 });
+  await ctx.addInitScript(() => { localStorage.setItem('stc_t','t'); localStorage.setItem('stc_u', JSON.stringify({userId:'U1',name:'Musyafar Kamal',username:'admin',role:'ADMIN'})); });
+  const page = await ctx.newPage();
+  await page.route(/^https?:\/\/(?!localhost)/, r => r.abort());
+  await install(page);
+  const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.goto(BASE + '/index.html', { waitUntil: 'load' }); await page.waitForTimeout(900);
+  const go = async k => { await page.evaluate(k => { const a = document.querySelector('#nav a[data-p="'+k+'"]')||document.querySelector('#tabs a[data-p="'+k+'"]'); if (a) a.click(); }, k); await page.waitForTimeout(700); };
+  const ids = () => page.evaluate(() => [...document.querySelectorAll('#view .film')].map(c => { const t = c.querySelector('.cdl'); return c.querySelector('b') ? c.querySelector('b').textContent : ''; }));
+  await go('ats');
+  let t = await ids();
+  ok('film sudah lewat tayang tidak tampil', !t.includes('SUDAH LEWAT TAYANG'), JSON.stringify(t));
+  ok('film dengan countdown berjalan tampil', t.includes('HITUNG MUNDUR 4 DETIK'), JSON.stringify(t));
+  ok('film biasa tampil', t.includes('LAGI PROBATION: KERJA NGEJAR APA SIH?'));
+  await page.waitForTimeout(6000);
+  t = await ids();
+  ok('countdown habis -> kartu hilang tanpa refresh', !t.includes('HITUNG MUNDUR 4 DETIK'), JSON.stringify(t));
+  await go('dashboard'); await go('ats');
+  t = await ids();
+  ok('setelah pindah halaman film yang habis tetap tidak muncul', !t.includes('HITUNG MUNDUR 4 DETIK'), JSON.stringify(t));
+  const geo = await page.evaluate(() => { const i = document.querySelector('#view .film > img, #view .film > .noimg'); if (!i) return null; const r = i.getBoundingClientRect(); const cs = getComputedStyle(i); return { w: r.width, h: r.height, fit: cs.objectFit, ratio: r.width / r.height }; });
+  ok('poster memakai object-fit: contain', geo && geo.fit === 'contain', JSON.stringify(geo));
+  ok('poster 2:3 (tidak gepeng)', geo && Math.abs(geo.ratio - 2/3) < 0.02, geo ? geo.ratio.toFixed(3) : 'n/a');
+  const ovf = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  ok('tanpa horizontal overflow', ovf === 0, 'overflow ' + ovf + 'px');
+  ok('tanpa error JavaScript', errs.length === 0, errs.slice(0,2).join(' | '));
+  await page.screenshot({ path: `shots/ats-countdown-${W}.png`, fullPage: false });
+  console.log(fail ? `\nGAGAL ${fail}` : '\nSEMUA LULUS'); await b.close(); process.exit(fail ? 1 : 0);
+})().catch(e => { console.error('FATAL', e.stack); process.exit(1); });

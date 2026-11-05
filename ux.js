@@ -1,4 +1,4 @@
-/* STC XXI Technical Report - penyempurnaan UX (hanya perilaku tampilan, tidak mengubah app.js).
+/* Outlet Operation System - penyempurnaan UX (hanya perilaku tampilan, tidak mengubah app.js).
    1) Menu akun di header (Profil / Keluar) dibuka dari sudut kanan atas.
    2) Lebar sidebar dapat digeser / diatur dengan keyboard; pilihan diingat di perangkat ini.
    3) Konten muncul bertahap saat di-scroll, plus bilah progres dan bayangan header.
