@@ -171,3 +171,12 @@ body.form-open #phead, body.form-open #view, body.form-open #phero { display: no
 }
 .mdc-fd input { flex: none !important; height: 44px; width: 160px; box-sizing: border-box; }
 @media (max-width: 720px) { .mdc-fd input { width: 100%; } }
+
+/* ---------- Film Testing: banyak studio dalam satu formulir ---------- */
+.ft-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 4px 0 8px; }
+.ft-pn[hidden] { display: none !important; }
+.ft-pn { margin-top: 18px; }
+.ft-pn legend { font-size: 14px; font-weight: 700; }
+#app .ft-pn { border: 1px solid var(--line, #dfe2ea) !important; border-radius: 12px !important; padding: 8px 18px 18px !important; }
+#app .ft-pn > legend { font-size: 14px !important; font-weight: 700 !important; color: var(--brand-ink, #4a2fb0) !important; background: var(--brand-soft, #eeeaff); border-radius: 999px; padding: 4px 14px !important; }
+@media (max-width: 720px) { #app .ft-pn { padding: 6px 12px 14px !important; } .ft-chips .btn { flex: 1 1 140px; } }

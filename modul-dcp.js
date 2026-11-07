@@ -79,7 +79,7 @@
     }).then(function (r) {
       toast(r.failed ? 'Sebagian foto gagal (' + r.failed + ')' : 'Foto tersimpan (' + r.added + ')', !!r.failed);
       done && done();
-    }).catch(function (e) { toast(e.message, 1); });
+    }).catch(function (e) { toast(e.message, 1); done && done(); });
   }
 
   /* ---------- dokumentasi foto di dalam form (galeri + kamera), sama dengan form laporan lain ---------- */
@@ -696,6 +696,7 @@
       if (L.masalah) h += '<h3>Masalah</h3><p>' + q(L.masalah) + '</p>';
       if (L.tindakan) h += '<h3>Tindakan</h3><p>' + q(L.tindakan) + '</p>';
       if (L.hasilUlang) h += '<h3>Hasil ulang</h3><p>' + q(L.hasilUlang) + '</p>';
+      if ((r.batch || []).length) h += '<h3>Studio lain dalam laporan ini</h3><ul class="mdc-chk">' + r.batch.map(function (b) { return '<li><button type="button" class="mdc-link" data-ftsib="' + q(b.id) + '">Studio ' + q(b.studio) + ' · ' + q(b.id) + '</button> ' + stFt(b.status) + '</li>'; }).join('') + '</ul>';
       h += '<h3>Riwayat</h3><ol class="mdc-tl">' + (r.riwayat || []).map(function (x) {
         return '<li><b>' + q(x.id) + '</b> ' + stFt(x.status) + ' · ' + q(x.tester) + ' · ' + q(x.tanggal) + '</li>';
       }).join('') + '</ol>';
@@ -709,6 +710,7 @@
         (canWrite() && !r.retestId ? '<button type="button" class="btn sec" id="ftedit">Ubah</button>' : '') +
         (canDel() && !r.retestId ? '<button type="button" class="btn danger" id="ftdel">Hapus</button>' : '') + '</div>';
       modal(h);
+      [].forEach.call(document.querySelectorAll('[data-ftsib]'), function (b) { b.onclick = function () { ftDetail(b.getAttribute('data-ftsib')); }; });
       bindPhotoDel();
       loadPhotos();
       if ($('mdcxl')) $('mdcxl').onclick = function () { ftOneExport(L, items, 'xlsx', r.foto); };
@@ -728,54 +730,71 @@
   function ftForm(row, parent) {
     getMeta().then(function (m) {
       var x = row || {}, items = m.checklistItem || [], groups = m.checklist || [];
+      var single = !!(row || parent);
+      var allData = FT_VIEW ? [].concat.apply([], Object.keys(FT_VIEW.by).map(function (k) { return FT_VIEW.by[k]; })) : [];
+      var studios = single ? [String(x.studio || parent.studio)] : studioList(allData);
+      var pre = parent ? (parent.checklist || []) : [];
       var cur = {};
       (x.checklist || []).forEach(function (c) { cur[c.id] = c; });
-      var pre = parent ? (parent.checklist || []) : [];
+      function panel(z, i) {
+        var sv_ = single ? x : {}, pv_ = single && parent ? parent : {};
+        var h = '<fieldset class="mdc-fs ft-pn" data-i="' + i + '"><legend>Studio ' + q(z) + '</legend>' +
+          '<div class="mdc-row"><label>Server<input name="sv' + i + '" maxlength="80" value="' + q(sv_.server || pv_.server || '') + '"></label>' +
+          '<label>Proyektor<input name="pj' + i + '" maxlength="80" value="' + q(sv_.projector || pv_.projector || '') + '"></label></div>';
+        groups.forEach(function (g) {
+          h += '<div class="mdc-sec">' + q(g.name) + '</div>';
+          items.filter(function (it) { return it.grp === g.name; }).forEach(function (it) {
+            var c = cur[it.id] || (pre.filter(function (p) { return p.id === it.id; })[0] || {});
+            var pOn = c.val === 'PASS' || !c.val, nOn = c.val === 'N/A';
+            h += '<div class="mdc-ck" data-id="' + it.id + '"><span>' + q(it.label) + '</span>' +
+              '<div class="mdc-cb" role="group" aria-label="Hasil ' + q(it.label) + ' Studio ' + q(z) + '">' +
+              '<label class="mdc-cbx"><input type="checkbox" name="p_' + i + '_' + it.id + '"' + (pOn ? ' checked' : '') + '> Lulus</label>' +
+              '<label class="mdc-cbx"><input type="checkbox" name="n_' + i + '_' + it.id + '"' + (nOn ? ' checked' : '') + '> Tidak diuji</label></div>' +
+              '<input class="mdc-ket" name="k_' + i + '_' + it.id + '" maxlength="500" placeholder="Keterangan (opsional; wajib jika gagal)" value="' + q(c.ket || '') + '" aria-label="Keterangan ' + q(it.label) + ' Studio ' + q(z) + '"></div>';
+          });
+        });
+        h += '<div class="mdc-sec">Catatan dan foto</div>' +
+          '<label>Deskripsi masalah (wajib jika ada FAIL)<textarea name="ms' + i + '" maxlength="2000" rows="2">' + q(sv_.masalah || '') + '</textarea></label>' +
+          '<label>Tindakan perbaikan (wajib jika ada FAIL)<textarea name="td' + i + '" maxlength="2000" rows="2">' + q(sv_.tindakan || '') + '</textarea></label>' +
+          '<label>Catatan teknisi<textarea name="ct' + i + '" maxlength="2000" rows="2">' + q(sv_.catatanTeknisi || '') + '</textarea></label>' +
+          '<label class="mdc-chkbox"><input type="checkbox" name="rt' + i + '"' + (sv_.status === 'RETEST' ? ' checked' : '') + '> Perlu pengetesan ulang (hasil RETEST)</label>' +
+          photoBox('ft' + i) + '</fieldset>';
+        return h;
+      }
       var h = '<h3>' + (row ? 'Ubah laporan' : parent ? 'Pengetesan ulang' : 'Input Testing') + '</h3>' +
         (parent ? '<p class="mdc-note">Pengetesan ulang untuk <b class="mdc-mono">' + q(parent.id) + '</b>. Laporan lama tetap tersimpan sebagai riwayat.</p>' : '') +
         '<form id="ftf" class="mdc-form" novalidate>' +
-        '<div class="mdc-sec">Jadwal dan lokasi</div>' +
+        '<div class="mdc-sec">Jadwal dan film</div>' +
         '<div class="mdc-row"><label>Tanggal<input name="tanggal" type="date" required value="' + q(x.tanggal || (parent && parent.tanggal) || jkt()) + '"></label>' +
         '<label>Jam<input name="jam" type="time" required value="' + q(x.jam || jam()) + '"></label></div>' +
         '<label>Judul film<input name="film" required maxlength="200" value="' + q(x.film || (parent && parent.film) || '') + '"></label>' +
-        '<div class="mdc-row"><label>Studio<select name="studio">' + (function () {
-          var lockTo = parent ? String(parent.studio) : '', cur = String(x.studio || (parent && parent.studio) || (FST.sel && FST.sel[0]) || '1');
-          return studioList(FT_VIEW ? [].concat.apply([], Object.keys(FT_VIEW.by).map(function (k) { return FT_VIEW.by[k]; })) : []).filter(function (z) { return !lockTo || z === lockTo || z === cur; })
-            .map(function (z) { return '<option value="' + q(z) + '"' + (z === cur ? ' selected' : '') + '>Studio ' + q(z) + '</option>'; }).join('');
-        })() + '</select></label>' +
-        '<label>Format<select name="format">' + FMT_FT.map(function (f) { return '<option' + ((x.format || (parent && parent.format) || '2D') === f ? ' selected' : '') + '>' + f + '</option>'; }).join('') + '</select></label></div>' +
-        '<div class="mdc-row"><label>Server<input name="server" maxlength="80" value="' + q(x.server || (parent && parent.server) || '') + '"></label>' +
-        '<label>Proyektor<input name="projector" maxlength="80" value="' + q(x.projector || (parent && parent.projector) || '') + '"></label></div>' +
-        '<div class="mdc-sec">Pengetes</div>' +
-        '<label>Tester<input name="tester" required maxlength="120" value="' + q(x.tester || (curU() && curU().name) || '') + '"></label>';
-      groups.forEach(function (g) {
-        h += '<fieldset class="mdc-fs"><legend>' + q(g.name) + '</legend>';
-        items.filter(function (it) { return it.grp === g.name; }).forEach(function (it) {
-          var c = cur[it.id] || (pre.filter(function (p) { return p.id === it.id; })[0] || {});
-          var pOn = c.val === 'PASS' || !c.val, nOn = c.val === 'N/A';
-          h += '<div class="mdc-ck" data-id="' + it.id + '"><span>' + q(it.label) + '</span>' +
-            '<div class="mdc-cb" role="group" aria-label="Hasil ' + q(it.label) + '">' +
-            '<label class="mdc-cbx"><input type="checkbox" name="p_' + it.id + '"' + (pOn ? ' checked' : '') + '> Lulus</label>' +
-            '<label class="mdc-cbx"><input type="checkbox" name="n_' + it.id + '"' + (nOn ? ' checked' : '') + '> Tidak diuji</label></div>' +
-            '<input class="mdc-ket" name="k_' + it.id + '" maxlength="500" placeholder="Keterangan (opsional; wajib jika gagal)" value="' + q(c.ket || '') + '" aria-label="Keterangan ' + q(it.label) + '"></div>';
-        });
-        h += '</fieldset>';
-      });
-      h += '<div class="mdc-sec">Catatan dan foto</div>';
-      h += '<label>Deskripsi masalah (wajib jika ada FAIL)<textarea name="masalah" maxlength="2000" rows="2">' + q(x.masalah || '') + '</textarea></label>' +
-        '<label>Tindakan perbaikan (wajib jika ada FAIL)<textarea name="tindakan" maxlength="2000" rows="2">' + q(x.tindakan || '') + '</textarea></label>' +
-        '<label>Catatan teknisi<textarea name="catatanTeknisi" maxlength="2000" rows="2">' + q(x.catatanTeknisi || '') + '</textarea></label>' +
-        '<label class="mdc-chkbox"><input type="checkbox" name="retest"' + (x.status === 'RETEST' ? ' checked' : '') + '> Perlu pengetesan ulang (hasil RETEST)</label>' +
-        '<p class="mdc-note">Hasil dihitung otomatis: ada item FAIL = FAILED; tanpa FAIL dan ditandai tes ulang = RETEST; selain itu = PASSED.</p>' +
-        photoBox('ft') +
+        '<div class="mdc-row"><label>Format<select name="format">' + FMT_FT.map(function (f) { return '<option' + ((x.format || (parent && parent.format) || '2D') === f ? ' selected' : '') + '>' + f + '</option>'; }).join('') + '</select></label>' +
+        '<label>Tester<input name="tester" required maxlength="120" value="' + q(x.tester || (curU() && curU().name) || '') + '"></label></div>';
+      if (!single) {
+        h += '<div class="mdc-sec">Studio yang dites</div><div class="ft-chips" id="ftchips" role="group" aria-label="Pilih studio">' +
+          studios.map(function (z, i) { return '<label class="mdc-cbx"><input type="checkbox" name="stu" value="' + q(z) + '" data-i="' + i + '" checked> Studio ' + q(z) + '</label>'; }).join('') +
+          '<button type="button" class="btn sec" id="ftall">Pilih semua</button><button type="button" class="btn sec" id="ftnone">Kosongkan</button></div>' +
+          '<p class="mdc-note">Semua studio terisi dalam satu laporan. Hasil, checklist, dan foto tiap studio disimpan terpisah; hilangkan centang studio yang tidak dites.</p>';
+      }
+      h += studios.map(panel).join('') +
+        '<p class="mdc-note">Hasil dihitung otomatis per studio: ada item FAIL = FAILED; tanpa FAIL dan ditandai tes ulang = RETEST; selain itu = PASSED.</p>' +
         '<p class="mdc-err" id="ftferr" role="alert"></p>' +
         '<div class="mdc-foot"><button type="button" class="btn sec" id="ftx">Batal</button><button type="submit" class="btn" id="ftok">Simpan</button></div></form>';
       modal(h);
-      var ph = photoBind('ft');
+      var phs = studios.map(function (z, i) { return photoBind('ft' + i); });
       $('ftx').onclick = closeM;
       var f = $('ftf');
+      function pn(i) { return f.querySelector('.ft-pn[data-i="' + i + '"]'); }
+      function chosen() { return studios.map(function (z, i) { return i; }).filter(function (i) { return single || f.querySelector('input[name=stu][data-i="' + i + '"]').checked; }); }
+      function showPanels() { studios.forEach(function (z, i) { pn(i).hidden = !single && !f.querySelector('input[name=stu][data-i="' + i + '"]').checked; }); }
+      showPanels();
+      if ($('ftall')) {
+        $('ftall').onclick = function () { [].forEach.call(f.querySelectorAll('input[name=stu]'), function (c) { c.checked = true; }); showPanels(); };
+        $('ftnone').onclick = function () { [].forEach.call(f.querySelectorAll('input[name=stu]'), function (c) { c.checked = false; }); showPanels(); };
+      }
       f.onchange = function (e) {
         var nm = e.target.name || '';
+        if (nm === 'stu') { showPanels(); return; }
         if (nm.indexOf('p_') === 0 && e.target.checked) f['n_' + nm.slice(2)].checked = false;
         if (nm.indexOf('n_') === 0 && e.target.checked) f['p_' + nm.slice(2)].checked = false;
         if (nm.indexOf('p_') === 0 || nm.indexOf('n_') === 0) {
@@ -785,31 +804,40 @@
       };
       f.onsubmit = function (e) {
         e.preventDefault();
-        var err = $('ftferr');
-        var chk = items.map(function (it) {
-          var val = f['p_' + it.id].checked ? 'PASS' : (f['n_' + it.id].checked ? 'N/A' : 'FAIL');
-          return { id: it.id, val: val, ket: f['k_' + it.id].value.trim(), label: it.label };
+        var err = $('ftferr'), sel = chosen(), bad = '', out = [];
+        if (!sel.length) { err.textContent = 'Pilih minimal satu studio.'; return; }
+        sel.forEach(function (i) {
+          if (bad) return;
+          var z = studios[i], pre_ = 'Studio ' + z + ': ';
+          var chk = items.map(function (it) {
+            var val = f['p_' + i + '_' + it.id].checked ? 'PASS' : (f['n_' + i + '_' + it.id].checked ? 'N/A' : 'FAIL');
+            return { id: it.id, val: val, ket: f['k_' + i + '_' + it.id].value.trim(), label: it.label };
+          });
+          var fl = chk.filter(function (c) { return c.val === 'FAIL' && !c.ket; });
+          if (fl.length) { bad = pre_ + 'item FAIL wajib diberi keterangan: ' + fl[0].label + '.'; return; }
+          var anyFail = chk.some(function (c) { return c.val === 'FAIL'; });
+          if (anyFail && (!f['ms' + i].value.trim() || !f['td' + i].value.trim())) { bad = pre_ + 'hasil FAILED, isi deskripsi masalah dan tindakan perbaikan.'; return; }
+          out.push({
+            id: x.id || '', tanggal: f.tanggal.value, jam: f.jam.value, film: f.film.value.trim(), studio: z, format: f.format.value,
+            server: f['sv' + i].value.trim(), projector: f['pj' + i].value.trim(), tester: f.tester.value.trim(),
+            checklist: chk.map(function (c) { return { id: c.id, val: c.val, ket: c.ket }; }),
+            masalah: f['ms' + i].value.trim(), tindakan: f['td' + i].value.trim(), catatanTeknisi: f['ct' + i].value.trim(),
+            retest: !!f['rt' + i].checked, parentId: parent ? parent.id : ''
+          });
         });
-        var fl = chk.filter(function (c) { return c.val === 'FAIL' && !c.ket; });
-        if (fl.length) { err.textContent = 'Item FAIL wajib diberi keterangan: ' + fl[0].label + '.'; return; }
-        var anyFail = chk.some(function (c) { return c.val === 'FAIL'; });
-        if (anyFail && (!f.masalah.value.trim() || !f.tindakan.value.trim())) { err.textContent = 'Hasil FAILED: isi deskripsi masalah dan tindakan perbaikan.'; return; }
+        if (bad) { err.textContent = bad; return; }
         err.textContent = '';
         $('ftok').disabled = true;
-        var p = {
-          id: x.id || '', tanggal: f.tanggal.value, jam: f.jam.value, film: f.film.value.trim(), studio: f.studio.value, format: f.format.value,
-          server: f.server.value.trim(), projector: f.projector.value.trim(), tester: f.tester.value.trim(),
-          checklist: chk.map(function (c) { return { id: c.id, val: c.val, ket: c.ket }; }),
-          masalah: f.masalah.value.trim(), tindakan: f.tindakan.value.trim(), catatanTeknisi: f.catatanTeknisi.value.trim(),
-          retest: !!f.retest.checked, parentId: parent ? parent.id : ''
-        };
-        api('ft_save', p).then(function (id) {
-          var pf = ph.get();
-          closeM(); toast('Testing tersimpan'); vFt();
-          if (pf && pf.length) sendPhotos(id, pf, 'Dokumentasi', 'ft_photo_save', function () { ftDetail(id); });
-          else ftDetail(id);
-        })
-          .catch(function (er) { $('ftok').disabled = false; err.textContent = er.message; });
+        /* satu studio: ft_save; banyak studio: ft_batch_save (atomik di server, satu batchId) */
+        var run = out.length === 1 ? api('ft_save', out[0]).then(function (id) { return [id]; })
+          : api('ft_batch_save', { batchId: S.mi.uid(), items: out }).then(function (r) { return r.ids; });
+        run.then(function (ids) {
+          closeM(); toast(ids.length > 1 ? 'Testing ' + ids.length + ' studio tersimpan' : 'Testing tersimpan'); vFt();
+          return sel.reduce(function (p, i, k) {
+            var pf = phs[i].get();
+            return p.then(function () { return pf.length ? new Promise(function (res) { sendPhotos(ids[k], pf, 'Dokumentasi', 'ft_photo_save', res); }) : 0; });
+          }, Promise.resolve()).then(function () { ftDetail(ids[0]); });
+        }).catch(function (er) { $('ftok').disabled = false; err.textContent = er.message; });
       };
     });
   }
