@@ -793,3 +793,6 @@ html:root[data-theme] #app .mdc-tbl table{min-width: 0;}
 
 .st-Draf{background:var(--warn-bg);color:var(--warn)}
 .st-Terkirim{background:var(--ok-bg);color:var(--ok)}
+
+.aud-row.aud-over{outline:2px solid var(--red);outline-offset:1px;background:var(--red-bg);border-radius:12px}
+.aud-over-r td{background:var(--red-bg)}
