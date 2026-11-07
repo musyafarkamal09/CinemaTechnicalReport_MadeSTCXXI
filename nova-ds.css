@@ -229,3 +229,39 @@ label, #app .mdc-form label, #modal .mdc-form label { font-size: var(--t-xs); fo
 /* Tab bawah HP: label "Buat" sejajar dengan tab lain; bayangan bertumpu (offset), bukan halo berwarna */
 #tabs a.pl em { margin-top: -3px; }
 #tabs a.pl .pl-b { box-shadow: 0 4px 10px rgba(27, 22, 48, .22) !important; }
+
+/* ===== Formulir Daily Monitoring AC: penataan (v16-ac) =====
+   Satu kartu per area, nomor otomatis (CSS counter), tombol hapus sejajar dengan pemilih area,
+   Merk | Kondisi | Suhu satu baris, AC Eror + tombol foto satu baris di dasar kartu. Hanya memengaruhi #acs. */
+#acs { display: flex; flex-direction: column; gap: 14px; counter-reset: acn; margin: 6px 0 12px; }
+#acs > .acr { counter-increment: acn; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: end;
+  background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-l); padding: 14px 16px 16px;
+  box-shadow: 0 1px 2px rgba(27, 22, 48, .05); transition: border-color .15s, box-shadow .15s; }
+#acs > .acr:focus-within { border-color: var(--brand-300); box-shadow: 0 0 0 3px var(--brand-ring); }
+#acs > .acr:has(.ae:checked) { border-color: var(--err-bd); }
+#acs > .acr > * { grid-column: 1 / -1; margin: 0; min-width: 0; }
+#acs > .acr > .acr-h { display: flex; align-items: center; gap: 10px; }
+#acs > .acr > .acr-h::before { content: counter(acn); flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--brand-soft); color: var(--brand-ink); font-size: 13px; font-weight: 700; }
+#acs .acr-h select { flex: 1 1 auto; width: auto; min-width: 0; font-weight: 600; }
+#acs .acr-h .rm { flex: none; width: 40px; height: 40px; min-height: 40px; padding: 0; font-size: 18px; line-height: 1; color: var(--mute) !important; }
+#acs .acr-h .rm:hover { color: var(--err) !important; border-color: var(--err-bd) !important; background: var(--err-bg) !important; }
+#acs > .acr > .acr-g label, #acs > .acr > .acc-l { display: block; font-size: var(--t-xs); font-weight: 600; color: var(--lbl); }
+#acs > .acr > .acr-g label select, #acs > .acr > .acr-g label input, #acs > .acr > .acc-l select { display: block; width: 100%; box-sizing: border-box; margin-top: 4px; font-weight: 500; color: var(--ink); }
+#acs > .acr > .acc-n { color: var(--mute); }
+#acs > .acr > .aerr { justify-self: start; width: auto; }
+#acs > .acr > .aerr input[type=checkbox] { width: 18px; height: 18px; min-height: 0; flex: none; }
+#acs > .acr > .pick { display: flex; gap: 8px; margin: 0; }
+#acs > .acr > .pick .btn { flex: 1 1 0; justify-content: center; text-align: center; margin: 0; }
+#acs > .acr > .ph:empty { display: none; }
+@media (min-width: 700px) {
+  #acs > .acr { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #acs > .acr > .acr-g, #acs > .acr > .acc-l { grid-column: auto; }
+  #acs > .acr:has(> .acr-t[style*="display:none"]) > .acc-l { grid-column: span 2; }
+  #acs > .acr > .aerr { grid-column: 1 / span 2; }
+  #acs > .acr > .pick { grid-column: 3; justify-content: flex-end; }
+}
+.acbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 16px; }
+.acbar #aad { flex: 1 1 220px; min-height: 44px; border-style: dashed !important; color: var(--brand-ink) !important; }
+.acbar #apc { padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-2); color: var(--mute);
+  font-size: var(--t-sm); font-variant-numeric: tabular-nums; white-space: nowrap; }
