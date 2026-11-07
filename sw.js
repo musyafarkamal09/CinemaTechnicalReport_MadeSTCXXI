@@ -4,7 +4,7 @@ importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDKWorker.js');
    selalu mendapat versi terbaru; cache hanya dipakai saat jaringan tidak tersedia.
    Permintaan API (Apps Script, lintas domain, POST) tidak pernah disentuh.
    Saat merilis versi baru, naikkan CACHE_VERSION. */
-var CACHE_VERSION = 'nova-v17c-penonton-semua-user';
+var CACHE_VERSION = 'nova-v18-penonton-draf-submit';
 var CACHE = CACHE_VERSION;
 var SHELL = [
   './',

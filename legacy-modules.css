@@ -790,3 +790,6 @@ html:root[data-theme] #app .mdc-tbl table{min-width: 0;}
 @media (max-width:768px){#dsld button::before{content:"";position:absolute;inset:-19px -10px}}
 @media (max-width:768px){#dsld button{box-sizing:content-box !important;padding:19px 0 !important;background-clip:content-box !important;min-width:0 !important}}
 @media (max-width:768px){.dsl-b{box-sizing:content-box !important;padding:8px !important;background-clip:content-box !important;min-width:0 !important;min-height:0 !important}}
+
+.st-Draf{background:var(--warn-bg);color:var(--warn)}
+.st-Terkirim{background:var(--ok-bg);color:var(--ok)}
