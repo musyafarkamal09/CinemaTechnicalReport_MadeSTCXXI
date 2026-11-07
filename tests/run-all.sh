@@ -7,5 +7,6 @@ for W in desktop tablet phone; do
   echo "== run.js (semua modul) $W"; node tests/browser/run.js $W | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);let b=0;for(const[k,v]of Object.entries(j.modules))if(v.overflowPx>0||v.pageErrors.length){b++;console.log('BAD',k)}console.log('modul',Object.keys(j.modules).length,'bermasalah',b,'error global',j.globalErrors.length)})"
   node tests/browser/v14.js $W | grep -E 'FAIL|HASIL'
   node tests/browser/v16.js $W | grep -E 'FAIL|HASIL'
+  node tests/browser/audience.js $W | grep -E 'FAIL|HASIL'
 done
-for t in ac-download-sidebar ats-countdown pdf-foto; do echo "== $t"; node tests/browser/$t.js | grep -E "FAIL|SEMUA|HASIL"; done
+for t in ac-download-sidebar ats-countdown pdf-foto audience-export; do echo "== $t"; node tests/browser/$t.js | grep -E "FAIL|SEMUA|HASIL"; done

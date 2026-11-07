@@ -265,3 +265,34 @@ label, #app .mdc-form label, #modal .mdc-form label { font-size: var(--t-xs); fo
 .acbar #aad { flex: 1 1 220px; min-height: 44px; border-style: dashed !important; color: var(--brand-ink) !important; }
 .acbar #apc { padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-2); color: var(--mute);
   font-size: var(--t-sm); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ---- Data Penonton: tabel input per studio (4 studio x 5 show; studio/show tambahan opsional) ---- */
+#aud { margin: 6px 0 14px; }
+#aud > h4 { margin: 0 0 6px; }
+#aud-list { display: flex; flex-direction: column; gap: 14px; margin: 8px 0 12px; }
+.aud-st { background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-l); padding: 12px 14px 14px; box-shadow: 0 1px 2px rgba(27, 22, 48, .05); }
+.aud-st:focus-within { border-color: var(--brand-300); box-shadow: 0 0 0 3px var(--brand-ring); }
+.aud-sh { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.aud-sh h4 { margin: 0; flex: 1 1 auto; font-size: var(--t-md, 16px); color: var(--ink); }
+.aud-sum { padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-2); color: var(--mute); font-size: var(--t-xs); font-variant-numeric: tabular-nums; }
+.aud-head { display: none; }
+.aud-rows { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+.aud-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 10px; border: 1px solid var(--line-soft); border-radius: var(--r-m); background: var(--surface-2); }
+.aud-n { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; font-size: var(--t-xs); letter-spacing: .04em; color: var(--brand-ink); }
+.aud-rm { flex: none; width: 32px; height: 32px; border: 1px solid var(--line-2); border-radius: var(--r-m); background: var(--surface); color: var(--mute); font-size: 18px; line-height: 1; cursor: pointer; }
+.aud-rm:hover { color: var(--err); border-color: var(--err-bd); background: var(--err-bg); }
+.aud-f { display: block; margin: 0; min-width: 0; font-size: var(--t-xs); font-weight: 600; color: var(--lbl); }
+.aud-f > span { display: block; margin-bottom: 3px; }
+.aud-f > input { display: block; width: 100%; box-sizing: border-box; margin: 0; min-width: 0; font-weight: 500; color: var(--ink); }
+.aud-film, .aud-ket { grid-column: 1 / -1; }
+#aud-tot { padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-2); color: var(--ink); font-size: var(--t-sm); font-variant-numeric: tabular-nums; }
+#aud .acbar #aud-as { flex: 1 1 220px; min-height: 44px; border-style: dashed !important; color: var(--brand-ink) !important; }
+.aud-as { min-height: 40px; border-style: dashed !important; color: var(--brand-ink) !important; }
+@media (min-width: 900px) {
+  .aud-head, .aud-row { grid-template-columns: 74px minmax(150px, 2.2fr) 96px 92px 100px minmax(100px, 1fr) minmax(110px, 1.2fr); gap: 8px; align-items: center; }
+  .aud-head { display: grid; padding: 0 10px 6px; font-size: var(--t-xs); font-weight: 700; color: var(--mute); text-transform: uppercase; letter-spacing: .03em; }
+  .aud-row { padding: 6px 10px; }
+  .aud-n { grid-column: auto; gap: 6px; justify-content: flex-start; }
+  .aud-film, .aud-ket { grid-column: auto; }
+  .aud-f > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
+}

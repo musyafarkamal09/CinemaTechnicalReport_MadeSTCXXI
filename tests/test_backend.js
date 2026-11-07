@@ -69,7 +69,33 @@ check('meterDiff_ null on reset (no negative)', dd.diffs.lwbp===null, JSON.strin
 // 8. Notification hook wraps H.rep_save
 check('H.rep_save wrapped by hook', typeof ctx.H.rep_save==='function');
 // Version string
-check('doGet version string matches current build (v16-refinement)', /versi: v16-refinement/.test(src));
+check('doGet version string matches current build (v17-data-penonton)', /versi: v17-data-penonton/.test(src));
+
+// 9. Data Penonton (audience)
+const bad=(f)=>{try{f();return null}catch(e){return String(e&&e.message||e)}};
+const mk=(o)=>Object.assign({date:'2026-11-07',studios:[]},o);
+const A1=ctx.clean_('audience',mk({studios:[
+ {studio:'Studio 1',shows:[{show:'SHOW1',film:'Film A',jam:'12:30',tiket:'10',penonton:'8',petugas:'Budi',ket:''},{show:'SHOW2'},{show:'SHOW3',film:'Film B',tiket:'',penonton:'3'}]},
+ {studio:'Studio 2',shows:[{show:'SHOW1'},{show:'SHOW2'}]},
+ {studio:'Studio 5',shows:[{show:'SHOW1',film:'Film C',tiket:'4',penonton:'4'},{show:'SHOW6',film:'Film D',penonton:'1'}]}
+]}));
+check('audience: baris kosong dan studio kosong dilewati', A1.studios.length===2 && A1.studios[0].shows.length===2, JSON.stringify(A1.studios.map(s=>s.shows.length)));
+check('audience: studio tambahan (Studio 5) dan show ke-6 diterima', A1.studios[1].studio==='Studio 5' && A1.studios[1].shows[1].show==='SHOW6');
+check('audience: total dihitung server (show/tiket/penonton)', A1.totalShow===4 && A1.totalTiket===14 && A1.totalPenonton===16, [A1.totalShow,A1.totalTiket,A1.totalPenonton].join('/'));
+check('audience: tiket kosong tetap string kosong, bukan 0', A1.studios[0].shows[1].tiket==='');
+check('audience: tanpa show terisi ditolak', /minimal satu show/.test(bad(()=>ctx.clean_('audience',mk({studios:[{studio:'Studio 1',shows:[{show:'SHOW1'}]}]})))||''));
+check('audience: nama film wajib bila baris terisi', /Nama film wajib/.test(bad(()=>ctx.clean_('audience',mk({studios:[{studio:'Studio 1',shows:[{show:'SHOW1',tiket:'5'}]}]})))||''));
+check('audience: tiket negatif/desimal/teks ditolak', ['-1','2.5','abc'].every(v=>/bilangan bulat/.test(bad(()=>ctx.clean_('audience',mk({studios:[{studio:'Studio 1',shows:[{show:'SHOW1',film:'X',tiket:v}]}]})))||'')));
+check('audience: jam tidak valid ditolak', /Jam show/.test(bad(()=>ctx.clean_('audience',mk({studios:[{studio:'Studio 1',shows:[{show:'SHOW1',film:'X',jam:'25:99'}]}]})))||''));
+check('audience: tanggal wajib', /Tanggal/.test(bad(()=>ctx.clean_('audience',{date:'',studios:[]}))||''));
+check('audience: batas studio', /Maksimal/.test(bad(()=>ctx.clean_('audience',mk({studios:Array.from({length:13},(_,i)=>({studio:'Studio '+(i+1),shows:[{film:'X'}]}))})))||''));
+check('audience: batas show per studio', /Maksimal/.test(bad(()=>ctx.clean_('audience',mk({studios:[{studio:'Studio 1',shows:Array.from({length:16},()=>({film:'X'}))}]})))||''));
+check('audience: studio ganda ditolak', /lebih dari satu kali/.test(bad(()=>ctx.clean_('audience',mk({studios:[{studio:'Studio 1',shows:[{film:'X'}]},{studio:'studio 1',shows:[{film:'Y'}]}]})))||''));
+check('audience: judul laporan', /Data Penonton - 2026-11-07 - 4 show, 16 penonton/.test(ctx.title_('audience',A1)), ctx.title_('audience',A1));
+check('audience: terdaftar di PFX/PREFIX/FOLDERS/PHS/MIR', ctx.PFX.audience&&ctx.REPORT_PREFIX.audience==='DP'&&ctx.FOLDERS.audience&&ctx.PHS.audience&&ctx.MIR.audience);
+const mr=ctx.MIR.audience.row({id:'DP-1',createdAt:0,updatedAt:0,reporter:'T',status:'Aktif'},A1);
+check('audience: baris sheet cocok jumlah kolom header', mr.length===ctx.MIR.audience.head.length, mr.length+' vs '+ctx.MIR.audience.head.length);
+check('audience: kolom numerik/wrap MIR valid', ctx.MIR.audience.num.concat(ctx.MIR.audience.wrap).every(c=>c>=1&&c<=ctx.MIR.audience.head.length));
 
 const pass=r.filter(x=>x.pass).length;
 console.log(r.map(x=>(x.pass?'PASS ':'FAIL ')+x.name+(x.detail&&!x.pass?' :: '+x.detail:'')).join('\n'));
