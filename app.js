@@ -140,7 +140,7 @@ IC.ac='<svg class="ic" viewBox="0 0 24 24"><path d="M12 2v20M4.9 7l14.2 10M4.9 1
 IC.water='<svg class="ic" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>';
 IC.film='<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg>';
 IC.menu='<svg class="ic" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
-var GRP={dashboard:'Menu utama',work:'Laporan teknik',film:'Film & digital',glosarium:'Administrasi'},TB=[['dashboard','Beranda'],['work','Pekerjaan'],['meter','Meteran']],TBR=[['dashboard','Beranda'],['issue','Perbaikan'],['pengumuman','Pengumuman']],RO=['dashboard','pengumuman','ats','issue','glosarium'];var GSR=['dashboard','pengumuman','ats','patrol'];
+var GRP={dashboard:'Menu utama',work:'Laporan teknik',film:'Film & digital',glosarium:'Administrasi'},TB=[['dashboard','Beranda'],['work','Pekerjaan'],['meter','Meteran']],TBR=[['dashboard','Beranda'],['issue','Perbaikan'],['pengumuman','Pengumuman']],RO=['dashboard','pengumuman','ats','issue','audience','glosarium'];var GSR=['dashboard','pengumuman','ats','patrol','audience'];
 function tbFor(){return U&&(U.role==='REPORTER'||U.role==='GUIDE_SECURITY')?TBR:TB}
 function can(m){if(m[2])return U.role==='ADMIN';if(U.role==='REPORTER')return RO.indexOf(m[0])>=0;if(U.role==='GUIDE_SECURITY')return GSR.indexOf(m[0])>=0;return true}
 /* ---- shell ---- */
@@ -180,8 +180,8 @@ function openMenu(){$('side').classList.add('open');$('shade').classList.add('op
 IC.search='<svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
 var NEWBTN='<a data-p="new" class="pl" role="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Buat laporan baru"><span class="pl-b" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><em>Buat</em></a>';
 var NEWI={ADMIN:[['dcpk','DCP Keluar','Catat pengiriman DCP','dcp'],['dcpm','DCP Masuk','Catat pengembalian DCP','dcp'],['pelk','Pelaporan DCP Keluar','Tujuan, penerima, dokumentasi','pel'],['pelm','Pelaporan DCP Masuk','Outlet, dokumentasi','pel'],['ftest','Input Testing','Pengetesan harian film'],['work','Laporan Pekerjaan','Pekerjaan teknis harian'],['meter','Laporan Meteran','Listrik & air'],['ac','Daily Monitoring AC','Suhu & kondisi AC'],['purchase','Laporan Pembelian','Barang & jasa'],['audience','Data Penonton','Penonton per show & studio'],['issue','Perlu Diperbaiki','Lapor kerusakan'],['patrol','Inspeksi & Patroli Studio','Catat hasil patroli']],
- REPORTER:[['issue','Perlu Diperbaiki','Lapor kerusakan']],
- GUIDE_SECURITY:[['patrol','Inspeksi & Patroli Studio','Catat hasil patroli']]};
+ REPORTER:[['issue','Perlu Diperbaiki','Lapor kerusakan'],['audience','Data Penonton','Penonton per show & studio']],
+ GUIDE_SECURITY:[['patrol','Inspeksi & Patroli Studio','Catat hasil patroli'],['audience','Data Penonton','Penonton per show & studio']]};
 var NEWCREATE={work:'ra',meter:'ra',ac:'ra',purchase:'ra',audience:'ra',issue:'ra',patrol:'ra',ftest:'ftnew'};
 var NEWDCP={dcpk:'KELUAR',dcpm:'MASUK'};
 var NEWPEL={pelk:'KELUAR',pelm:'MASUK'};
@@ -276,7 +276,7 @@ function vDash(){Promise.all([api('dashboard'),api('ats_list')]).then(function(r
  hr=Number(new Intl.DateTimeFormat('en-GB',{timeZone:TZ,hour:'2-digit',hour12:false}).format(new Date()))%24,
  gr=hr<11?'Selamat pagi':hr<15?'Selamat siang':hr<18?'Selamat sore':'Selamat malam',rr=U.role==='REPORTER',
  open=Number(d.issueOpen)||0,
- qa=rr?[['issue','Laporkan masalah','Kerusakan atau kendala yang perlu ditangani']]:[['work','Catat pekerjaan','Perawatan dan perbaikan hari ini'],['issue','Lapor perbaikan','Ada perangkat yang bermasalah'],['meter','Catat meteran','Angka listrik dan air'],['ac','Monitoring AC','Suhu ruangan harian'],['purchase','Catat pembelian','Barang dan perlengkapan']],
+ qa=rr?[['issue','Laporkan masalah','Kerusakan atau kendala yang perlu ditangani'],['audience','Catat data penonton','Tiket dan penonton per show']]:[['work','Catat pekerjaan','Perawatan dan perbaikan hari ini'],['issue','Lapor perbaikan','Ada perangkat yang bermasalah'],['meter','Catat meteran','Angka listrik dan air'],['ac','Monitoring AC','Suhu ruangan harian'],['purchase','Catat pembelian','Barang dan perlengkapan']],
  tot=rr?[['Laporan saya',d.issue,'issue']]:[['Pekerjaan',d.work,'work'],['Meteran',d.meter,'meter'],['Pembelian',d.purchase,'purchase']],
  mx=Math.max.apply(null,tot.map(function(x){return Number(x[1])||0}).concat([1])),
  sum=open>0?open+' laporan perbaikan masih terbuka.':'Tidak ada laporan perbaikan yang terbuka.',
@@ -338,7 +338,7 @@ function dFlat(o,out){if(o==null)return;var t=typeof o;if(t==='string'||t==='num
 function dRepTitle(x){var d=x.data||{};return x.title||d.title||d.location||d.store||x.id}
 function dRepBuild(t,x){var L=[];dFlat(x.data,L);return {t:t,x:x,L:L,n:nq([x.id,x.reporter,x.title,T[t]?T[t].label:t,dt(x.createdAt)].concat(L).join(' '))}}
 function dLoadRep(force){if(RPC.busy)return RPC.busy;if(!force&&RPC.t&&Date.now()-RPC.t<60000)return Promise.resolve();
- var rp=U.role==='REPORTER',ts=rp?['issue']:U.role==='GUIDE_SECURITY'?['patrol']:['work','issue','meter','ac','purchase','audience'],fail=0;
+ var rp=U.role==='REPORTER',ts=rp?['issue','audience']:U.role==='GUIDE_SECURITY'?['patrol','audience']:['work','issue','meter','ac','purchase','audience'],fail=0;
  var P=ts.map(function(t){return api(rp?'rep_list':'rep_export',{type:t,q:'',from:'',to:'',status:'',page:1,quiet:1}).then(function(r){return {t:t,items:(r&&r.items)||[]}},function(){fail++;return {t:t,items:[]}})});
  if(!rp)P.push(api('filmrep_list',{q:'',quiet:1}).then(function(l){return {t:'film',items:l||[]}},function(){fail++;return {t:'film',items:[]}}));
  RPC.busy=Promise.all(P).then(function(R){var out=[];R.forEach(function(g){g.items.forEach(function(x){if(g.t==='film'){var L=[];dFlat(x,L);out.push({t:'film',x:{id:x.id,title:x.title,reporter:'',createdAt:0,data:x},L:L,n:nq(L.join(' ')+' laporan film')})}else out.push(dRepBuild(g.t,x))})});RPC.items=out;RPC.fail=fail;RPC.t=Date.now();RPC.busy=null;if(DQP)DQP()},function(){RPC.busy=null});
