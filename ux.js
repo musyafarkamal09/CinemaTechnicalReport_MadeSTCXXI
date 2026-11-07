@@ -253,3 +253,31 @@ if(!reduce&&'IntersectionObserver' in window){
  });
 })();
 })();
+
+/* v16 — aksesibilitas: hubungkan <label> dengan kontrol di sebelahnya bila belum terhubung.
+   Banyak form dibangun sebagai <label>Teks</label><input>. Pass ini memakai aria-labelledby pada
+   kontrol (id kontrol TIDAK diubah, karena kunci draf lokal bergantung pada id kontrol) dan satu
+   listener klik agar mengetuk label memfokuskan kolomnya. Tidak mengubah tampilan. */
+(function(){
+  var seq=0;
+  function nextCtl(l){var n=l.nextElementSibling;while(n&&n.tagName==='SMALL')n=n.nextElementSibling;
+    return(n&&/^(INPUT|SELECT|TEXTAREA)$/.test(n.tagName)&&n.type!=='hidden')?n:null}
+  function link(root){
+    try{
+      [].forEach.call((root||document).querySelectorAll('label:not([for])'),function(l){
+        if(l.querySelector('input,select,textarea')||l.dataset.a11y)return;
+        var n=nextCtl(l);if(!n||n.getAttribute('aria-labelledby')||n.getAttribute('aria-label'))return;
+        if(!l.id)l.id='lbl-'+(++seq);
+        n.setAttribute('aria-labelledby',l.id);l.dataset.a11y='1';
+      });
+    }catch(e){}
+  }
+  document.addEventListener('click',function(e){
+    var l=e.target.closest&&e.target.closest('label[data-a11y]');if(!l||e.target!==l)return;
+    var n=nextCtl(l);if(n&&n.focus)n.focus();
+  });
+  var pend=false;
+  function sched(){if(pend)return;pend=true;(window.requestAnimationFrame||setTimeout)(function(){pend=false;link(document)})}
+  try{new MutationObserver(sched).observe(document.body,{childList:true,subtree:true})}catch(e){}
+  link(document);
+})();

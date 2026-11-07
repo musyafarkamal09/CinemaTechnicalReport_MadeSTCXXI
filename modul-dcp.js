@@ -144,9 +144,10 @@
       h += '<div class="mdc-filter"><input id="dcpq" type="search" placeholder="Cari film, kode disk, PH, atau ID" value="' + q(DST.q) + '" aria-label="Cari DCP">' +
         '<select id="dcpj" aria-label="Jenis"><option value="">Semua jenis</option><option value="KELUAR"' + (DST.jenis === 'KELUAR' ? ' selected' : '') + '>Keluar</option><option value="MASUK"' + (DST.jenis === 'MASUK' ? ' selected' : '') + '>Masuk</option></select>' +
         '<select id="dcps" aria-label="Status"><option value="">Semua status</option>' + STAT_DCP.map(function (s) { return '<option' + (DST.status === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></div>';
-      h += '<div class="mdc-tbl" role="region" aria-label="Daftar DCP"><table><thead><tr><th>ID</th><th>Tanggal</th><th>Jenis</th><th>Film</th><th>Kode disk</th><th>Status</th><th>Kelengkapan</th></tr></thead><tbody>' +
+      var bc = {}; list.forEach(function (t) { if (t.batchId) bc[t.batchId] = (bc[t.batchId] || 0) + 1; });
+      h += '<div class="mdc-tbl stack" role="region" aria-label="Daftar DCP"><table><thead><tr><th>ID</th><th>Tanggal</th><th>Jenis</th><th>Film</th><th>Kode disk</th><th>Status</th><th>Kelengkapan</th></tr></thead><tbody>' +
         (list.length ? list.map(function (t) {
-          return '<tr data-dcp-open="' + q(t.id) + '" tabindex="0"><td class="mdc-mono">' + q(t.id) + '</td><td>' + q(t.tanggal) + ' ' + q(t.jam) + '</td><td>' + (t.jenis === 'KELUAR' ? 'Keluar' : 'Masuk') + '</td><td>' + q(t.film) + '</td><td class="mdc-mono">' + q(t.kodeDisk) + '</td><td>' + stDcp(t.status) + (t.jenis === 'KELUAR' && !t.masukId ? ' <span class="mdc-st mdc-warn">Belum kembali</span>' : '') + '</td><td>' + (t.incomplete ? st('bad', 'Tidak lengkap') : st('ok', 'Lengkap')) + '</td></tr>';
+          return '<tr data-dcp-open="' + q(t.id) + '" tabindex="0"><td data-l="ID" class="mdc-mono">' + q(t.id) + (bc[t.batchId] > 1 ? ' <span class="mdc-st mdc-info" title="Satu laporan memuat ' + bc[t.batchId] + ' item">Multi-item (' + bc[t.batchId] + ')</span>' : '') + '</td><td data-l="Tanggal">' + q(t.tanggal) + ' ' + q(t.jam) + '</td><td data-l="Jenis">' + (t.jenis === 'KELUAR' ? 'Keluar' : 'Masuk') + '</td><td data-l="Film">' + q(t.film) + '</td><td data-l="Kode disk" class="mdc-mono">' + q(t.kodeDisk) + '</td><td data-l="Status">' + stDcp(t.status) + (t.jenis === 'KELUAR' && !t.masukId ? ' <span class="mdc-st mdc-warn">Belum kembali</span>' : '') + '</td><td data-l="Kelengkapan">' + (t.incomplete ? st('bad', 'Tidak lengkap') : st('ok', 'Lengkap')) + '</td></tr>';
         }).join('') : '<tr><td colspan="7" class="mdc-empty">Belum ada data DCP.</td></tr>') +
         '</tbody></table></div>';
       v.innerHTML = h;
@@ -217,8 +218,8 @@
   }
 
   /* ---------- unduh Excel & PDF: elemen dan pola sama dengan laporan lain (menu Download) ---------- */
-  function dlMenu(k) {
-    return '<div class="dlw"><button type="button" class="btn sec" data-dlt aria-haspopup="menu" aria-expanded="false">Download</button>' +
+  function dlMenu(k, label) {
+    return '<div class="dlw"><button type="button" class="btn sec" data-dlt aria-haspopup="menu" aria-expanded="false">' + q(label || 'Download') + '</button>' +
       '<div class="dlm hidden" role="menu"><button type="button" role="menuitem" id="' + k + 'xl">Excel (.xlsx)</button>' +
       '<button type="button" role="menuitem" id="' + k + 'pdf">PDF (.pdf)</button></div></div>';
   }
@@ -228,28 +229,57 @@
     if (!ok) toast('Library ' + (pdf ? 'PDF' : 'Excel') + ' belum termuat. Periksa koneksi internet lalu muat ulang halaman.', 1);
     return ok;
   }
-  function recSave(title, pairs, tables, fmt, file) {
-    var pdf = fmt === 'pdf';
+  /* Ekspor generik. tables: [{title, head, rows, sheet?, fs?, colStyles?}]; extra: {id, orient, photos:[{title,list}], user}
+     PDF: header logo XXI+NOVA, footer identitas MK dan "Halaman k / n" di setiap halaman (pdfkit.js).
+     Excel: satu lembar; bila ada tabel dengan `sheet`, tiap tabel itu menjadi lembar sendiri (data tidak tercampur). */
+  function uname() { var u = curU() || {}; return u.name || u.fullName || u.username || ''; }
+  function sheetName(n, used) {
+    var b = String(n || 'Sheet').replace(/[\\\/\?\*\[\]:]/g, ' ').trim().slice(0, 28) || 'Sheet', x = b, k = 2;
+    while (used[x.toLowerCase()]) { x = b.slice(0, 25) + ' ' + k++; }
+    used[x.toLowerCase()] = 1; return x;
+  }
+  function recSave(title, pairs, tables, fmt, file, extra) {
+    var pdf = fmt === 'pdf', ex = extra || {};
     if (!needLib(pdf)) return;
-    pairs = pairs.map(function (p) { return [sv(p[0]), sv(p[1])]; });
+    if (pdf && !window.NovaPDF) { toast('Modul PDF belum termuat. Muat ulang halaman.', 1); return; }
+    pairs = (pairs || []).map(function (p) { return [sv(p[0]), sv(p[1])]; });
     if (pdf) {
-      var wide = tables.some(function (t) { return t.head.length > 6; });
-      var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: wide ? 'landscape' : 'portrait' });
-      var fs = wide ? 7.5 : 9, pad = wide ? 1.5 : 2;
-      doc.setFontSize(14); doc.text(title, 14, 16);
-      doc.autoTable({ startY: 22, body: pairs, theme: 'grid', margin: { left: 14, right: 14 }, styles: { fontSize: 9, cellPadding: 2, overflow: 'linebreak' }, columnStyles: { 0: { cellWidth: 50, fontStyle: 'bold' } } });
+      var wide = ex.orient ? ex.orient === 'landscape' : tables.some(function (t) { return t.head.length > 6; });
+      var blocks = [];
+      if (pairs.length) blocks.push({ t: 'pairs', rows: pairs });
       tables.forEach(function (t) {
-        doc.autoTable({ startY: doc.lastAutoTable.finalY + 8, head: [t.head], body: t.rows, theme: 'grid', margin: { left: 10, right: 10 }, styles: { fontSize: fs, cellPadding: pad, overflow: 'linebreak', valign: 'top' }, headStyles: { fillColor: [47, 93, 70], textColor: 255, fontStyle: 'bold' } });
+        var fs = t.fs || (wide ? (t.head.length > 10 ? 7 : 7.8) : 8.5);
+        blocks.push({ t: 'table', title: t.title, head: t.head, rows: t.rows, fs: fs, colStyles: t.colStyles, foot: t.foot });
       });
+      (ex.photos || []).forEach(function (ph) { blocks.push({ t: 'photos', title: ph.title, list: ph.list }); });
+      var doc = window.NovaPDF.render({ title: title, id: ex.id || '', user: uname(), orient: wide ? 'landscape' : 'portrait', blocks: blocks });
       doc.save(file + '.pdf');
     } else {
-      var aoa = [[title + ' - NOVA'], []].concat(pairs, [[]]);
-      tables.forEach(function (t) { aoa = aoa.concat([t.head], t.rows, [[]]); });
-      var ws = XLSX.utils.aoa_to_sheet(aoa);
+      var used = {}, wb = XLSX.utils.book_new(), main = [[title + ' - NOVA'], ['NOVA \u2014 An Innovation by MK | Designed & Developed by MK'], []].concat(pairs, [[]]);
+      var sep = [];
+      tables.forEach(function (t) {
+        if (t.sheet) { sep.push(t); return; }
+        main = main.concat(t.title ? [[t.title]] : [], [t.head], t.rows, [[]]);
+      });
+      var ws = XLSX.utils.aoa_to_sheet(main);
       ws['!cols'] = [{ wch: 26 }, { wch: 36 }, { wch: 18 }, { wch: 40 }, { wch: 14 }];
-      var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Laporan');
+      XLSX.utils.book_append_sheet(wb, ws, sheetName(ex.mainSheet || 'Laporan', used));
+      sep.forEach(function (t) {
+        var s2 = XLSX.utils.aoa_to_sheet([[t.title || t.sheet], []].concat([t.head], t.rows));
+        s2['!cols'] = t.head.map(function (h, ci) { var m = String(h).length; t.rows.forEach(function (r) { m = Math.max(m, Math.min(48, String(r[ci] == null ? '' : r[ci]).length)); }); return { wch: Math.max(10, m + 2) }; });
+        XLSX.utils.book_append_sheet(wb, s2, sheetName(t.sheet, used));
+      });
       XLSX.writeFile(wb, file + '.xlsx');
     }
+  }
+  /* ambil foto (data URL) untuk sekumpulan transaksi -> [{title, list:[{data,w,h,caption}]}]; gagal dimuat dilewati */
+  function collectPhotos(entries, getKind) {
+    var jobs = entries.map(function (en) {
+      return Promise.all((en.foto || []).slice(0, 12).map(function (p) {
+        return api(getKind, { fotoId: p.fotoId, quiet: true }).then(function (r) { return window.NovaPDF.loadPhoto(r.url, (p.kind || 'Foto') + ' - ' + en.label); }).catch(function () { return null; });
+      })).then(function (l) { return { title: 'Foto dokumentasi - ' + en.label, list: l.filter(Boolean) }; });
+    });
+    return Promise.all(jobs).then(function (a) { return a.filter(function (x) { return x.list.length; }); });
   }
   function dcpExport(fmt) {
     api('dcp_list', { q: DST.q, jenis: DST.jenis, status: DST.status }).then(function (rows) {
@@ -261,26 +291,121 @@
       recSave('Laporan DCP Management', [['Jumlah laporan', rows.length], ['Tanggal cetak', jkt()]], [{ head: head, rows: body }], fmt, 'Laporan_DCP_STCXXI_' + jkt());
     }).catch(function (e) { toast(e.message, 1); });
   }
+  /* Laporan gabungan Daily Film Testing: studio terpilih (4 atau lebih) dalam SATU berkas.
+     Rekap di awal; data tiap studio di tabel/lembar sendiri (tidak dicampur). */
   function ftExport(fmt) {
-    api('ft_list', { q: FST.q, status: FST.status, studio: FST.studio }).then(function (rows) {
-      if (!rows.length) { toast('Tidak ada data untuk diunduh.', 1); return; }
-      var head = ['ID', 'Tanggal', 'Jam', 'Film', 'Studio', 'Format', 'Server', 'Proyektor', 'Tester', 'Hasil'];
-      var body = rows.map(function (x) { return [x.id, x.tanggal, x.jam, x.film, x.studio, x.format, x.server, x.projector, x.tester, x.status].map(sv); });
-      recSave('Laporan Daily Film Testing', [['Jumlah laporan', rows.length], ['Tanggal cetak', jkt()]], [{ head: head, rows: body }], fmt, 'Laporan_Testing_STCXXI_' + jkt());
-    }).catch(function (e) { toast(e.message, 1); });
+    var V = FT_VIEW;
+    if (!V) { toast('Buka halaman Film Testing terlebih dahulu.', 1); return; }
+    var sel = V.sel, total = 0;
+    sel.forEach(function (z) { total += V.by[z].length; });
+    if (!total) { toast('Tidak ada data untuk diunduh pada studio yang dipilih.', 1); return; }
+    var tot = ftStat([].concat.apply([], sel.map(function (z) { return V.by[z]; })));
+    var per = FST.from || FST.to ? (FST.from || 'awal') + ' s.d. ' + (FST.to || 'sekarang') : 'Semua tanggal';
+    var pairs = [['Studio dalam laporan', sel.map(function (z) { return 'Studio ' + z; }).join(', ')], ['Jumlah studio', sel.length], ['Periode', per], ['Filter status', FST.status || 'Semua'], ['Total laporan', total], ['Tanggal cetak', jkt()]];
+    var tables = [{
+      title: 'Rekap gabungan per studio', head: ['Studio', 'Total', 'PASSED', 'FAILED', 'RETEST', 'Hari ini'],
+      rows: sel.map(function (z) { var o = ftStat(V.by[z]); return ['Studio ' + z, o.n, o.passed, o.failed, o.retest, o.hari].map(sv); }),
+      foot: ['Total', tot.n, tot.passed, tot.failed, tot.retest, tot.hari].map(sv), fs: 9
+    }];
+    sel.forEach(function (z) {
+      var list = V.by[z], o = ftStat(list);
+      tables.push({
+        title: 'Studio ' + z + ' - ' + o.n + ' laporan (' + o.passed + ' passed, ' + o.failed + ' failed, ' + o.retest + ' retest)', sheet: 'Studio ' + z,
+        head: ['ID', 'Tanggal', 'Jam', 'Film', 'Format', 'Server', 'Proyektor', 'Tester', 'Hasil', 'Temuan / masalah'],
+        rows: list.length ? list.map(function (x) { return [x.id + (x.parentId ? ' (retest)' : ''), x.tanggal, x.jam, x.film, x.format, x.server, x.projector, x.tester, x.status, ftTemuan(x, V.items) || '-'].map(sv); }) : [['Belum ada laporan', '', '', '', '', '', '', '', '', '']],
+        colStyles: { 9: { cellWidth: 62 } }, fs: 7.5
+      });
+    });
+    recSave('Laporan Gabungan Daily Film Testing', pairs, tables, fmt, 'Laporan_Testing_Gabungan_' + sel.length + 'Studio_' + jkt(), { id: sel.length + ' studio', orient: 'landscape', mainSheet: 'Rekap' });
   }
-  function dcpOneExport(x, fmt) {
-    var pairs = [['ID', x.id], ['Jenis', x.jenis === 'KELUAR' ? 'DCP Keluar' : 'DCP Masuk'], ['Tanggal', x.tanggal + ' ' + x.jam], ['Film', x.film], ['Kode disk', x.kodeDisk], ['PH', x.ph], ['Format', x.format || '-'], ['Penyerah', x.penyerah], ['Penerima', x.penerima], ['Tujuan / asal', x.tujuan], ['Status', x.status], ['Keterangan', x.keterangan || '-'], ['Diverifikasi', x.verifiedAt ? (x.verifiedBy + ' · ' + dt(x.verifiedAt)) : 'Belum']];
-    var tables = [{ head: ['Komponen', 'Status', 'Keterangan'], rows: (x.kelengkapan || []).map(function (k) { return [k.name, k.status, k.note || '-'].map(sv); }) }];
-    recSave('DCP ' + (x.jenis === 'KELUAR' ? 'Keluar' : 'Masuk') + ' ' + x.id, pairs, tables, fmt, 'DCP_' + x.id);
+  function dcpOneExport(x, fmt, foto) {
+    var jn = x.jenis === 'KELUAR' ? 'DCP Keluar' : 'DCP Masuk';
+    var pairs = [['ID', x.id], ['Jenis', jn], ['Tanggal', x.tanggal + ' ' + x.jam], ['Film', x.film], ['Kode disk', x.kodeDisk], ['PH', x.ph], ['Format', x.format || '-'], ['Penyerah', x.penyerah], ['Penerima', x.penerima], ['Tujuan / asal', x.tujuan], ['Status', x.status], ['Keterangan', x.keterangan || '-'], ['Diverifikasi', x.verifiedAt ? (x.verifiedBy || '-') : 'Belum']];
+    var tables = [{ title: 'Kelengkapan', head: ['Komponen', 'Status', 'Keterangan'], rows: (x.kelengkapan || []).map(function (k) { return [k.name, k.status, k.note || '-'].map(sv); }) }];
+    var done = function (ph) { recSave(jn + ' ' + x.id, pairs, tables, fmt, 'DCP_' + x.id, { id: x.id, orient: 'portrait', photos: ph || [] }); };
+    if (fmt === 'pdf' && foto && foto.length && window.NovaPDF) {
+      toast('Menyiapkan PDF dan foto...');
+      collectPhotos([{ foto: foto, label: x.id }], 'dcp_photo_get').then(done).catch(function () { done([]); });
+    } else done([]);
   }
-  function ftOneExport(L, items, fmt) {
-    var pairs = [['ID', L.id], ['Tanggal', L.tanggal + ' ' + L.jam], ['Judul film', L.film], ['Studio', L.studio], ['Format', L.format], ['Server', L.server], ['Proyektor', L.projector], ['Tester', L.tester], ['Hasil', L.status], ['Masalah', L.masalah || '-'], ['Tindakan', L.tindakan || '-'], ['Catatan teknisi', L.catatanTeknisi || '-']];
-    var tables = [{ head: ['Item', 'Hasil', 'Keterangan'], rows: (L.checklist || []).map(function (c) {
+  /* Laporan DCP lengkap: SEMUA item satu laporan (batch) dalam satu PDF/Excel, termasuk kelengkapan & foto tiap item */
+  function dcpBatchExport(items, fmt) {
+    if (!items.length) return;
+    var f = items[0], jn = f.jenis === 'KELUAR' ? 'DCP Keluar' : 'DCP Masuk';
+    var tg = items.map(function (r) { return r.tanggal + ' ' + r.jam; }).sort();
+    var pairs = [['Jenis laporan', jn], ['Tanggal', tg[0] + (tg[tg.length - 1] !== tg[0] ? ' s.d. ' + tg[tg.length - 1] : '')], ['Jumlah item', items.length], ['Kode laporan (batch)', f.batchId || f.id], ['Dicetak oleh', uname()]];
+    var summary = { title: 'Ringkasan item', sheet: '', head: ['No', 'ID', 'Judul film', 'Kode disk', 'PH', 'Format', 'Status', 'Penyerah', 'Penerima', 'Tujuan / asal', 'Kelengkapan'],
+      rows: items.map(function (r, i) { return [i + 1, r.id, r.film, r.kodeDisk, r.ph, r.format || '-', r.status, r.penyerah, r.penerima, r.tujuan, kelOk(r.kelengkapan) ? 'Lengkap' : 'Belum lengkap'].map(sv); }) };
+    delete summary.sheet;
+    var tables = [summary];
+    items.forEach(function (r, i) {
+      var rows = (r.kelengkapan || []).map(function (k) { return [k.name, k.status, k.note || '-'].map(sv); });
+      if (r.keterangan) rows.push(['Keterangan item', '', r.keterangan].map(sv));
+      tables.push({ title: 'Item ' + (i + 1) + ': ' + r.film + ' (' + r.kodeDisk + ') - kelengkapan', sheet: 'Item ' + (i + 1) + ' ' + r.kodeDisk, head: ['Komponen', 'Status', 'Keterangan'], rows: rows });
+    });
+    var file = 'Laporan_DCP_' + (f.jenis === 'KELUAR' ? 'Keluar' : 'Masuk') + '_' + items.length + 'item_' + jkt();
+    var go = function (ph) { recSave('Laporan ' + jn + ' - ' + items.length + ' item', pairs, tables, fmt, file, { id: f.batchId || f.id, orient: 'landscape', photos: ph || [], mainSheet: 'Ringkasan' }); };
+    if (fmt === 'pdf' && window.NovaPDF) {
+      toast('Menyiapkan PDF: mengambil foto semua item...');
+      Promise.all(items.map(function (r) { return api('dcp_get', { id: r.id, quiet: true }).then(function (d) { return { foto: d.foto || [], label: r.id + ' ' + r.film }; }).catch(function () { return { foto: [], label: r.id }; }); }))
+        .then(function (en) { return collectPhotos(en, 'dcp_photo_get'); }).then(go).catch(function () { go([]); });
+    } else go([]);
+  }
+  function byId(a, b) { return String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0; }
+  /* panel "Item DCP dalam laporan ini": lihat, tambah, ubah, hapus tiap item + unduh laporan lengkap */
+  function renderBatch(host, x) {
+    if (!host) return;
+    var load = x.batchId ? api('dcp_list', { q: '', quiet: true }).then(function (l) {
+      var o = (l || []).filter(function (r) { return r.batchId === x.batchId; });
+      if (!o.some(function (r) { return r.id === x.id; })) o.push(x);
+      return o.sort(byId);
+    }) : Promise.resolve([x]);
+    load.then(function (items) {
+      var h = '<h3>Item DCP dalam laporan ini (' + items.length + ')</h3><div class="mdc-tbl stack" role="region" aria-label="Item DCP"><table><thead><tr><th>No</th><th>Judul film</th><th>Kode disk</th><th>Format</th><th>Status</th><th>Aksi</th></tr></thead><tbody>' +
+        items.map(function (r, i) {
+          return '<tr class="' + (r.id === x.id ? 'mi-cur' : '') + '"><td data-l="No">' + (i + 1) + '</td><td data-l="Judul film"><b>' + q(r.film) + '</b><small class="mdc-mono"> ' + q(r.id) + '</small></td><td data-l="Kode disk" class="mdc-mono">' + q(r.kodeDisk) + '</td><td data-l="Format">' + q(r.format || '-') + '</td><td data-l="Status">' + stDcp(r.status) + '</td><td data-l="Aksi" class="mi-acts">' +
+            (r.id === x.id ? '<span class="mdc-st mdc-info">Sedang dibuka</span>' : '<button type="button" class="btn sec" data-mi-open="' + q(r.id) + '">Buka</button>') +
+            (canWrite() ? '<button type="button" class="btn sec" data-mi-edit="' + q(r.id) + '">Ubah</button>' : '') +
+            (canDel() ? '<button type="button" class="btn danger" data-mi-del="' + q(r.id) + '">Hapus</button>' : '') + '</td></tr>';
+        }).join('') + '</tbody></table></div>' +
+        '<div class="mdc-foot mi-bfoot">' + (canWrite() ? '<button type="button" class="btn sec" id="mi-add2">+ Tambah item ke laporan ini</button>' : '') + (can('pdf') ? dlMenu('mib', 'Download laporan lengkap') : '') + '</div>';
+      host.innerHTML = h;
+      var by = {}; items.forEach(function (r) { by[r.id] = r; });
+      [].forEach.call(host.querySelectorAll('[data-mi-open]'), function (b) { b.onclick = function () { dcpDetail(b.getAttribute('data-mi-open')); }; });
+      [].forEach.call(host.querySelectorAll('[data-mi-edit]'), function (b) { b.onclick = function () { var r = by[b.getAttribute('data-mi-edit')]; dcpForm(r.jenis, r); }; });
+      [].forEach.call(host.querySelectorAll('[data-mi-del]'), function (b) {
+        b.onclick = function () {
+          var r = by[b.getAttribute('data-mi-del')];
+          if (!confirm('Hapus item ' + r.id + ' (' + r.film + ', ' + r.kodeDisk + ') dari laporan ini? Foto item ini ikut dihapus.')) return;
+          b.disabled = true;
+          api('dcp_del', { id: r.id }).then(function () {
+            toast('Item dihapus'); vDcp();
+            if (r.id === x.id) { var rest = items.filter(function (z) { return z.id !== r.id; }); if (rest.length) dcpDetail(rest[0].id); else closeM(); }
+            else renderBatch(host, x);
+          }).catch(function (e) { b.disabled = false; toast(e.message, 1); });
+        };
+      });
+      if ($('mi-add2')) $('mi-add2').onclick = function () {
+        var bid = x.batchId || S.mi.uid(), btn = this; btn.disabled = true;
+        /* laporan tunggal lama diikat ke batch dulu (data lama tidak berubah selain batchId) */
+        var pre = x.batchId ? Promise.resolve() : api('dcp_save', Object.assign({}, x, { batchId: bid }));
+        pre.then(function () { dcpForm(x.jenis, null, null, { batchId: bid, seed: x }); }).catch(function (e) { btn.disabled = false; toast(e.message, 1); });
+      };
+      if ($('mibxl')) $('mibxl').onclick = function () { dcpBatchExport(items, 'xlsx'); };
+      if ($('mibpdf')) $('mibpdf').onclick = function () { dcpBatchExport(items, 'pdf'); };
+    }).catch(function () { host.innerHTML = ''; });
+  }
+  function ftOneExport(L, items, fmt, foto) {
+    var pairs = [['ID', L.id], ['Tanggal', L.tanggal + ' ' + L.jam], ['Judul film', L.film], ['Studio', 'Studio ' + L.studio], ['Format', L.format], ['Server', L.server || '-'], ['Proyektor', L.projector || '-'], ['Tester', L.tester], ['Hasil', L.status], ['Masalah', L.masalah || '-'], ['Tindakan', L.tindakan || '-'], ['Hasil ulang', L.hasilUlang || '-'], ['Catatan teknisi', L.catatanTeknisi || '-']];
+    var tables = [{ title: 'Checklist pengetesan', head: ['Item', 'Hasil', 'Keterangan'], rows: (L.checklist || []).map(function (c) {
       var it = (items || []).filter(function (i) { return i.id === c.id; })[0];
       return [it ? it.label : c.id, c.val || '-', c.ket || '-'].map(sv);
     }) }];
-    recSave('Daily Film Testing ' + L.id, pairs, tables, fmt, 'Testing_' + L.id);
+    var done = function (ph) { recSave('Daily Film Testing ' + L.id, pairs, tables, fmt, 'Testing_' + L.id, { id: L.id, orient: 'portrait', photos: ph || [] }); };
+    if (fmt === 'pdf' && foto && foto.length && window.NovaPDF) {
+      toast('Menyiapkan PDF dan foto...');
+      collectPhotos([{ foto: foto, label: L.id }], 'ft_photo_get').then(done).catch(function () { done([]); });
+    } else done([]);
   }
 
   function dcpDetail(id) {
@@ -295,6 +420,7 @@
         return '<li><span>' + q(c.name) + '</span>' + (c.status === 'Lengkap' ? st('ok', c.status) : c.status === 'Tidak Diperlukan' ? st('na', c.status) : st('bad', c.status)) + (c.note ? '<em>' + q(c.note) + '</em>' : '') + '</li>';
       }).join('') + '</ul>';
       if (x.keterangan) h += '<h3>Keterangan</h3><p>' + q(x.keterangan) + '</p>';
+      h += '<div id="mi-sib" class="mi-sib" data-b="' + q(x.batchId || '') + '" data-id="' + q(x.id) + '"></div>';
       h += '<h3>Timeline</h3><ol class="mdc-tl"><li><b>Dibuat</b> oleh ' + q(x.createdBy || '-') + ' · ' + dt(x.createdAt) + '</li>' +
         (x.updatedAt && x.updatedAt !== x.createdAt ? '<li><b>Diubah</b> oleh ' + q(x.updatedBy || '-') + ' · ' + dt(x.updatedAt) + '</li>' : '') +
         (r.relasi ? '<li><b>Tertaut</b> dengan ' + (r.relasi.jenis === 'KELUAR' ? 'DCP Keluar' : 'DCP Masuk') + ' ' + q(r.relasi.id) + '</li>' : '') +
@@ -310,8 +436,9 @@
       modal(h);
       bindPhotoDel();
       loadPhotos();
-      if ($('mdcxl')) $('mdcxl').onclick = function () { dcpOneExport(x, 'xlsx'); };
-      if ($('mdcpdf')) $('mdcpdf').onclick = function () { dcpOneExport(x, 'pdf'); };
+      renderBatch($('mi-sib'), x);
+      if ($('mdcxl')) $('mdcxl').onclick = function () { dcpOneExport(x, 'xlsx', r.foto); };
+      if ($('mdcpdf')) $('mdcpdf').onclick = function () { dcpOneExport(x, 'pdf', r.foto); };
       var kindPh = x.jenis === 'KELUAR' ? 'Foto DCP Keluar' : 'Foto DCP Masuk';
       ['dcpphg', 'dcpphc'].forEach(function (id) { if ($(id)) $(id).onchange = function (e) { var fl = Array.prototype.slice.call(e.target.files || []); e.target.value = ''; sendPhotos(x.id, fl, kindPh, 'dcp_photo_save', function () { dcpDetail(x.id); }); }; });
       if ($('dcpedit')) $('dcpedit').onclick = function () { dcpForm(x.jenis, x); };
@@ -324,12 +451,14 @@
     }).catch(function (e) { toast(e.message, 1); });
   }
 
-  function dcpForm(jenis, row, keluarRef) {
+  function dcpForm(jenis, row, keluarRef, ctx) {
     getMeta().then(function (m) {
-      var x = row || {};
+      var sd = ctx && ctx.seed ? ctx.seed : null;
+      var x = row || (sd ? { tanggal: sd.tanggal, jam: sd.jam, penyerah: sd.penyerah, penerima: sd.penerima, tujuan: sd.tujuan, status: sd.status, format: sd.format } : {});
       var kel = (x.kelengkapan && x.kelengkapan.length) ? x.kelengkapan : KOMP_DEF.map(function (n) { return { name: n, status: 'Lengkap', note: '' }; });
       var lk = keluarRef || null;
-      var h = '<h3>' + (row ? 'Ubah ' : '') + (jenis === 'KELUAR' ? 'DCP Keluar' : 'DCP Masuk') + '</h3>' +
+      var h = '<h3>' + (row ? 'Ubah ' : (ctx && ctx.batchId ? 'Tambah item ke laporan: ' : '')) + (jenis === 'KELUAR' ? 'DCP Keluar' : 'DCP Masuk') + '</h3>' +
+        (ctx && ctx.batchId ? '<p class="mdc-note">Item baru ini akan masuk ke laporan yang sama dengan item <b class="mdc-mono">' + q(sd ? sd.id : '') + '</b>. Anda bisa menambahkan beberapa item sekaligus di bawah.</p>' : '') +
         '<form id="dcpf" class="mdc-form" novalidate>' +
         '<div class="mdc-sec">Jadwal</div>' +
         '<div class="mdc-row"><label>Tanggal<input name="tanggal" type="date" required value="' + q(x.tanggal || jkt()) + '"></label>' +
@@ -352,11 +481,12 @@
         '<div class="mdc-sec">Catatan dan foto</div>' +
         '<label>Keterangan umum<textarea name="keterangan" maxlength="2000" rows="2">' + q(x.keterangan || '') + '</textarea></label>' +
         '<label>Status<select name="status">' + STAT_DCP.map(function (s) { return '<option' + ((x.status || 'Diproses') === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></label>' +
-        photoBox('dcp') +
+        (row ? '' : '<div id="mi-host"></div>') + photoBox('dcp') +
         '<p class="mdc-err" id="dcperr" role="alert"></p>' +
         '<div class="mdc-foot"><button type="button" class="btn sec" id="dcpx">Batal</button><button type="submit" class="btn" id="dcpok">Simpan</button></div></form>';
       modal(h);
       var ph = photoBind('dcp');
+      var MI = (!x.id && S.mi && $('mi-host')) ? S.mi.mount($('mi-host'), { mode: 'dcp' }) : null;
       $('dcpx').onclick = closeM;
       $('dcpf').onsubmit = function (e) {
         e.preventDefault();
@@ -371,35 +501,53 @@
         var err = $('dcperr');
         if (bad.length) { err.textContent = 'Isi keterangan untuk: ' + bad.map(function (c) { return c.name; }).join(', ') + '.'; return; }
         if (!kelOk(p.kelengkapan) && !p.keterangan) { p.keterangan = p.kelengkapan.filter(function (c) { return c.status !== 'Lengkap' && c.status !== 'Tidak Diperlukan'; }).map(function (c) { return c.name + ': ' + c.note; }).join('; '); }
+        var ex = MI ? MI.read() : { items: [] };
+        if (ex.error) { err.textContent = ex.error; return; }
+        var batch = (ctx && ctx.batchId) ? ctx.batchId : (ex.items.length ? S.mi.uid() : '');
+        var items = [p].concat(ex.items.map(function (it) {
+          return Object.assign({}, p, { id: '', film: it.film, kodeDisk: it.kodeDisk, format: it.format, ph: it.ph, keterangan: it.keterangan, kelengkapan: it.kelengkapan, relasiId: '', batchId: batch });
+        }));
+        if (batch) {
+          p.batchId = batch;
+          var seen = {}, dup = '';
+          items.forEach(function (it, i) { var k = String(it.kodeDisk).toLowerCase(); if (seen[k] !== undefined && !dup) dup = 'Kode disk ' + it.kodeDisk + ' dipakai dua kali (item ' + (seen[k] + 1) + ' dan item ' + (i + 1) + ').'; seen[k] = i; });
+          if (dup) { err.textContent = dup; return; }
+        }
         err.textContent = '';
         $('dcpok').disabled = true;
-        var doSave = function () { api('dcp_save', p).then(function (id) {
-          var pf = ph.get();
-          closeM(); toast('DCP tersimpan'); vDcp();
-          if (pf && pf.length) sendPhotos(id, pf, jenis === 'KELUAR' ? 'Foto DCP Keluar' : 'Foto DCP Masuk', 'dcp_photo_save', function () { dcpDetail(id); });
-          else dcpDetail(id);
-        }).catch(function (er) { $('dcpok').disabled = false; err.textContent = er.message; }); };
-        if (jenis === 'KELUAR' && !x.id) {
-          api('dcp_list', { q: p.kodeDisk, quiet: true }).then(function (list) {
-            var open = (list || []).filter(function (r) { return r.jenis === 'KELUAR' && String(r.kodeDisk) === p.kodeDisk && !r.masukId; });
-            if (open.length) { $('dcpok').disabled = false; err.textContent = 'Kode disk ' + p.kodeDisk + ' masih belum kembali (' + open[0].id + ', film ' + open[0].film + '). Catat DCP Masuk terlebih dahulu.'; return; }
-            doSave();
-          }).catch(function (er) { $('dcpok').disabled = false; err.textContent = er.message; });
-        } else if (jenis === 'MASUK' && !x.id) {
-          api('dcp_list', { q: p.kodeDisk, quiet: true }).then(function (list) {
-            var norm = function (v) { return String(v || '').trim().toLowerCase(); };
-            var cand = (list || []).filter(function (r) { return r.jenis === 'KELUAR' && String(r.kodeDisk) === p.kodeDisk && !r.masukId; })
-              .sort(function (a, b) { return (String(a.tanggal) + ' ' + String(a.jam)).localeCompare(String(b.tanggal) + ' ' + String(b.jam)); });
-            var same = cand.filter(function (r) { return norm(r.film) === norm(p.film); });
-            var fail = function (m) { $('dcpok').disabled = false; err.textContent = m; };
-            if (!cand.length) return fail('Tidak ada DCP Keluar yang belum kembali untuk kode disk ' + p.kodeDisk + '. Catat DCP Keluar terlebih dahulu.');
-            if (!same.length) return fail('Judul film tidak sama dengan DCP Keluar yang terbuka untuk kode disk ' + p.kodeDisk + ' (' + cand[0].film + '). Judul dan kode disk harus sama.');
-            var pick = (lk && lk.id) ? same.filter(function (r) { return r.id === lk.id; })[0] : same[0];
-            if (!pick) return fail('DCP Keluar yang dipilih tidak cocok dengan judul dan kode disk ini.');
-            p.relasiId = pick.id;
-            doSave();
-          }).catch(function (er) { $('dcpok').disabled = false; err.textContent = er.message; });
-        } else { doSave(); }
+        var norm = function (v) { return String(v || '').trim().toLowerCase(); };
+        /* validasi tiap item terhadap data server sebelum ada yang disimpan */
+        var check = function (it, first) {
+          if (x.id) return Promise.resolve(it);
+          return api('dcp_list', { q: it.kodeDisk, quiet: true }).then(function (list) {
+            var open = (list || []).filter(function (r) { return r.jenis === 'KELUAR' && String(r.kodeDisk) === it.kodeDisk && !r.masukId; });
+            if (jenis === 'KELUAR') {
+              if (open.length) throw new Error('Kode disk ' + it.kodeDisk + ' masih belum kembali (' + open[0].id + ', film ' + open[0].film + '). Catat DCP Masuk terlebih dahulu.');
+              return it;
+            }
+            var cand = open.sort(function (a, b) { return (String(a.tanggal) + ' ' + String(a.jam)).localeCompare(String(b.tanggal) + ' ' + String(b.jam)); });
+            var same = cand.filter(function (r) { return norm(r.film) === norm(it.film); });
+            if (!cand.length) throw new Error('Tidak ada DCP Keluar yang belum kembali untuk kode disk ' + it.kodeDisk + '. Catat DCP Keluar terlebih dahulu.');
+            if (!same.length) throw new Error('Judul film tidak sama dengan DCP Keluar yang terbuka untuk kode disk ' + it.kodeDisk + ' (' + cand[0].film + '). Judul dan kode disk harus sama.');
+            var pick = (first && lk && lk.id) ? same.filter(function (r) { return r.id === lk.id; })[0] : same[0];
+            if (!pick) throw new Error('DCP Keluar yang dipilih tidak cocok dengan judul dan kode disk ini.');
+            it.relasiId = pick.id; return it;
+          });
+        };
+        var seq = function (arr, fn) { return arr.reduce(function (pr, it, i) { return pr.then(function () { return fn(it, i); }); }, Promise.resolve()); };
+        seq(items, function (it, i) { return check(it, i === 0).catch(function (er) { throw new Error(items.length > 1 ? 'Item ' + (i + 1) + ': ' + er.message : er.message); }); })
+          .then(function () {
+            /* satu item: dcp_save; banyak item: dcp_batch_save (atomik di server — semua tersimpan atau tidak sama sekali) */
+            if (items.length === 1) return api('dcp_save', items[0]).then(function (id) { return [id]; });
+            return api('dcp_batch_save', { kind: 'dcp', batchId: batch, items: items }).then(function (r) { return r.ids; });
+          })
+          .then(function (ids) {
+            var pf = ph.get(), id = ids[0];
+            closeM(); toast(ids.length > 1 ? ids.length + ' item DCP tersimpan dalam satu laporan' : (x.id ? 'DCP diperbarui' : 'DCP tersimpan')); vDcp();
+            if (pf && pf.length) sendPhotos(id, pf, jenis === 'KELUAR' ? 'Foto DCP Keluar' : 'Foto DCP Masuk', 'dcp_photo_save', function () { dcpDetail(id); });
+            else dcpDetail(id);
+          })
+          .catch(function (er) { $('dcpok').disabled = false; err.textContent = er.message; });
       };
     });
   }
@@ -433,35 +581,97 @@
   }
 
   /* ================= DAILY FILM TESTING ================= */
-  var FST = { q: '', status: '', studio: '' };
-  var FT_TMP = null;
+  /* ---- state: studio dipilih bisa banyak (default semua); data tiap studio TETAP terpisah di tampilan, rekap, dan ekspor ---- */
+  var FST = { q: '', status: '', from: '', to: '', sel: null };
+  var FT_TMP = null, FT_VIEW = null;
+  function studioKey(a, b) { var x = Number(a), y = Number(b); if (!isNaN(x) && !isNaN(y) && x !== y) return x - y; return String(a) < String(b) ? -1 : String(a) > String(b) ? 1 : 0; }
+  function studioList(data) {
+    var set = { '1': 1, '2': 1, '3': 1, '4': 1 };
+    try { JSON.parse(localStorage.getItem('nova_studios') || '[]').forEach(function (z) { if (z) set[String(z)] = 1; }); } catch (e) {}
+    (data || []).forEach(function (t) { if (t.studio !== '' && t.studio != null) set[String(t.studio)] = 1; });
+    return Object.keys(set).sort(studioKey);
+  }
+  function addStudioPrompt() {
+    var v = (prompt('Nomor atau nama studio yang ditambahkan (mis. 5):') || '').trim().slice(0, 20);
+    if (!v) return false;
+    if (/[<>"'&]/.test(v)) { toast('Nama studio tidak boleh memuat karakter < > " \' &.', 1); return false; }
+    try { var a = JSON.parse(localStorage.getItem('nova_studios') || '[]'); if (a.indexOf(v) < 0) a.push(v); localStorage.setItem('nova_studios', JSON.stringify(a)); } catch (e) {}
+    if (FST.sel && FST.sel.indexOf(v) < 0) FST.sel.push(v);
+    return true;
+  }
+  function ftStat(list) {
+    var today = jkt(), o = { n: list.length, passed: 0, failed: 0, retest: 0, hari: 0 };
+    list.forEach(function (t) { if (t.status === 'PASSED') o.passed++; else if (t.status === 'FAILED') o.failed++; else if (t.status === 'RETEST') o.retest++; if (t.tanggal === today) o.hari++; });
+    return o;
+  }
+  function ftTemuan(t, items) {
+    var f = (t.checklist || []).filter(function (c) { return c.val === 'FAIL'; }).map(function (c) {
+      var it = (items || []).filter(function (i) { return i.id === c.id; })[0]; return (it ? it.label : c.id) + (c.ket ? ': ' + c.ket : '');
+    });
+    if (t.masalah) f.push('Masalah: ' + t.masalah);
+    return f.join('; ');
+  }
 
   window.vFt = function () {
     var v = $('view');
-    Promise.all([api('ft_dash'), api('ft_list', { q: FST.q, status: FST.status, studio: FST.studio }), getMeta(), loadMyPerm()]).then(function (r) {
-      var d = r[0], list = r[1] || [];
-      var h = '<div class="mdc-top"><div class="mdc-kpis">' + kpi('Dites hari ini', d.hariIni, '') + kpi('PASSED', d.passed, 'ok') +
-        kpi('FAILED', d.failed, d.failed ? 'bad' : '') + kpi('RETEST', d.retest, d.retest ? 'warn' : '') + '</div>' +
-        '<div class="mdc-acts">' + (canWrite() ? '<button type="button" class="btn" id="ftnew">Mulai film testing</button>' : '') + dlMenu('ft') + '</div></div>';
-      if ((d.perluTindakan || []).length) {
-        h += '<div class="mdc-alert bad"><b>Perlu tindakan / tes ulang (' + d.perluTindakan.length + ')</b><ul>' +
-          d.perluTindakan.map(function (t) { return '<li><button type="button" class="mdc-link" data-ft-open="' + q(t.id) + '">' + q(t.film) + ' · ' + q(t.id) + '</button> ' + stFt(t.status) + '</li>'; }).join('') + '</ul></div>';
+    Promise.all([api('ft_list', { q: FST.q, status: FST.status, from: FST.from, to: FST.to }), getMeta(), loadMyPerm()]).then(function (r) {
+      var all = r[0] || [], studios = studioList(all);
+      var sel = (FST.sel || studios).filter(function (z) { return studios.indexOf(z) >= 0; });
+      if (!sel.length) sel = studios.slice();
+      var by = {}; studios.forEach(function (z) { by[z] = []; });
+      all.forEach(function (t) { by[String(t.studio)].push(t); });
+      var shown = []; sel.forEach(function (z) { shown = shown.concat(by[z]); });
+      var hasRe = {}; all.forEach(function (t) { if (t.parentId) hasRe[t.parentId] = 1; });
+      var perlu = shown.filter(function (t) { return (t.status === 'FAILED' || t.status === 'RETEST') && !hasRe[t.id]; });
+      var tot = ftStat(shown), allSel = sel.length === studios.length;
+      FT_VIEW = { sel: sel, by: by, studios: studios, items: (META && META.checklistItem) || [] };
+
+      var h = '<div class="mdc-studio-tabs" role="group" aria-label="Pilih studio (boleh lebih dari satu)">' +
+        '<button type="button" class="mdc-stab' + (allSel ? ' on' : '') + '" aria-pressed="' + allSel + '" data-stu-all="1">Semua studio</button>' +
+        studios.map(function (z) { var on = sel.indexOf(z) >= 0; return '<button type="button" class="mdc-stab' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-stu="' + q(z) + '">Studio ' + q(z) + ' <small>' + by[z].length + '</small></button>'; }).join('') +
+        (canWrite() ? '<button type="button" class="mdc-stab add" id="stuadd" aria-label="Tambah studio">+ Studio</button>' : '') + '</div>' +
+        '<div class="mdc-top"><div class="mdc-kpis">' + kpi('Studio dipilih', sel.length, '') + kpi('Total laporan', tot.n, '') + kpi('PASSED', tot.passed, 'ok') + kpi('FAILED', tot.failed, tot.failed ? 'bad' : '') + kpi('RETEST', tot.retest, tot.retest ? 'warn' : '') + kpi('Dites hari ini', tot.hari, '') + '</div>' +
+        '<div class="mdc-acts">' + (canWrite() ? '<button type="button" class="btn" id="ftnew">Mulai film testing</button>' : '') + (can('pdf') ? dlMenu('ft', 'Download laporan gabungan') : '') + '</div></div>';
+      if (perlu.length) {
+        h += '<div class="mdc-alert bad"><b>Perlu tindakan / tes ulang (' + perlu.length + ')</b><ul>' +
+          perlu.map(function (t) { return '<li><button type="button" class="mdc-link" data-ft-open="' + q(t.id) + '">Studio ' + q(t.studio) + ' · ' + q(t.film) + ' · ' + q(t.id) + '</button> ' + stFt(t.status) + '</li>'; }).join('') + '</ul></div>';
       }
       h += '<div class="mdc-filter"><input id="ftq" type="search" placeholder="Cari film atau ID" value="' + q(FST.q) + '" aria-label="Cari testing">' +
-        '<select id="fts" aria-label="Status"><option value="">Semua status</option>' + ['PASSED', 'FAILED', 'RETEST'].map(function (s) { return '<option' + (FST.status === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select>' +
-        '<select id="ftstu" aria-label="Studio"><option value="">Semua studio</option>' + ['1', '2', '3', '4'].map(function (s) { return '<option value="' + s + '"' + (FST.studio === s ? ' selected' : '') + '>Studio ' + s + '</option>'; }).join('') + '</select></div>';
-      h += '<div class="mdc-tbl ft" role="region" aria-label="Daftar testing"><table><thead><tr><th>ID</th><th>Tanggal</th><th>Film</th><th>Studio</th><th>Tester</th><th>Hasil</th></tr></thead><tbody>' +
-        (list.length ? list.map(function (t) {
-          return '<tr data-ft-open="' + q(t.id) + '" tabindex="0"><td class="mdc-mono">' + q(t.id) + (t.parentId ? ' <span class="mdc-st mdc-info">Retest</span>' : '') + '</td><td>' + q(t.tanggal) + ' ' + q(t.jam) + '</td><td>' + q(t.film) + '</td><td>Studio ' + q(t.studio) + '</td><td>' + q(t.tester) + '</td><td>' + stFt(t.status) + '</td></tr>';
-        }).join('') : '<tr><td colspan="6" class="mdc-empty">Belum ada laporan testing.</td></tr>') + '</tbody></table></div>';
+        '<select id="fts" aria-label="Status"><option value="">Semua status</option>' + ['PASSED', 'FAILED', 'RETEST'].map(function (z) { return '<option' + (FST.status === z ? ' selected' : '') + '>' + z + '</option>'; }).join('') + '</select>' +
+        '<label class="mdc-fd">Dari<input id="ftf1" type="date" value="' + q(FST.from) + '"></label><label class="mdc-fd">Sampai<input id="ftf2" type="date" value="' + q(FST.to) + '"></label>' +
+        ((FST.q || FST.status || FST.from || FST.to) ? '<button type="button" class="btn sec" id="ftrst">Reset</button>' : '') + '</div>';
+      /* rekap gabungan: satu baris per studio — angka tiap studio tidak dicampur */
+      h += '<section class="ft-rekap" aria-label="Rekap gabungan"><h3>Rekap gabungan (' + sel.length + ' studio)</h3><div class="mdc-tbl stack"><table><thead><tr><th>Studio</th><th>Total</th><th>PASSED</th><th>FAILED</th><th>RETEST</th><th>Hari ini</th></tr></thead><tbody>' +
+        sel.map(function (z) { var o = ftStat(by[z]); return '<tr><td data-l="Studio"><b>Studio ' + q(z) + '</b></td><td data-l="Total">' + o.n + '</td><td data-l="PASSED">' + o.passed + '</td><td data-l="FAILED">' + o.failed + '</td><td data-l="RETEST">' + o.retest + '</td><td data-l="Hari ini">' + o.hari + '</td></tr>'; }).join('') +
+        '</tbody><tfoot><tr><td data-l="Studio"><b>Total</b></td><td data-l="Total"><b>' + tot.n + '</b></td><td data-l="PASSED"><b>' + tot.passed + '</b></td><td data-l="FAILED"><b>' + tot.failed + '</b></td><td data-l="RETEST"><b>' + tot.retest + '</b></td><td data-l="Hari ini"><b>' + tot.hari + '</b></td></tr></tfoot></table></div></section>';
+      /* satu bagian per studio */
+      sel.forEach(function (z) {
+        var list = by[z], o = ftStat(list);
+        h += '<section class="ft-studio" data-studio="' + q(z) + '" aria-label="Studio ' + q(z) + '"><div class="ft-sh"><h3>Studio ' + q(z) + '</h3><span class="ft-sm">' + o.n + ' laporan · ' + o.passed + ' passed · ' + o.failed + ' failed · ' + o.retest + ' retest</span></div>' +
+          '<div class="mdc-tbl stack" role="region" aria-label="Daftar testing Studio ' + q(z) + '"><table><thead><tr><th>ID</th><th>Tanggal</th><th>Film</th><th>Tester</th><th>Hasil</th></tr></thead><tbody>' +
+          (list.length ? list.map(function (t) {
+            return '<tr data-ft-open="' + q(t.id) + '" tabindex="0"><td data-l="ID" class="mdc-mono">' + q(t.id) + (t.parentId ? ' <span class="mdc-st mdc-info">Retest</span>' : '') + '</td><td data-l="Tanggal">' + q(t.tanggal) + ' ' + q(t.jam) + '</td><td data-l="Film">' + q(t.film) + '</td><td data-l="Tester">' + q(t.tester) + '</td><td data-l="Hasil">' + stFt(t.status) + '</td></tr>';
+          }).join('') : '<tr><td colspan="5" class="mdc-empty">Belum ada laporan testing untuk Studio ' + q(z) + '.</td></tr>') + '</tbody></table></div></section>';
+      });
       v.innerHTML = h;
       var t;
       $('ftq').oninput = function (e) { FST.q = e.target.value; clearTimeout(t); t = setTimeout(vFt, 350); };
       $('fts').onchange = function (e) { FST.status = e.target.value; vFt(); };
-      $('ftstu').onchange = function (e) { FST.studio = e.target.value; vFt(); };
+      $('ftf1').onchange = function (e) { FST.from = e.target.value; vFt(); };
+      $('ftf2').onchange = function (e) { FST.to = e.target.value; vFt(); };
+      if ($('ftrst')) $('ftrst').onclick = function () { FST.q = ''; FST.status = ''; FST.from = ''; FST.to = ''; vFt(); };
+      [].forEach.call(v.querySelectorAll('[data-stu]'), function (b) {
+        b.onclick = function () {
+          var z = b.getAttribute('data-stu'), cur = (FST.sel || studios).filter(function (k) { return studios.indexOf(k) >= 0; });
+          var i2 = cur.indexOf(z); if (i2 >= 0) { if (cur.length === 1) { toast('Minimal satu studio harus dipilih.', 1); return; } cur.splice(i2, 1); } else cur.push(z);
+          cur.sort(studioKey); FST.sel = cur.length === studios.length ? null : cur; vFt();
+        };
+      });
+      if (v.querySelector('[data-stu-all]')) v.querySelector('[data-stu-all]').onclick = function () { FST.sel = null; vFt(); };
+      if ($('stuadd')) $('stuadd').onclick = function () { if (addStudioPrompt()) vFt(); };
       if ($('ftnew')) $('ftnew').onclick = function () { ftForm(null, null); };
-      $('ftxl').onclick = function () { ftExport('xlsx'); };
-      $('ftpdf').onclick = function () { ftExport('pdf'); };
+      if ($('ftxl')) $('ftxl').onclick = function () { ftExport('xlsx'); };
+      if ($('ftpdf')) $('ftpdf').onclick = function () { ftExport('pdf'); };
       document.querySelectorAll('[data-ft-open]').forEach(function (rw) {
         rw.onclick = function () { ftDetail(rw.dataset.ftOpen); };
         rw.onkeydown = function (e) { if (e.key === 'Enter') ftDetail(rw.dataset.ftOpen); };
@@ -501,8 +711,8 @@
       modal(h);
       bindPhotoDel();
       loadPhotos();
-      if ($('mdcxl')) $('mdcxl').onclick = function () { ftOneExport(L, items, 'xlsx'); };
-      if ($('mdcpdf')) $('mdcpdf').onclick = function () { ftOneExport(L, items, 'pdf'); };
+      if ($('mdcxl')) $('mdcxl').onclick = function () { ftOneExport(L, items, 'xlsx', r.foto); };
+      if ($('mdcpdf')) $('mdcpdf').onclick = function () { ftOneExport(L, items, 'pdf', r.foto); };
       if ($('ftph')) $('ftph').onchange = function (e) { sendPhotos(L.id, e.target.files, 'Dokumentasi', 'ft_photo_save', function () { ftDetail(L.id); }); };
       if ($('ftre')) $('ftre').onclick = function () { ftForm(null, L); };
       if ($('ftgo')) $('ftgo').onclick = function () { ftDetail($('ftgo').dataset.id); };
@@ -528,7 +738,11 @@
         '<div class="mdc-row"><label>Tanggal<input name="tanggal" type="date" required value="' + q(x.tanggal || (parent && parent.tanggal) || jkt()) + '"></label>' +
         '<label>Jam<input name="jam" type="time" required value="' + q(x.jam || jam()) + '"></label></div>' +
         '<label>Judul film<input name="film" required maxlength="200" value="' + q(x.film || (parent && parent.film) || '') + '"></label>' +
-        '<div class="mdc-row"><label>Studio<select name="studio">' + ['1', '2', '3', '4'].map(function (s) { return '<option value="' + s + '"' + ((x.studio || (parent && parent.studio)) == s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></label>' +
+        '<div class="mdc-row"><label>Studio<select name="studio">' + (function () {
+          var lockTo = parent ? String(parent.studio) : '', cur = String(x.studio || (parent && parent.studio) || (FST.sel && FST.sel[0]) || '1');
+          return studioList(FT_VIEW ? [].concat.apply([], Object.keys(FT_VIEW.by).map(function (k) { return FT_VIEW.by[k]; })) : []).filter(function (z) { return !lockTo || z === lockTo || z === cur; })
+            .map(function (z) { return '<option value="' + q(z) + '"' + (z === cur ? ' selected' : '') + '>Studio ' + q(z) + '</option>'; }).join('');
+        })() + '</select></label>' +
         '<label>Format<select name="format">' + FMT_FT.map(function (f) { return '<option' + ((x.format || (parent && parent.format) || '2D') === f ? ' selected' : '') + '>' + f + '</option>'; }).join('') + '</select></label></div>' +
         '<div class="mdc-row"><label>Server<input name="server" maxlength="80" value="' + q(x.server || (parent && parent.server) || '') + '"></label>' +
         '<label>Proyektor<input name="projector" maxlength="80" value="' + q(x.projector || (parent && parent.projector) || '') + '"></label></div>' +
@@ -600,5 +814,5 @@
     });
   }
   /* helper bersama untuk modul Pelaporan DCP (pelaporan.js) */
-  S.pel = { photoBox: photoBox, photoBind: photoBind, sendPhotos: sendPhotos, loadPhotos: loadPhotos, canWrite: canWrite, loadMyPerm: loadMyPerm, dlMenu: dlMenu, recSave: recSave, jkt: jkt, KOMP_DEF: KOMP_DEF };
+  S.pel = { collectPhotos: collectPhotos, uname: uname, photoBox: photoBox, photoBind: photoBind, sendPhotos: sendPhotos, loadPhotos: loadPhotos, canWrite: canWrite, loadMyPerm: loadMyPerm, dlMenu: dlMenu, recSave: recSave, jkt: jkt, KOMP_DEF: KOMP_DEF };
 })();

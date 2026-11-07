@@ -16,19 +16,19 @@ let fail = 0; const ok = (n, c, d) => { console.log((c ? 'PASS ' : 'FAIL ') + n 
   await page.evaluate(() => document.querySelector('#nav a[data-p="ac"]').click()); await page.waitForTimeout(800);
   const sb = await page.evaluate(() => { const a = document.querySelector('#nav a.on'); const s = getComputedStyle(a); return { txt: a.textContent.trim(), bg: s.backgroundColor, shadow: s.boxShadow, tr: s.transitionDuration }; });
   ok('item sidebar aktif = Daily Monitoring AC', sb.txt.indexOf('Daily Monitoring') === 0, sb.txt);
-  ok('highlight aktif solid #49337b (sesuai referensi)', sb.bg === 'rgb(73, 51, 123)', sb.bg);
+  ok('highlight aktif = putih translusen di atas ungu sidebar (NOVA DS v2)', /^rgba\(255, 255, 255, 0\.1/.test(sb.bg), sb.bg);
   ok('tanpa inset bar / garis', sb.shadow === 'none', sb.shadow);
-  ok('transisi menu aktif', /\.2s|0\.2s/.test(sb.tr), sb.tr);
+  ok('transisi menu aktif 150-250ms', /^0?\.(15|2|25)s/.test(sb.tr), sb.tr);
   // 2) indikator suhu
   const tc = await page.evaluate(() => {
-    const out = {}; ['ok','na2','bad','cold'].forEach(k => { const d = document.createElement('div'); d.className = 'dac-c ' + k; d.innerHTML = '<b>x</b><span class="dac-t">24</span><small>s</small>'; document.body.appendChild(d); const cs = getComputedStyle(d), t = getComputedStyle(d.querySelector('.dac-t')); out[k] = { shadow: cs.boxShadow, text: t.color }; d.remove(); });
+    const out = {}; ['ok','na2','bad','cold'].forEach(k => { const d = document.createElement('div'); d.className = 'dac-c ' + k; d.innerHTML = '<b>x</b><span class="dac-t">24</span><small>s</small>'; document.getElementById('app').appendChild(d); const cs = getComputedStyle(d), t = getComputedStyle(d.querySelector('.dac-t')); out[k] = { shadow: getComputedStyle(d.querySelector('b'), '::before').backgroundColor, text: t.color }; d.remove(); });
     const badge = document.createElement('span'); badge.className = 'ts-warm'; document.body.appendChild(badge); out.badge = getComputedStyle(badge).color; badge.remove();
     return out; });
-  ok('APPROVED (ok) hijau', tc.ok.shadow.includes('rgb(33, 139, 105)'), tc.ok.shadow);
-  ok('DATA KOSONG (na2) kuning', tc.na2.shadow.includes('217, 164, 0'), tc.na2.shadow);
-  ok('PANAS (bad) merah', tc.bad.shadow.includes('190, 18, 60'), tc.bad.shadow);
-  ok('DINGIN (cold) merah', tc.cold.shadow.includes('190, 18, 60'), tc.cold.shadow);
-  ok('badge status warm berwarna merah', tc.badge === 'rgb(190, 18, 60)', tc.badge);
+  ok('APPROVED (ok): titik status hijau', tc.ok.shadow.includes('rgb(31, 122, 92)'), tc.ok.shadow);
+  ok('DATA KOSONG (na2): titik emas', tc.na2.shadow.includes('199, 159, 69'), tc.na2.shadow);
+  ok('PANAS (bad): titik merah', tc.bad.shadow.includes('180, 18, 58'), tc.bad.shadow);
+  ok('DINGIN (cold): titik merah', tc.cold.shadow.includes('180, 18, 58'), tc.cold.shadow);
+  ok('badge status warm berwarna merah', tc.badge === 'rgb(180, 18, 58)', tc.badge);
   ok('tanpa error JavaScript', errs.length === 0, errs.slice(0,2).join(' | '));
   console.log(fail ? `\nGAGAL ${fail}` : '\nSEMUA LULUS'); await b.close(); process.exit(fail ? 1 : 0);
 })().catch(e => { console.error('FATAL', e.stack); process.exit(1); });

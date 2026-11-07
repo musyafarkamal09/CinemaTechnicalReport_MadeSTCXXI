@@ -79,18 +79,6 @@ html, body {
 #side .brand > div:not(.bmark) { min-width: 0; }
 #side .brand > div b { white-space: normal; }
 
-/* blok "Outlet terpilih" (ditambahkan di index.html) */
-#side .outlet-sel {
-  display: flex; align-items: center; gap: 10px; padding: 12px;
-  background: #33225a; border-radius: 7px; height: 55px; box-sizing: border-box; margin-top: 2px;
-}
-#side .outlet-sel .oi { color: #c7b7fc; width: 19px; height: 19px; flex: 0 0 auto; }
-#side .outlet-sel .oi svg { width: 19px; height: 19px; }
-#side .outlet-sel .ot { min-width: 0; flex: 1; }
-#side .outlet-sel small { display: block; color: #b6acce; font-size: 10px; line-height: 1.2; }
-#side .outlet-sel b { display: block; color: #fff; font-size: 11px; font-weight: 600; line-height: 1.25; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#side .outlet-sel .oc { color: #b6acce; width: 13px; height: 13px; flex: 0 0 auto; }
-
 #nav { display: flex; flex-direction: column; gap: 16px; }
 #nav .ng {
   color: #9889b5 !important; font-size: 9px !important; font-weight: 600 !important;
@@ -151,8 +139,7 @@ html, body {
 #cp { font-size: 10px; color: var(--faint); padding: 0 32px 18px; }
 
 /* ---------- 4. Kartu, panel, KPI ---------- */
-.card, #app .card, #app .mdc-kpi, #app .mdc-tbl, #app .mdc-fs, #app .dq, #app .dact,
-#app .dc-b, #app .ds-list, #app .dstu, #app .dsl-s, #app .panel {
+.card,#app .card,#app .mdc-kpi,#app .mdc-tbl,#app .mdc-fs,#app .dq,#app .dc-b,#app .dstu,#app .dsl-s,#app .panel{
   background: var(--surface) !important;
   border: 1px solid var(--line) !important;
   border-radius: 10px !important;
@@ -172,11 +159,11 @@ html, body {
 .btn:hover { background: var(--brand-hover); border-color: var(--brand-hover); }
 .btn:active { transform: translateY(1px); }
 .btn:focus-visible { outline: 2px solid var(--brand-300); outline-offset: 2px; }
-.btn.sec, .btn.ghost {
+.btn.sec{
   background: var(--surface) !important; color: var(--body) !important;
   border: 1px solid var(--line-2) !important;
 }
-.btn.sec:hover, .btn.ghost:hover { background: var(--surface-2) !important; border-color: var(--line-2) !important; }
+.btn.sec:hover{ background: var(--surface-2) !important; border-color: var(--line-2) !important; }
 .btn[disabled] { opacity: .5; cursor: not-allowed; }
 
 /* ---------- 6. Formulir ---------- */
@@ -217,9 +204,6 @@ label { font-size: 11px; font-weight: 600; color: var(--lbl); }
 #tabs { background: var(--surface) !important; border-top: 1px solid var(--line) !important; }
 #tabs a { font-size: 10px; color: var(--mute); }
 #tabs a.on { color: var(--brand-ink); font-weight: 600; }
-
-/* ---------- 11. Login ---------- */
-#login .lpane { background: var(--surface); }
 #login .lbox { border: 1px solid var(--line) !important; border-radius: 12px !important; box-shadow: none !important; background: var(--surface) !important; }
 
 /* ---------- 12. Responsif ---------- */
@@ -365,7 +349,6 @@ label { font-size: 11px; font-weight: 600; color: var(--lbl); }
 #mchart{border:0 !important;background:transparent !important;padding:0 !important;border-radius:0 !important;box-shadow:none !important;overflow:hidden}
 #mchart svg text{font-family:var(--font,Inter,system-ui,sans-serif) !important}
 #mchart .cgr{stroke:#ebe8f3 !important;stroke-width:1 !important;opacity:1 !important}
-#mchart .cax{display:none}
 #mchart .ctx,#mchart .cyl{fill:#8a86a0 !important;font-size:11px !important;font-weight:500 !important}
 #mchart .cyl{font-variant-numeric:tabular-nums}
 .mcc{margin:2px 0 4px}

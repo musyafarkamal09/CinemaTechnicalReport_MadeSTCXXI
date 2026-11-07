@@ -49,7 +49,7 @@
   };
 
   function thumb(p, i) {
-    return '<div><img src="' + p.url + '" alt=""><button type="button" class="x" data-i="' + i + '">×</button></div>';
+    return '<div><img src="' + String(p.url).replace(/"/g,'&quot;') + '" alt=""><button type="button" class="x" data-i="' + i + '">×</button></div>';
   }
 
   window.draftPhotosRestore = function (form) {

@@ -1,5 +1,5 @@
 const fs=require('fs'),vm=require('vm');
-const src=fs.readFileSync('/home/claude/release/CinemaTechnicalReport_FINAL/frontend/app.js','utf8');
+const src=fs.readFileSync(''+require('path').join(__dirname,'..','app.js')+'','utf8');
 function fnSrc(name){const i=src.indexOf('function '+name+'(');if(i<0)throw new Error('missing '+name);let d=0,j=src.indexOf('{',i);for(;j<src.length;j++){if(src[j]==='{')d++;else if(src[j]==='}'){d--;if(d===0)break;}}return src.slice(i,j+1);}
 const store={};
 const LS={get length(){return Object.keys(store).length},key:i=>Object.keys(store)[i]??null,getItem:k=>store[k]??null,setItem:(k,v)=>{store[k]=String(v)},removeItem:k=>{delete store[k]}};

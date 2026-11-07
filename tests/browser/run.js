@@ -1,4 +1,4 @@
-const { chromium } = require('playwright');
+const { chromium } = require('/home/claude/.npm-global/lib/node_modules/playwright');
 const { install } = require('./mockapi');
 const MODS = ['dashboard','pengumuman','ats','work','patrol','issue','meter','ac','purchase','film','dcp','ftest','pel','glosarium','penyimpanan','pengguna','audit','pengaturan'];
 const W = process.argv[2] || 'desktop';

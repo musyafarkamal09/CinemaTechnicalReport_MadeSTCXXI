@@ -69,7 +69,7 @@ check('meterDiff_ null on reset (no negative)', dd.diffs.lwbp===null, JSON.strin
 // 8. Notification hook wraps H.rep_save
 check('H.rep_save wrapped by hook', typeof ctx.H.rep_save==='function');
 // Version string
-check('doGet version string matches current build (v12-notif-cache)', /versi: v12-notif-cache/.test(src));
+check('doGet version string matches current build (v16-refinement)', /versi: v16-refinement/.test(src));
 
 const pass=r.filter(x=>x.pass).length;
 console.log(r.map(x=>(x.pass?'PASS ':'FAIL ')+x.name+(x.detail&&!x.pass?' :: '+x.detail:'')).join('\n'));

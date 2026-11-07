@@ -88,6 +88,28 @@
     P.recSave('Laporan Pelaporan DCP', [['Jumlah transaksi', rows.length], ['Tanggal cetak', P.jkt()]], [{ head: pick(head), rows: body.map(pick) }], fmt, 'Laporan_Pelaporan_DCP_STCXXI_' + P.jkt());
   }
 
+  /* Laporan multi-item: semua item (batchId sama) dalam SATU PDF/Excel — ringkasan, kelengkapan tiap item, foto tiap item */
+  function plBatchExport(rows, fmt) {
+    rows = sortAsc(rows);
+    if (!rows.length) return;
+    var f = rows[0], sv = function (v) { return v == null ? '' : String(v); };
+    var jen = rows.every(function (r) { return r.jenis === f.jenis; }) ? (f.jenis === 'KELUAR' ? 'DCP Keluar' : 'DCP Masuk') : 'DCP Masuk/Keluar';
+    var pairs = [['Jenis laporan', jen], ['Tanggal', f.tanggal + ' ' + f.jam], ['Jumlah item', rows.length], ['Pelapor', f.pelapor || '-'], ['Kode laporan (batch)', f.batchId || f.id], ['Dicetak oleh', P.uname()]];
+    var tables = [{ title: 'Ringkasan item', head: ['No', 'ID', 'Jenis', 'Kode disk', 'Judul film', 'PH', 'Jenis DCP', 'Outlet', 'Tujuan / asal', 'Penerima', 'Pengirim', 'Status'],
+      rows: rows.map(function (r, i) { return [i + 1, r.id, r.jenis === 'KELUAR' ? 'Keluar' : 'Masuk', r.kodeDisk, r.film, r.ph, r.jenisDcp || 'Besar', r.outlet, r.jenis === 'KELUAR' ? r.outletTujuan : r.asalDari, r.penerima, r.namaPengirim, statusOf(r)].map(sv); }) }];
+    rows.forEach(function (r, i) {
+      var kr = (r.kelengkapan || []).map(function (c) { return [c.name, c.status, c.note || '-'].map(sv); });
+      if (r.keterangan) kr.push(['Keterangan item', '', r.keterangan]);
+      tables.push({ title: 'Item ' + (i + 1) + ': ' + r.film + ' (' + r.kodeDisk + ') - kelengkapan', sheet: 'Item ' + (i + 1) + ' ' + r.kodeDisk, head: ['Komponen', 'Status', 'Keterangan'], rows: kr.length ? kr : [['Tidak diisi', '', '']] });
+    });
+    var file = 'Laporan_Pelaporan_DCP_' + rows.length + 'item_' + P.jkt();
+    var go = function (ph) { P.recSave('Laporan Pelaporan DCP - ' + rows.length + ' item', pairs, tables, fmt, file, { id: f.batchId || f.id, orient: 'landscape', photos: ph || [], mainSheet: 'Ringkasan' }); };
+    if (fmt === 'pdf' && window.NovaPDF) {
+      toast('Menyiapkan PDF: mengambil foto semua item...');
+      P.collectPhotos(rows.map(function (r) { return { foto: r.foto || [], label: r.id + ' ' + r.film }; }), 'dcp_photo_get').then(go).catch(function () { go([]); });
+    } else go([]);
+  }
+
   /* ---------- daftar utama ---------- */
   window.vPel = function () {
     var v = $('view');
@@ -200,6 +222,24 @@
       (acts ? '<div class="pel-acts">' + acts + '</div>' : '') + '</article></div>';
   }
 
+  function batchIds(g) { var m = {}; g.hist.forEach(function (r) { if (r.batchId) m[r.batchId] = 1; }); return Object.keys(m); }
+  function batchHtml(g) {
+    return batchIds(g).map(function (b, bi) {
+      var rs = sortAsc(ROWS.filter(function (r) { return r.batchId === b; }));
+      if (rs.length < 2) return '';
+      return '<section class="mi-sib" aria-label="Laporan multi-item"><h3>Laporan multi-item (' + rs.length + ' item)</h3><ul class="mi-sibl">' + rs.map(function (r) {
+        return '<li><button type="button" class="btn sec" data-pel-open="' + q(r.kodeDisk) + '">' + q(r.film) + ' · ' + q(r.kodeDisk) + ' · ' + (r.jenis === 'KELUAR' ? 'Keluar' : 'Masuk') + '</button></li>';
+      }).join('') + '</ul><div class="mdc-foot mi-bfoot">' + P.dlMenu('plb' + bi, 'Download laporan lengkap') + '</div></section>';
+    }).join('');
+  }
+  function bindBatch(g) {
+    [].forEach.call(document.querySelectorAll('#mbox [data-pel-open]'), function (b) { b.onclick = function () { openDetail(b.getAttribute('data-pel-open')); }; });
+    batchIds(g).forEach(function (b, bi) {
+      var rs = ROWS.filter(function (r) { return r.batchId === b; });
+      if ($('plb' + bi + 'xl')) $('plb' + bi + 'xl').onclick = function () { plBatchExport(rs, 'xlsx'); };
+      if ($('plb' + bi + 'pdf')) $('plb' + bi + 'pdf').onclick = function () { plBatchExport(rs, 'pdf'); };
+    });
+  }
   function openDetail(kd) {
     var g = groupOf(kd);
     if (!g) { toast('Kode disk tidak ditemukan.', 1); return; }
@@ -207,7 +247,7 @@
     var h = '<h3>Kode disk ' + q(g.kd) + '</h3>' +
       '<p class="mdc-note">' + q(g.film) + ' · PH ' + q(g.ph) + '</p>' +
       '<div class="pel-sum">Posisi saat ini: <span class="mdc-st mdc-' + (p.cls === 'ok' ? 'selesai' : 'warn') + '">' + q(p.txt) + '</span> · ' + g.hist.length + ' transaksi</div>' +
-      '<div class="pel-tl" aria-label="Riwayat DCP">' + g.hist.map(function (r) { return nodeHtml(r, enabled); }).join('') + '</div>' +
+      '<div class="pel-tl" aria-label="Riwayat DCP">' + g.hist.map(function (r) { return nodeHtml(r, enabled); }).join('') + '</div>' + batchHtml(g) +
       '<div class="mdc-foot"><button type="button" class="btn sec" id="plx">Tutup</button>' +
       (enabled ? '<button type="button" class="btn sec" id="plAddM">+ Masuk</button><button type="button" class="btn" id="plAddK">+ Keluar</button>' : '') + '</div>';
     modal(h);
@@ -216,6 +256,7 @@
     if (a) a.onclick = function () { openForm('MASUK', null, g.kd); };
     if (b) b.onclick = function () { openForm('KELUAR', null, g.kd); };
     P.loadPhotos();
+    bindBatch(g);
     document.querySelectorAll('#mbox [data-pel-act]').forEach(function (btn) {
       btn.onclick = function () { act(btn.getAttribute('data-pel-act'), btn.getAttribute('data-id'), g.kd); };
     });
@@ -364,10 +405,11 @@
     h += '<p class="mdc-note" id="plInfo"></p>' +
       '<div class="pel-auto"><span>Tanggal & waktu: otomatis saat disimpan</span><span>Pelapor: ' + q(myName()) + '</span></div>' +
       '<label>Catatan<textarea name="keterangan" maxlength="2000" rows="3">' + q(rec ? rec.keterangan : '') + '</textarea></label>' +
-      jenisBlock(rec) + (rec ? '' : P.photoBox('pel')) + '<p class="mdc-err" id="plerr" role="alert"></p>' +
+      jenisBlock(rec) + (rec || kd ? '' : '<div id="mi-host"></div>') + (rec ? '' : P.photoBox('pel')) + '<p class="mdc-err" id="plerr" role="alert"></p>' +
       '<div class="mdc-foot"><button type="button" class="btn sec" id="plcancel">Batal</button><button type="submit" class="btn" id="plsave">Simpan laporan</button></div></form>';
     modal(h);
     var pb = rec ? null : P.photoBind('pel');
+    var MI = (!rec && !kd && S.mi && $('mi-host')) ? S.mi.mount($('mi-host'), { mode: 'pel' }) : null;
     var f = $('plf'), saved = rec;
 
     function sync() {
@@ -433,18 +475,32 @@
       if (!body.kodeDisk) { toast('Kode disk wajib diisi.', 1); return; }
       if (!body.outlet) { toast(masuk ? 'Outlet DCP masuk tidak valid.' : 'DCP belum berada di outlet ini. Catat DCP Masuk terlebih dahulu.', 1); return; }
       if (!masuk && !body.outletTujuan) { toast('Pilih outlet tujuan.', 1); return; }
+      var ex = MI ? MI.read() : { items: [] };
+      if (ex.error) { $('plerr').textContent = ex.error; return; }
+      var batch = ex.items.length ? S.mi.uid() : '';
+      var items = [body].concat(ex.items.map(function (it) {
+        return Object.assign({}, body, { kodeDisk: it.kodeDisk, film: it.film, ph: it.ph, jenisDcp: it.jenisDcp, kelengkapan: it.kelengkapan, keterangan: it.keterangan, batchId: batch });
+      }));
+      if (batch) {
+        body.batchId = batch;
+        var seen = {}, dup = '';
+        items.forEach(function (it, i) { var k = String(it.kodeDisk).toLowerCase(); if (seen[k] !== undefined && !dup) dup = 'Kode disk ' + it.kodeDisk + ' dipakai dua kali (item ' + (seen[k] + 1) + ' dan item ' + (i + 1) + ').'; seen[k] = i; });
+        if (dup) { $('plerr').textContent = dup; return; }
+      }
       var btn = $('plsave'); btn.disabled = true;
       if (saved) body.id = saved.id;
-      api('pel_save', body).then(function (id) {
-        saved = { id: id };
+      /* satu item: pel_save; banyak item: dcp_batch_save (atomik di server — tidak ada laporan setengah jadi) */
+      var call = items.length === 1
+        ? api('pel_save', items[0]).then(function (id) { return [id]; })
+        : api('dcp_batch_save', { kind: 'pel', batchId: batch, items: items }).then(function (r) { return r.ids; });
+      call.then(function (ids) {
+        var id = ids[0]; saved = { id: id };
         var files = pb ? pb.get() : [];
-        var finish = function () { toast(rec ? 'Laporan diperbarui.' : 'Laporan tersimpan.'); reload().then(function () { refresh(body.kodeDisk); }); };
-        if (files.length) {
-          P.sendPhotos(id, files, 'Foto DCP ' + (masuk ? 'Masuk' : 'Keluar'), 'dcp_photo_save', finish);
-        } else finish();
+        var finish = function () { toast(rec ? 'Laporan diperbarui.' : (ids.length > 1 ? ids.length + ' item DCP tersimpan dalam satu laporan.' : 'Laporan tersimpan.')); reload().then(function () { refresh(body.kodeDisk); }); };
+        if (files.length) P.sendPhotos(id, files, 'Foto DCP ' + (masuk ? 'Masuk' : 'Keluar'), 'dcp_photo_save', finish); else finish();
       }).catch(function (er) {
         btn.disabled = false;
-        toast(er.message, 1);
+        toast(er.message, 1); $('plerr').textContent = er.message;
       });
     };
   }

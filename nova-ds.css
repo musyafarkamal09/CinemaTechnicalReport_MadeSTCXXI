@@ -1,0 +1,231 @@
+/* ==========================================================================
+   NOVA Design System v2 — "Ruang Proyeksi"
+   Dimuat paling akhir. Hanya menata tampilan: tidak mengubah ID, kelas yang dipakai JS, atau alur kerja.
+
+   Mode: Operate (alat kerja harian teknisi dan admin outlet). Identitas hadir lewat empat hal, bukan dekorasi:
+     1. Tipe     — Inter (standar Figma) di-tune: angka tabular, "a" tunggal (cv11), skala tetap 12/13/14/16/20/24.
+     2. Palet    — violet NOVA + SATU aksen emas dari logo. Netral berwarna violet (bukan abu kebiruan).
+     3. Kepadatan— tabel 13px, baris 44px, ringkasan angka sebagai satu "ledger", bukan deretan kartu ikon.
+     4. Signature— CUE MARK: cincin emas kecil, tanda pergantian reel di pojok frame film. Dipakai HANYA untuk
+                   penanda keadaan: menu aktif, studio terpilih, peringatan terbuka. Kosong = tidak aktif, terisi = aktif.
+   Struktur Figma (sidebar 244px, topbar 72px, padding konten 32px, radius 10/8) tetap dipertahankan.
+   ========================================================================== */
+
+/* ---------- 1. Token ---------- */
+:root, :root[data-theme=light] {
+  --canvas: #f6f4f9; --surface: #ffffff; --surface-2: #faf9fc;
+  --line: #e8e4ef; --line-2: #dcd7e8; --line-soft: #f0edf5;
+  --ink: #1b1630; --body: #2b2542; --lbl: #47415f; --mute: #6a6482; --faint: #736d8b;
+  --brand: #6a4bdc; --brand-hover: #5a3cc8; --brand-soft: #efebfc; --brand-ink: #5a3cc8; --brand-ring: #e3dcfa; --brand-300: #bcaaf3;
+  --cue: #c79f45; --cue-ink: #84601a; --on-brand: #fff;
+  --ok: #1f7a5c; --ok-bg: #ebf7f1; --warn: #8f6209; --warn-bg: #fff6e2; --err: #b4123a; --err-bg: #fff0f2; --err-bd: #f6c6ce;
+  --info: #2a62c7; --info-bg: #e9f0fd;
+  --shadow-card: 0 1px 2px rgba(27, 22, 48, .04);
+  --r-s: 6px; --r-m: 8px; --r-l: 10px;
+  --t-xs: 12px; --t-sm: 13px; --t-md: 14px; --t-lg: 16px; --t-xl: 20px; --t-2xl: 24px;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+}
+:root[data-theme=dark] {
+  --canvas: #100c20; --surface: #181230; --surface-2: #1e1739; --line: #2d2550; --line-2: #3a3162; --line-soft: #251e44;
+  --ink: #f2eeff; --body: #d3cdea; --lbl: #bdb7dc; --mute: #a29bc6; --faint: #8e87b5;
+  --brand: #9a82f2; --brand-hover: #ad98f7; --brand-soft: #2a2057; --brand-ink: #cabdff; --brand-ring: #2a2057; --brand-300: #8b71e7;
+  --cue: #d9b45a; --cue-ink: #e6c978; --on-brand: #140d2b;
+  --ok: #52c08b; --warn: #e6c274; --err: #ff8f95; --info: #86abf8;
+}
+
+/* ---------- 2. Tipe dasar ---------- */
+html { -webkit-text-size-adjust: 100%; }
+body, #app { font-size: var(--t-md); line-height: 1.5; font-feature-settings: "cv11", "ss03", "calt"; text-rendering: optimizeLegibility; }
+h1, h2, h3 { text-wrap: balance; letter-spacing: -.012em; color: var(--ink); }
+p, li { text-wrap: pretty; }
+td, th, .n, strong.n, .mdc-kpi b, .dx-k .n, time, .mdc-mono, input[type=date], input[type=number] { font-variant-numeric: tabular-nums; font-feature-settings: "tnum", "cv11"; }
+.mdc-mono { font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace; font-size: 12.5px; letter-spacing: 0; font-feature-settings: "zero"; }
+
+/* Permukaan browser: seleksi, caret, scrollbar, fokus, tautan */
+::selection { background: color-mix(in srgb, var(--cue) 38%, transparent); color: inherit; }
+input, textarea, select { caret-color: var(--brand); accent-color: var(--brand); }
+* { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+*::-webkit-scrollbar-thumb:hover { background: var(--faint); background-clip: padding-box; border: 2px solid transparent; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+a { text-underline-offset: 3px; text-decoration-thickness: 1px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+
+/* ---------- 3. Cue mark (signature) ---------- */
+#nav a.on::after,.mdc-stab::before,.dx-sum i,.dx-k.warn .l::before{
+  content: ""; display: inline-block; box-sizing: border-box; width: 9px; height: 9px; border-radius: 50%;
+  border: 1.5px solid var(--cue); background: transparent; flex: none;
+}
+.mdc-stab.on::before,.dx-sum.warn i,.dx-k.warn .l::before{ background: var(--cue); }
+
+/* ---------- 4. Shell: sidebar, topbar, judul halaman ---------- */
+#side { background: var(--side); }
+#nav .ng { text-transform: none; letter-spacing: 0; font-size: var(--t-xs); font-weight: 600; color: rgba(255, 255, 255, .52); margin: 20px 12px 6px; }
+#nav a { font-size: var(--t-sm); font-weight: 500; color: rgba(255, 255, 255, .78); transition: background .15s var(--ease), color .15s; }
+#nav a:hover { background: rgba(255, 255, 255, .07); color: #fff; }
+#nav a.on { background: rgba(255, 255, 255, .11) !important; color: #fff; font-weight: 600; }
+#nav a.on::after { margin-left: auto; position: static; transform: none; box-shadow: none; opacity: 1; }
+.bname b { letter-spacing: .04em; }
+.bname .bout, .bname .bout2 { font-size: 11px; }
+
+#main > header { background: var(--surface) !important; }
+#clock { font-size: var(--t-xs); color: var(--mute); font-variant-numeric: tabular-nums; }
+#conn { font-size: var(--t-xs); }
+.ssrch input, #ssearch { font-size: var(--t-sm); }
+.uh-who b { font-size: var(--t-sm); }
+.badge { font-size: 11px; }
+
+#app #phero h1 { font-size: var(--t-2xl); line-height: 1.2; font-weight: 700; letter-spacing: -.015em; }
+#app #phero p { font-size: var(--t-sm); color: var(--mute); max-width: 68ch; }
+#app #phero .ph-t i { display: none; }
+
+/* ---------- 5. Tombol ---------- */
+.btn { color: var(--on-brand); min-height: 40px; font-size: var(--t-sm); font-weight: 600; letter-spacing: 0; border-radius: var(--r-m); background: var(--brand); border-color: var(--brand); box-shadow: none; transition: background .15s var(--ease), border-color .15s var(--ease), transform .08s; }
+.btn:hover { background: var(--brand-hover); border-color: var(--brand-hover); }
+.btn.sec{ background: var(--surface) !important; color: var(--ink) !important; border-color: var(--line-2) !important; }
+.btn.sec:hover{ background: var(--surface-2) !important; border-color: var(--faint) !important; }
+.btn.danger{ background: var(--surface) !important; color: var(--err) !important; border-color: var(--err-bd) !important; }
+.btn.danger:hover{ background: var(--err-bg) !important; }
+.btn[disabled], .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+/* ---------- 6. Formulir ---------- */
+input, select, textarea { font-size: var(--t-sm); min-height: 40px; border-radius: var(--r-m); border-color: var(--line-2); color: var(--ink); }
+input::placeholder, textarea::placeholder { color: var(--faint); }
+input:hover, select:hover, textarea:hover { border-color: var(--faint); }
+input:focus, select:focus, textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-ring); outline: none; }
+input:disabled, select:disabled, textarea:disabled { background: var(--surface-2); color: var(--mute); cursor: not-allowed; }
+label, #app .mdc-form label, #modal .mdc-form label { font-size: var(--t-xs); font-weight: 600; color: var(--lbl) !important; }
+.fl, .mdc-fd { font-size: var(--t-xs); font-weight: 600; color: var(--lbl); }
+
+/* ---------- 7. Kartu, tabel, status ---------- */
+.card, #app .card, #app .mdc-tbl, #app .mdc-fs, #app .panel { border-radius: var(--r-l) !important; border-color: var(--line) !important; box-shadow: none !important; }
+#app .empty { border: 1px dashed var(--line-2) !important; border-radius: var(--r-l); background: transparent !important; padding: 36px 20px; text-align: center; color: var(--mute); font-size: var(--t-sm); }
+#app .empty b { display: block; color: var(--ink); font-size: var(--t-md); font-weight: 600; margin-bottom: 4px; }
+
+#app .mdc-tbl { overflow: auto; background: var(--surface); }
+#app .mdc-tbl table { width: 100%; border-collapse: collapse; }
+#app .mdc-tbl th { font-size: var(--t-xs); font-weight: 600; color: var(--mute); text-transform: none; letter-spacing: 0; background: var(--surface-2); padding: 10px 14px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+#app .mdc-tbl td { font-size: var(--t-sm); color: var(--body); padding: 12px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+#app .mdc-tbl tbody tr:last-child td { border-bottom: 0; }
+#app .mdc-tbl tbody tr { transition: background .12s; }
+#app .mdc-tbl tbody tr[data-dcp-open], #app .mdc-tbl tbody tr[data-ft-open] { cursor: pointer; }
+#app .mdc-tbl tbody tr:hover { background: var(--surface-2); }
+#app .mdc-tbl tbody tr:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+#app .mdc-tbl tfoot td { background: var(--surface-2); border-top: 1px solid var(--line-2); font-weight: 600; color: var(--ink); }
+#app .mdc-tbl .mdc-empty { text-align: center; color: var(--mute); padding: 28px 14px; }
+
+#app .mdc-st, .st, .pri { font-size: 11.5px !important; font-weight: 600 !important; border-radius: 999px !important; padding: 2px 10px !important; letter-spacing: 0 !important; }
+
+/* Ringkasan angka (DCP, Film Testing): satu ledger berhias garis tipis, bukan deretan kartu */
+:root[data-theme] #app .mdc-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r-l); overflow: hidden; flex: 1 1 auto; }
+:root[data-theme] #app .mdc-kpis:has(> :nth-child(6)) { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+:root[data-theme] #app .mdc-kpi { background: var(--surface) !important; border: 0 !important; border-radius: 0 !important; padding: 14px 18px !important; display: flex; flex-direction: column; gap: 2px; box-shadow: none !important; }
+:root[data-theme] #app .mdc-kpi small { order: 1; font-size: var(--t-xs); color: var(--mute); font-weight: 500; }
+:root[data-theme] #app .mdc-kpi b { order: 2; font-size: var(--t-xl); line-height: 1.2; font-weight: 650; letter-spacing: -.02em; color: var(--ink); }
+:root[data-theme] #app .mdc-kpi.ok b { color: var(--ok); } #app .mdc-kpi.bad b { color: var(--err); } #app .mdc-kpi.warn b { color: var(--warn); }
+
+/* Chip studio: cincin kosong = tidak dipilih, terisi = dipilih (cue mark) */
+.mdc-studio-tabs { gap: 6px; }
+.mdc-stab { min-height: 36px; padding: 0 14px 0 12px; border-radius: var(--r-m); font-size: var(--t-sm); font-weight: 600; color: var(--body); background: var(--surface); border: 1px solid var(--line-2); transition: background .15s var(--ease), border-color .15s; }
+.mdc-stab:hover { border-color: var(--faint); }
+.mdc-stab small { background: transparent; padding: 0; color: var(--mute); font-weight: 500; font-variant-numeric: tabular-nums; }
+.mdc-stab.on { background: var(--brand-soft); border-color: var(--brand); color: var(--brand-ink); }
+.mdc-stab.on small { background: transparent; color: var(--brand-ink); }
+.mdc-stab.add { border-style: dashed; }
+.mdc-stab.add::before { display: none; }
+
+#app .mdc-alert { border-radius: var(--r-l); border: 1px solid var(--line-2); background: var(--surface); color: var(--body); padding: 14px 16px; font-size: var(--t-sm); }
+#app .mdc-alert.bad, #app .mdc-alert { border-left-width: 1px; }
+#app .mdc-alert.bad { background: var(--err-bg); border-color: var(--err-bd); }
+#app .mdc-alert b { display: block; color: var(--ink); font-size: var(--t-md); margin-bottom: 4px; }
+#app .mdc-alert ul { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.mdc-link { background: none; border: 0; padding: 0; font: inherit; color: var(--brand-ink); text-decoration: underline; cursor: pointer; text-align: left; }
+
+/* ---------- 8. Dashboard ---------- */
+#app .dx { display: flex; flex-direction: column; gap: 20px; padding-top: 28px; }
+#app .dx-top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 20px; margin: 0; }
+#app .dx-top small { display: block; margin-bottom: 4px; font-size: var(--t-sm); color: var(--mute); text-transform: none; letter-spacing: 0; }
+#app .dx-top h1 { margin: 0; font-size: var(--t-2xl); line-height: 1.2; font-weight: 700; letter-spacing: -.015em; }
+#app .dx-sum { display: inline-flex; align-items: center; gap: 9px; margin: 0; padding: 7px 13px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--surface); font-size: var(--t-sm); font-weight: 500; color: var(--body); box-shadow: none; }
+#app .dx-sum.good i { border-color: var(--ok); background: var(--ok); }
+#app .dx-qg { display: flex; flex-wrap: wrap; gap: 8px; }
+#app .dx-q { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px 0 12px; border: 1px solid var(--line-2); border-radius: var(--r-m); background: var(--surface); box-shadow: none; font-size: var(--t-sm); font-weight: 600; color: var(--ink); text-align: left; transition: background .15s var(--ease), border-color .15s; }
+#app .dx-q:hover { background: var(--surface-2); border-color: var(--faint); transform: none; box-shadow: none; }
+#app .dx-q:first-child { background: var(--brand); border-color: var(--brand); color: var(--on-brand); }
+#app .dx-q:first-child:hover { background: var(--brand-hover); border-color: var(--brand-hover); }
+#app .dx-q i { display: inline-flex; width: auto; height: auto; padding: 0; background: none; border-radius: 0; color: inherit; }
+#app .dx-q i .ic, #app .dx-q i svg { width: 16px; height: 16px; }
+#app .dx-q span { display: inline; }
+#app .dx-q small { display: none; }
+
+#app .dx-kpi { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r-l); overflow: hidden; }
+#app .dx-k { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 16px 20px; min-height: 0; border: 0 !important; border-radius: 0 !important; background: var(--surface) !important; box-shadow: none !important; text-align: left; position: relative; transition: background .15s; }
+#app button.dx-k:hover { background: var(--surface-2) !important; transform: none; }
+#app .dx-k .dx-ki { display: none; }
+#app .dx-k .l { order: 1; display: inline-flex; align-items: center; gap: 7px; font-size: var(--t-sm); font-weight: 500; color: var(--mute); }
+#app .dx-k .n { order: 2; font-size: 28px; line-height: 1.15; font-weight: 650; letter-spacing: -.02em; color: var(--ink); }
+#app .dx-k small { order: 3; font-size: var(--t-xs); color: var(--mute); }
+#app .dx-k.warn .n { color: var(--warn); } #app .dx-k.good .n { color: var(--ink); }
+
+#app .dx-sec { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: none; }
+#app .dx-sec > .sh, #app .sh { padding: 14px 20px; border-bottom: 1px solid var(--line); }
+#app .sh h2 { font-size: var(--t-lg); font-weight: 650; letter-spacing: -.01em; margin: 0; }
+#app .sh .lnk, #app .lnk { font-size: var(--t-sm); font-weight: 600; color: var(--brand-ink); }
+#app .dx-cols { gap: 20px; }
+
+/* Monitoring AC: status = titik + teks, bukan garis tepi tebal */
+#app .dac-c { box-shadow: none !important; border: 1px solid var(--line) !important; border-radius: var(--r-m) !important; background: var(--surface) !important; }
+#app .dac-c.na { border-style: dashed !important; background: transparent !important; }
+#app .dac-c b { display: flex; align-items: center; gap: 7px; font-size: var(--t-xs); letter-spacing: .02em; color: var(--mute); }
+#app .dac-c b::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--line-2); flex: none; }
+#app .dac-c.ok b::before { background: var(--ok); } #app .dac-c.na2 b::before { background: var(--cue); } #app .dac-c.bad b::before, #app .dac-c.cold b::before { background: var(--err); }
+
+/* ---------- 9. Modal & footer ---------- */
+#mbox { border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 24px 60px rgba(27, 22, 48, .22), 0 2px 6px rgba(27, 22, 48, .08); }
+#mbox h3 { font-size: var(--t-lg); font-weight: 650; }
+.mdc-foot { gap: 8px; }
+
+/* ---------- 10. Responsif (struktural, bukan sekadar mengecil) ---------- */
+@media (max-width: 1100px) {
+  :root[data-theme] #app .mdc-kpis, :root[data-theme] #app .mdc-kpis:has(> :nth-child(6)) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 960px) {
+  /* 5 sel tanpa slot kosong: baris 1 = 2 sel (lebar 3), baris 2 = 3 sel (lebar 2) */
+  #app .dx-kpi { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  #app .dx-kpi > .dx-k { grid-column: span 2; }
+  #app .dx-kpi > .dx-k:nth-child(-n + 2) { grid-column: span 3; }
+}
+@media (max-width: 720px) {
+  #app .dx { padding-top: 16px; gap: 16px; }
+  #app .dx-top { flex-direction: column; align-items: flex-start; gap: 10px; }
+  #app .dx-top > div { min-width: 0; max-width: 100%; }
+  #app .dx-top h1 { overflow-wrap: anywhere; }
+  #app .dx-top h1, #app #phero h1 { font-size: var(--t-xl); }
+  #app .dx-sum { align-self: flex-start; }
+  #app .dx-qg { display: grid; grid-template-columns: 1fr 1fr; }
+  #app .dx-q { justify-content: flex-start; min-height: 44px; }
+  #app .dx-q:first-child { grid-column: 1 / -1; justify-content: center; }
+  #app .dx-kpi, :root[data-theme] #app .mdc-kpis, :root[data-theme] #app .mdc-kpis:has(> :nth-child(6)) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #app .dx-kpi > .dx-k, #app .dx-kpi > .dx-k:nth-child(-n + 2) { grid-column: span 1; }
+  #app .dx-kpi > :last-child:nth-child(odd), :root[data-theme] #app .mdc-kpis > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+  #app .dx-k { padding: 14px 16px; } #app .dx-k .n { font-size: 24px; }
+  :root[data-theme] #app .mdc-kpi { padding: 12px 14px !important; } :root[data-theme] #app .mdc-kpi b { font-size: 22px; }
+  #app .dx-sec > .sh, #app .sh { padding: 12px 16px; }
+  #app .mdc-acts { display: flex !important; flex-direction: row !important; flex-wrap: wrap; gap: 8px; }
+  #app .mdc-acts > .btn:not(.sec), #app .mdc-acts > .mdc-tg { flex: 1 1 100%; }
+  #app .mdc-acts > .btn.sec, #app .mdc-acts > .dlw { flex: 1 1 calc(50% - 4px); width: auto; }
+  #app .mdc-acts > .dlw .btn { width: 100%; }
+  input, select, textarea { font-size: 16px; min-height: 44px; }
+  #tabs { box-shadow: 0 -1px 0 var(--line); }
+}
+
+/* ---------- 11. Koreksi hasil render ---------- */
+#nav .ng { letter-spacing: 0 !important; text-transform: none !important; font-size: var(--t-xs) !important; }
+#app .dx-k small { border: 0 !important; padding: 0 !important; margin-top: 6px; }
+#app .dx-sec .dac-b, #app .dx-sec .dc-b { border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
+#app .dx-sec .dac-b { border-top: 0 !important; }
+
+/* Tab bawah HP: label "Buat" sejajar dengan tab lain; bayangan bertumpu (offset), bukan halo berwarna */
+#tabs a.pl em { margin-top: -3px; }
+#tabs a.pl .pl-b { box-shadow: 0 4px 10px rgba(27, 22, 48, .22) !important; }
