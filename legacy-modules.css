@@ -796,3 +796,19 @@ html:root[data-theme] #app .mdc-tbl table{min-width: 0;}
 
 .aud-row.aud-over{outline:2px solid var(--red);outline-offset:1px;background:var(--red-bg);border-radius:12px}
 .aud-over-r td{background:var(--red-bg)}
+
+/* Daily Film Testing: bagian bersyarat dan dokumentasi per studio */
+.ft-fail[hidden],.ft-doc[hidden],.ft-pn[hidden]{display: none !important;}
+.ft-doc{margin: 0 0 12px;}
+.ft-doc textarea{min-height: 56px;}
+.ft-doc .mdc-ph{margin-top: 8px;}
+
+/* Kotak foto di dalam form: tombol 2 kolom, penghitung satu baris, thumbnail dengan tombol hapus di sudut */
+.mdc-form .mdc-ph{display: block; margin: 8px 0;}
+.mdc-form .mdc-ph .pick{display: grid; grid-template-columns: 1fr 1fr; gap: 8px;}
+.mdc-form .mdc-ph .pick .btn{justify-content: center; text-align: center; margin: 0; min-height: 44px;}
+.mdc-form .mdc-ph .mdc-note{margin: 8px 0 0;}
+.mdc-form .mdc-ph .ph{display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; margin: 8px 0 0;}
+.mdc-form .mdc-ph .ph > div{position: relative;}
+.mdc-form .mdc-ph .ph img{width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--r-s); border: 1px solid var(--bd); display: block;}
+.mdc-form .mdc-ph .ph .x{position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; min-height: 0; padding: 0; border-radius: 50%; border: 0; background: rgba(0,0,0,.6); color: #fff; font-size: 18px; line-height: 28px; cursor: pointer;}

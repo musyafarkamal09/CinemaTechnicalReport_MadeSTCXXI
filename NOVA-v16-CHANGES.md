@@ -57,3 +57,10 @@ Belum diuji: PDF hasil jsPDF asli secara visual (tes memakai perekam jsPDF dan s
 1. Unggah isi folder `nova/` menimpa v15, muat ulang paksa (Ctrl+Shift+R).
 2. Backend: salin `backend/Code.gs` ke Apps Script hanya jika ingin string versi baru (tidak ada perubahan perilaku), lalu *Deploy → Manage deployments → New version*.
 3. Rollback: kembalikan `app.js`, `ux.js`, `drafts.js`, `index.html`, `sw.js`, dan keempat CSS dari v15.
+
+## Tambahan: logo NOVA terbaru + Daily Film Testing multi-studio
+- **Logo & ikon:** logo NOVA terbaru (latar kotak-kotak dibersihkan jadi transparan) menggantikan `logo*.png`, `nova-logo*.png`, ikon PWA/Android (`icon-192`, `icon-512`, maskable) dan `apple-touch-icon`. Nama file dan ukuran tetap. Cache SW dinaikkan (`nova-v16-logo-ft`).
+- **Bug:** formulir Daily Film Testing hanya mengisi satu studio (dropdown) per input. Kini satu formulir memuat semua studio: pilih/lepas studio dengan kotak centang (bawaan: semua studio), tiap studio punya panel sendiri (server, proyektor, checklist, masalah, tindakan, catatan, RETEST, foto). Data tiap studio tetap baris terpisah; semuanya diikat `batchId`.
+- **Backend (`dcp.gs`, wajib deploy ulang):** kolom baru `batchId` (FT_LAPORAN, otomatis), aksi `ft_batch_save` atomik (satu studio gagal = semua dibatalkan, pesan menyebut nomor studio; maks 20 studio, studio ganda ditolak), `ft_get` mengembalikan `batch` (studio lain dalam laporan). Detail laporan menampilkan tautan studio lain. Edit dan tes ulang tetap per studio.
+- **Uji:** `tests/test_ft_batch.js` 10/10, `tests/browser/ft-multistudio.js` (desktop & HP) lulus, regresi 18 modul × 3 ukuran layar tanpa error JS/scroll horizontal, semua tes backend lulus.
+- **Belum diuji:** Apps Script asli, jsPDF/ExcelJS di lingkungan uji, ikon pada perangkat Android sungguhan. Tombol "+ Studio" belum ada di dalam formulir (tetap di tab daftar).

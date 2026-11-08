@@ -10,7 +10,8 @@
 - Server memeriksa kelengkapan saat Kirim (tidak hanya di browser).
 - Show yang tidak tayang: isi "Tidak tayang" di Nama Film, tiket 0, penonton 0 (karena Kirim mewajibkan 5 show per studio). **Asumsi — ubah bila aturan berbeda.**
 - Data lama (sebelum v18) dianggap Terkirim dengan aturan 30 menit lama.
-- Notifikasi ke Admin/Teknisi hanya dikirim saat Kirim, bukan tiap Simpan draf.
+- Notifikasi ke Admin/Teknisi hanya dikirim saat Kirim (label "baru"), bukan tiap Simpan draf; edit setelah Kirim berlabel "diperbarui".
+- Hitungan dashboard tidak memasukkan draf.
 - Kolom Status (Draf/Terkirim) ditambahkan di daftar, detail, Excel, PDF, dan sheet DATA_PENONTON.
 
 ## File berubah
@@ -22,3 +23,8 @@
 
 ## Pengujian
 Backend 62/62 lulus (20 tes baru draf/kirim/30 menit). Browser Data Penonton: desktop/tablet/phone lulus; `audience-draft.js` 12/12. `test_auth.js` 2 gagal sejak versi sebelumnya (bukan dari perubahan ini). Belum diuji di Apps Script nyata.
+
+## Deteksi penonton berlebih
+Bila **Penonton masuk > Tiket terjual** pada sebuah show: baris merah + pesan peringatan di formulir, tanda ⚠ di detail, dan label "n show berlebih" di daftar. Hanya peringatan; Simpan dan Kirim tetap boleh. Dihitung di browser dari data tersimpan, tidak ada perubahan backend.
+
+Berlaku juga di **PDF** (daftar: baris merah + angka tebal merah + ringkasan "PERINGATAN: n show"; detail: baris merah + baris "Peringatan" di ringkasan), **Excel detail** (baris merah), dan **Excel daftar** (kolom "Peringatan"). `index.html` app.js?v=168. PDF/Excel asli belum dibuka visual (library CDN tidak tersedia saat uji).

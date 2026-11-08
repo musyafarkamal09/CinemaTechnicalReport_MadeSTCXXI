@@ -11,7 +11,7 @@ Tidak ada kode dijalankan terhadap Google Sheets/Drive/endpoint produksi. Tes di
    Perbaikan: `rowSafe_()` pada jalur `arsipSatu_` dan `rebuildMirrors_`, dan regex `putRows_` kini hanya menerima URL `https://drive.google.com/`.
 
 ## Tidak diubah sengaja (keputusan desain Anda / perlu persetujuan)
-- **Kunci akun permanen setelah 10 password salah** (diuji `test_auth.js` sebagai kebutuhan). **Update: role ADMIN kini dikecualikan dari blokir** (keputusan pemilik; salah password Admin hanya ditunda 1 detik). Untuk akun non-Admin konsekuensinya tetap: orang tanpa login dapat mengunci akun mereka; pesan login membedakan username yang ada/tidak; `failCount` tanpa LockService dapat kalah balapan. Opsi: kunci sementara 15 menit, pesan seragam, kunci di sekitar update `failCount`. Mengubahnya mengubah kebijakan, jadi tidak saya terapkan.
+- **Kunci akun permanen setelah 10 password salah** (diuji `test_auth.js` sebagai kebutuhan). Konsekuensi: orang tanpa login dapat mengunci akun mana pun, termasuk Admin; pesan login membedakan username yang ada/tidak; `failCount` tanpa LockService dapat kalah balapan. Opsi: kunci sementara 15 menit, pesan seragam, kunci di sekitar update `failCount`. Mengubahnya mengubah kebijakan, jadi tidak saya terapkan.
 - `PUBLIC_PHOTOS=true`: foto laporan/tanda tangan berupa tautan "siapa pun dengan tautan".
 
 ## Catatan hardening (bukan celah terbukti)

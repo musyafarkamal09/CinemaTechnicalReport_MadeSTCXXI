@@ -22,8 +22,9 @@
   var MAX_IMG = 4000000;
 
   function q(s) { return esc(s); }
-  function jkt(d) { return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d || new Date()); }
-  function jam(d) { return new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hour12: false }).format(d || new Date()); }
+  function tnow() { return new Date(S.now ? S.now() : Date.now()); } /* jam server, sama di semua perangkat */
+  function jkt(d) { return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d || tnow()); }
+  function jam(d) { return new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hour12: false }).format(d || tnow()); }
   var MYPERM = null;
   function can(k) { var u = curU(); if (!u) return false; if (u.role === 'ADMIN') return true; return !!MYPERM && MYPERM.indexOf(k) >= 0; }
   function canDel() { return can('delete'); }
@@ -84,8 +85,8 @@
 
   /* ---------- dokumentasi foto di dalam form (galeri + kamera), sama dengan form laporan lain ---------- */
   var PH_MAX = 30;
-  function photoBox(key) {
-    return '<div class="mdc-sec">Dokumentasi foto</div>' +
+  function photoBox(key, nohead) {
+    return (nohead ? '' : '<div class="mdc-sec">Dokumentasi foto</div>') +
       '<div class="mdc-ph"><div class="pick"><label class="btn sec pk" for="' + key + 'gi">Pilih dari galeri</label>' +
       '<label class="btn sec pk" for="' + key + 'gc">Ambil dengan kamera</label></div>' +
       '<input class="vh" type="file" id="' + key + 'gi" accept="image/jpeg,image/png,image/webp" multiple>' +
@@ -93,15 +94,16 @@
       '<p class="mdc-note" id="' + key + 'cnt"></p><div class="ph" id="' + key + 'pv"></div></div>';
   }
   function photoBind(key) {
-    var files = [];
+    var files = [], urls = [];
     function draw() {
       var cnt = $(key + 'cnt'), pv = $(key + 'pv');
+      urls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) {} }); urls = []; /* cegah kebocoran memori di HP */
       if (cnt) cnt.textContent = 'Foto: ' + files.length + ' / ' + PH_MAX + ' (JPG/PNG/WebP, boleh langsung dari kamera)';
       if (!pv) return;
       pv.innerHTML = '';
       files.forEach(function (f, i) {
         var d = document.createElement('div'), im = document.createElement('img'), b = document.createElement('button');
-        im.src = URL.createObjectURL(f); im.alt = 'Foto ' + (i + 1);
+        var ou = URL.createObjectURL(f); urls.push(ou); im.decoding = 'async'; im.src = ou; im.alt = 'Foto ' + (i + 1);
         b.type = 'button'; b.className = 'x'; b.setAttribute('aria-label', 'Hapus foto ' + (i + 1)); b.textContent = '×';
         b.onclick = function () { files.splice(i, 1); draw(); };
         d.appendChild(im); d.appendChild(b); pv.appendChild(d);
@@ -274,12 +276,23 @@
   }
   /* ambil foto (data URL) untuk sekumpulan transaksi -> [{title, list:[{data,w,h,caption}]}]; gagal dimuat dilewati */
   function collectPhotos(entries, getKind) {
-    var jobs = entries.map(function (en) {
-      return Promise.all((en.foto || []).slice(0, 12).map(function (p) {
-        return api(getKind, { fotoId: p.fotoId, quiet: true }).then(function (r) { return window.NovaPDF.loadPhoto(r.url, (p.kind || 'Foto') + ' - ' + en.label); }).catch(function () { return null; });
-      })).then(function (l) { return { title: 'Foto dokumentasi - ' + en.label, list: l.filter(Boolean) }; });
-    });
-    return Promise.all(jobs).then(function (a) { return a.filter(function (x) { return x.list.length; }); });
+    var out = [];
+    function one(p, en) {
+      return api(getKind, { fotoId: p.fotoId, quiet: true }).then(function (r) { return window.NovaPDF.loadPhoto(r.url, (p.kind || 'Foto') + ' - ' + en.label); }).catch(function () { return null; });
+    }
+    return entries.reduce(function (chain, en) {
+      return chain.then(function () {
+        var fl = (en.foto || []).slice(0, 12), res = [];
+        function run(i) { /* 3 foto sekaligus */
+          if (i >= fl.length) return Promise.resolve();
+          return Promise.all(fl.slice(i, i + 3).map(function (p) { return one(p, en); })).then(function (l) { res = res.concat(l); return run(i + 3); });
+        }
+        return run(0).then(function () {
+          var list = res.filter(Boolean);
+          if (list.length) out.push({ title: 'Foto dokumentasi - ' + en.label, list: list });
+        });
+      });
+    }, Promise.resolve()).then(function () { return out; });
   }
   function dcpExport(fmt) {
     api('dcp_list', { q: DST.q, jenis: DST.jenis, status: DST.status }).then(function (rows) {
@@ -301,7 +314,8 @@
     if (!total) { toast('Tidak ada data untuk diunduh pada studio yang dipilih.', 1); return; }
     var tot = ftStat([].concat.apply([], sel.map(function (z) { return V.by[z]; })));
     var per = FST.from || FST.to ? (FST.from || 'awal') + ' s.d. ' + (FST.to || 'sekarang') : 'Semua tanggal';
-    var pairs = [['Studio dalam laporan', sel.map(function (z) { return 'Studio ' + z; }).join(', ')], ['Jumlah studio', sel.length], ['Periode', per], ['Filter status', FST.status || 'Semua'], ['Total laporan', total], ['Tanggal cetak', jkt()]];
+    var nFoto = 0; sel.forEach(function (z) { V.by[z].forEach(function (x) { nFoto += x.fotoCount || 0; }); });
+    var pairs = [['Studio dalam laporan', sel.map(function (z) { return 'Studio ' + z; }).join(', ')], ['Jumlah studio', sel.length], ['Periode', per], ['Filter status', FST.status || 'Semua'], ['Total laporan', total], ['Total foto dokumentasi', nFoto + (fmt === 'pdf' ? '' : ' (foto ada di PDF; Excel memuat jumlah dan keterangan per studio)')], ['Tanggal cetak', jkt()]];
     var tables = [{
       title: 'Rekap gabungan per studio', head: ['Studio', 'Total', 'PASSED', 'FAILED', 'RETEST', 'Hari ini'],
       rows: sel.map(function (z) { var o = ftStat(V.by[z]); return ['Studio ' + z, o.n, o.passed, o.failed, o.retest, o.hari].map(sv); }),
@@ -311,12 +325,23 @@
       var list = V.by[z], o = ftStat(list);
       tables.push({
         title: 'Studio ' + z + ' - ' + o.n + ' laporan (' + o.passed + ' passed, ' + o.failed + ' failed, ' + o.retest + ' retest)', sheet: 'Studio ' + z,
-        head: ['ID', 'Tanggal', 'Jam', 'Film', 'Format', 'Server', 'Proyektor', 'Tester', 'Hasil', 'Temuan / masalah'],
-        rows: list.length ? list.map(function (x) { return [x.id + (x.parentId ? ' (retest)' : ''), x.tanggal, x.jam, x.film, x.format, x.server, x.projector, x.tester, x.status, ftTemuan(x, V.items) || '-'].map(sv); }) : [['Belum ada laporan', '', '', '', '', '', '', '', '', '']],
-        colStyles: { 9: { cellWidth: 62 } }, fs: 7.5
+        head: ['ID', 'Tanggal', 'Jam', 'Film', 'Format', 'Server', 'Proyektor', 'Tester', 'Hasil', 'Temuan / masalah', 'Foto', 'Keterangan dokumentasi'],
+        rows: list.length ? list.map(function (x) { return [x.id + (x.parentId ? ' (retest)' : ''), x.tanggal, x.jam, x.film, x.format, x.server, x.projector, x.tester, x.status, ftTemuan(x, V.items) || '-', x.fotoCount || 0, x.ketDok || '-'].map(sv); }) : [['Belum ada laporan', '', '', '', '', '', '', '', '', '', '', '']],
+        colStyles: { 9: { cellWidth: 50 }, 11: { cellWidth: 44 } }, fs: 7
       });
     });
-    recSave('Laporan Gabungan Daily Film Testing', pairs, tables, fmt, 'Laporan_Testing_Gabungan_' + sel.length + 'Studio_' + jkt(), { id: sel.length + ' studio', orient: 'landscape', mainSheet: 'Rekap' });
+    var go = function (ph) { recSave('Laporan Gabungan Daily Film Testing', pairs, tables, fmt, 'Laporan_Testing_Gabungan_' + sel.length + 'Studio_' + jkt(), { id: sel.length + ' studio', orient: 'landscape', mainSheet: 'Rekap', photos: ph || [] }); };
+    if (fmt === 'pdf' && nFoto && window.NovaPDF) {
+      /* foto mengikuti studio dan laporannya: urut studio, lalu laporan; label memuat studio + ID + film */
+      toast('Menyiapkan PDF: mengambil foto per studio...');
+      var withFoto = []; sel.forEach(function (z) { V.by[z].forEach(function (x) { if (x.fotoCount) withFoto.push(x); }); });
+      var ens = [];
+      withFoto.reduce(function (p, x) {
+        return p.then(function () {
+          return api('ft_get', { id: x.id, quiet: true }).then(function (d) { ens.push({ foto: d.foto || [], label: 'Studio ' + x.studio + ' - ' + x.id + ' - ' + x.film + (x.ketDok ? ' (' + x.ketDok + ')' : '') }); }).catch(function () {});
+        });
+      }, Promise.resolve()).then(function () { return collectPhotos(ens, 'ft_photo_get'); }).then(go).catch(function () { go([]); });
+    } else go([]);
   }
   function dcpOneExport(x, fmt, foto) {
     var jn = x.jenis === 'KELUAR' ? 'DCP Keluar' : 'DCP Masuk';
@@ -396,7 +421,7 @@
     }).catch(function () { host.innerHTML = ''; });
   }
   function ftOneExport(L, items, fmt, foto) {
-    var pairs = [['ID', L.id], ['Tanggal', L.tanggal + ' ' + L.jam], ['Judul film', L.film], ['Studio', 'Studio ' + L.studio], ['Format', L.format], ['Server', L.server || '-'], ['Proyektor', L.projector || '-'], ['Tester', L.tester], ['Hasil', L.status], ['Masalah', L.masalah || '-'], ['Tindakan', L.tindakan || '-'], ['Hasil ulang', L.hasilUlang || '-'], ['Catatan teknisi', L.catatanTeknisi || '-']];
+    var pairs = [['ID', L.id], ['Tanggal', L.tanggal + ' ' + L.jam], ['Judul film', L.film], ['Studio', 'Studio ' + L.studio], ['Format', L.format], ['Server', L.server || '-'], ['Proyektor', L.projector || '-'], ['Tester', L.tester], ['Hasil', L.status], ['Masalah', L.masalah || '-'], ['Tindakan', L.tindakan || '-'], ['Hasil ulang', L.hasilUlang || '-'], ['Catatan teknisi', L.catatanTeknisi || '-'], ['Keterangan dokumentasi', L.ketDok || '-'], ['Jumlah foto', (foto || []).length]];
     var tables = [{ title: 'Checklist pengetesan', head: ['Item', 'Hasil', 'Keterangan'], rows: (L.checklist || []).map(function (c) {
       var it = (items || []).filter(function (i) { return i.id === c.id; })[0];
       return [it ? it.label : c.id, c.val || '-', c.ket || '-'].map(sv);
@@ -700,7 +725,7 @@
       h += '<h3>Riwayat</h3><ol class="mdc-tl">' + (r.riwayat || []).map(function (x) {
         return '<li><b>' + q(x.id) + '</b> ' + stFt(x.status) + ' · ' + q(x.tester) + ' · ' + q(x.tanggal) + '</li>';
       }).join('') + '</ol>';
-      h += '<h3>Dokumentasi (' + (r.foto || []).length + ')</h3><div class="mdc-ph">' + (r.foto || []).map(function (p) {
+      h += '<h3>Dokumentasi Studio ' + q(L.studio) + ' (' + (r.foto || []).length + ')</h3>' + (L.ketDok ? '<p class="mdc-note">' + q(L.ketDok) + '</p>' : '') + '<div class="mdc-ph">' + (r.foto || []).map(function (p) {
         return '<figure><img loading="lazy" data-fid="' + q(p.fotoId) + '" data-fk="ft" alt="' + q(p.kind) + '"><figcaption>' + q(p.kind) + '</figcaption>' + (can('photo') ? '<button type="button" class="mdc-pdel" data-pdel="' + q(p.fotoId) + '" data-pk="ft" data-id="' + q(L.id) + '" aria-label="Hapus foto ' + q(p.kind) + '">Hapus</button>' : '') + '</figure>';
       }).join('') + '</div>';
       if (canWrite()) h += '<label class="mdc-up">Tambah foto<input type="file" accept="image/*" multiple id="ftph"></label>';
@@ -753,13 +778,18 @@
               '<input class="mdc-ket" name="k_' + i + '_' + it.id + '" maxlength="500" placeholder="Keterangan (opsional; wajib jika gagal)" value="' + q(c.ket || '') + '" aria-label="Keterangan ' + q(it.label) + ' Studio ' + q(z) + '"></div>';
           });
         });
-        h += '<div class="mdc-sec">Catatan dan foto</div>' +
-          '<label>Deskripsi masalah (wajib jika ada FAIL)<textarea name="ms' + i + '" maxlength="2000" rows="2">' + q(sv_.masalah || '') + '</textarea></label>' +
-          '<label>Tindakan perbaikan (wajib jika ada FAIL)<textarea name="td' + i + '" maxlength="2000" rows="2">' + q(sv_.tindakan || '') + '</textarea></label>' +
+        h += '<div class="mdc-sec">Catatan</div>' +
+          '<div class="ft-fail" hidden><label>Deskripsi masalah (wajib karena ada FAIL)<textarea name="ms' + i + '" maxlength="2000" rows="2">' + q(sv_.masalah || '') + '</textarea></label>' +
+          '<label>Tindakan perbaikan (wajib karena ada FAIL)<textarea name="td' + i + '" maxlength="2000" rows="2">' + q(sv_.tindakan || '') + '</textarea></label></div>' +
           '<label>Catatan teknisi<textarea name="ct' + i + '" maxlength="2000" rows="2">' + q(sv_.catatanTeknisi || '') + '</textarea></label>' +
-          '<label class="mdc-chkbox"><input type="checkbox" name="rt' + i + '"' + (sv_.status === 'RETEST' ? ' checked' : '') + '> Perlu pengetesan ulang (hasil RETEST)</label>' +
-          photoBox('ft' + i) + '</fieldset>';
+          '<label class="mdc-chkbox"><input type="checkbox" name="rt' + i + '"' + (sv_.status === 'RETEST' ? ' checked' : '') + '> Perlu pengetesan ulang (hasil RETEST)</label></fieldset>';
         return h;
+      }
+      /* dokumentasi: bagian paling akhir formulir; keterangan dan foto terpisah untuk tiap studio */
+      function docPanel(z, i) {
+        return '<fieldset class="mdc-fs ft-doc" data-i="' + i + '"><legend>Dokumentasi Studio ' + q(z) + '</legend>' +
+          '<label>Keterangan dokumentasi<textarea name="kd' + i + '" maxlength="1000" rows="2" placeholder="Opsional: apa yang ditunjukkan foto Studio ' + q(z) + '">' + q((single ? x.ketDok : '') || '') + '</textarea></label>' +
+          photoBox('ft' + i, true) + '</fieldset>';
       }
       var h = '<h3>' + (row ? 'Ubah laporan' : parent ? 'Pengetesan ulang' : 'Input Testing') + '</h3>' +
         (parent ? '<p class="mdc-note">Pengetesan ulang untuk <b class="mdc-mono">' + q(parent.id) + '</b>. Laporan lama tetap tersimpan sebagai riwayat.</p>' : '') +
@@ -776,8 +806,9 @@
           '<button type="button" class="btn sec" id="ftall">Pilih semua</button><button type="button" class="btn sec" id="ftnone">Kosongkan</button></div>' +
           '<p class="mdc-note">Semua studio terisi dalam satu laporan. Hasil, checklist, dan foto tiap studio disimpan terpisah; hilangkan centang studio yang tidak dites.</p>';
       }
-      h += studios.map(panel).join('') +
-        '<p class="mdc-note">Hasil dihitung otomatis per studio: ada item FAIL = FAILED; tanpa FAIL dan ditandai tes ulang = RETEST; selain itu = PASSED.</p>' +
+      h += '<p class="mdc-note">Hasil dihitung otomatis per studio: ada item FAIL = FAILED; tanpa FAIL dan ditandai tes ulang = RETEST; selain itu = PASSED.</p>' +
+        studios.map(panel).join('') +
+        '<div class="mdc-sec">Dokumentasi foto</div>' + studios.map(docPanel).join('') +
         '<p class="mdc-err" id="ftferr" role="alert"></p>' +
         '<div class="mdc-foot"><button type="button" class="btn sec" id="ftx">Batal</button><button type="submit" class="btn" id="ftok">Simpan</button></div></form>';
       modal(h);
@@ -786,8 +817,9 @@
       var f = $('ftf');
       function pn(i) { return f.querySelector('.ft-pn[data-i="' + i + '"]'); }
       function chosen() { return studios.map(function (z, i) { return i; }).filter(function (i) { return single || f.querySelector('input[name=stu][data-i="' + i + '"]').checked; }); }
-      function showPanels() { studios.forEach(function (z, i) { pn(i).hidden = !single && !f.querySelector('input[name=stu][data-i="' + i + '"]').checked; }); }
-      showPanels();
+      function showPanels() { studios.forEach(function (z, i) { var hid = !single && !f.querySelector('input[name=stu][data-i="' + i + '"]').checked; pn(i).hidden = hid; f.querySelector('.ft-doc[data-i="' + i + '"]').hidden = hid; }); }
+      function updFail(i) { var any = items.some(function (it) { return !f['p_' + i + '_' + it.id].checked && !f['n_' + i + '_' + it.id].checked; }); pn(i).querySelector('.ft-fail').hidden = !any; }
+      showPanels(); studios.forEach(function (z, i) { updFail(i); });
       if ($('ftall')) {
         $('ftall').onclick = function () { [].forEach.call(f.querySelectorAll('input[name=stu]'), function (c) { c.checked = true; }); showPanels(); };
         $('ftnone').onclick = function () { [].forEach.call(f.querySelectorAll('input[name=stu]'), function (c) { c.checked = false; }); showPanels(); };
@@ -800,6 +832,7 @@
         if (nm.indexOf('p_') === 0 || nm.indexOf('n_') === 0) {
           var id = nm.slice(2), gagal = !f['p_' + id].checked && !f['n_' + id].checked;
           f['k_' + id].placeholder = gagal ? 'Keterangan masalah (wajib karena gagal)' : 'Keterangan (opsional)';
+          updFail(Number(id.split('_')[0]));
         }
       };
       f.onsubmit = function (e) {
@@ -821,7 +854,7 @@
             id: x.id || '', tanggal: f.tanggal.value, jam: f.jam.value, film: f.film.value.trim(), studio: z, format: f.format.value,
             server: f['sv' + i].value.trim(), projector: f['pj' + i].value.trim(), tester: f.tester.value.trim(),
             checklist: chk.map(function (c) { return { id: c.id, val: c.val, ket: c.ket }; }),
-            masalah: f['ms' + i].value.trim(), tindakan: f['td' + i].value.trim(), catatanTeknisi: f['ct' + i].value.trim(),
+            masalah: f['ms' + i].value.trim(), tindakan: f['td' + i].value.trim(), catatanTeknisi: f['ct' + i].value.trim(), ketDok: f['kd' + i].value.trim(),
             retest: !!f['rt' + i].checked, parentId: parent ? parent.id : ''
           });
         });
@@ -835,7 +868,7 @@
           closeM(); toast(ids.length > 1 ? 'Testing ' + ids.length + ' studio tersimpan' : 'Testing tersimpan'); vFt();
           return sel.reduce(function (p, i, k) {
             var pf = phs[i].get();
-            return p.then(function () { return pf.length ? new Promise(function (res) { sendPhotos(ids[k], pf, 'Dokumentasi', 'ft_photo_save', res); }) : 0; });
+            return p.then(function () { return pf.length ? new Promise(function (res) { sendPhotos(ids[k], pf, 'Dokumentasi Studio ' + studios[i], 'ft_photo_save', res); }) : 0; });
           }, Promise.resolve()).then(function () { ftDetail(ids[0]); });
         }).catch(function (er) { $('ftok').disabled = false; err.textContent = er.message; });
       };
