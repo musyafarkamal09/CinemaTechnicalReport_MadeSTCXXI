@@ -56,24 +56,24 @@ H.dcp_del = (b) => { calls.push(['dcp_del', b]); return true; };
 
   /* 2. Film Testing multi-studio */
   await go('ftest');
-  const st = await page.evaluate(()=>({chips:[...document.querySelectorAll('.mdc-stab[data-stu]')].map(x=>x.dataset.stu),secs:[...document.querySelectorAll('.ft-studio')].map(x=>x.dataset.studio),rekap:[...document.querySelectorAll('.ft-rekap tbody tr')].map(r=>r.innerText.replace(/\s+/g,' ').trim()),foot:document.querySelector('.ft-rekap tfoot')?.innerText.replace(/\s+/g,' ').trim()}));
-  ok('FT: 5 studio tampil (4+), semua terpilih default', st.chips.join()==='1,2,3,4,5' && st.secs.join()==='1,2,3,4,5', JSON.stringify(st.chips));
+  const st = await page.evaluate(()=>({chips:[...document.querySelectorAll('.mdc-stab[data-stu]')].map(x=>x.dataset.stu),secs:[...document.querySelectorAll('.ftr-list tbody tr[data-ft-open]')].map(x=>x.dataset.ftOpen),rekap:[...document.querySelectorAll('.ft-rekap tbody tr')].map(r=>r.innerText.replace(/\s+/g,' ').trim()),foot:document.querySelector('.ft-rekap tfoot')?.innerText.replace(/\s+/g,' ').trim()}));
+  ok('FT: 5 studio tampil (4+), semua terpilih default', st.chips.join()==='1,2,3,4,5' && st.secs.length===3, JSON.stringify(st.chips));
   ok('FT: rekap per studio terpisah & total benar', st.rekap[1].startsWith('Studio 2 2 1 1 0') && /Total 6 4 1 1/.test(st.foot), JSON.stringify(st.rekap)+st.foot);
-  const sec2 = await page.evaluate(()=>[...document.querySelectorAll('.ft-studio[data-studio="2"] tbody tr')].map(r=>r.dataset.ftOpen));
-  ok('FT: data studio 2 hanya milik studio 2', sec2.join()==='FT-2026-0002,FT-2026-0006', sec2.join());
+  const sec2 = await page.evaluate(()=>[...document.querySelectorAll('.ftr-list tbody tr[data-ft-open]')].map(r=>r.dataset.ftOpen+':'+r.querySelectorAll('.ftr-chip').length));
+  ok('FT: data lama per hari menyatu: 4 studio dalam SATU laporan hari ini, studio 2 kedua = laporan sendiri, laporan lama terpisah', sec2.join()==='FT-2026-0006:1,FT-2026-0001:4,FT-2026-0004:1', sec2.join());
   await page.click('.mdc-stab[data-stu="3"]'); await page.waitForTimeout(700);
   await page.click('.mdc-stab[data-stu="4"]'); await page.waitForTimeout(700);
-  const secs2 = await page.evaluate(()=>[...document.querySelectorAll('.ft-studio')].map(x=>x.dataset.studio));
+  const secs2 = await page.evaluate(()=>[...document.querySelectorAll('.ft-rekap tbody tr td:first-child')].map(x=>x.innerText.replace('Studio ','').trim()));
   ok('FT: pilih subset studio (hapus 3 dan 4)', secs2.join()==='1,2,5', secs2.join());
   await page.click('.mdc-stab[data-stu-all]'); await page.waitForTimeout(700);
   await page.click('[data-dlt]'); await page.click('#ftpdf'); await page.waitForTimeout(500);
   await page.click('[data-dlt]'); await page.click('#ftxl'); await page.waitForTimeout(500);
   const ex = await page.evaluate(()=>({pdf:window.__pdf[window.__pdf.length-1],x:window.__x}));
-  ok('FT PDF gabungan: info + rekap(5 studio) + 5 tabel studio terpisah', ex.pdf && ex.pdf.tables.length===7 && ex.pdf.tables[1].body.length===5 && ex.pdf.orient==='landscape', ex.pdf&&ex.pdf.tables.length+' tabel '+ex.pdf.file);
+  ok('FT PDF gabungan: info + rekap(5 studio) + SATU tabel harian', ex.pdf && ex.pdf.tables.length===3 && ex.pdf.tables[1].body.length===5 && ex.pdf.tables[2].body.length===6 && ex.pdf.orient==='landscape', ex.pdf&&ex.pdf.tables.length+' tabel '+ex.pdf.file);
   ok('FT PDF: header/footer identitas di tiap halaman', ex.pdf && ex.pdf.text.some(t=>/Innovation by MK/.test(t.s)) && ex.pdf.text.some(t=>/Designed & Developed by MK/.test(t.s)) && ex.pdf.text.some(t=>/Halaman 1 \//.test(t.s)));
-  ok('FT Excel: Rekap + 5 lembar studio', ex.x && ex.x.sheets.length===6 && ex.x.sheets.map(s=>s.name).join('|')==='Rekap|Studio 1|Studio 2|Studio 3|Studio 4|Studio 5', ex.x&&ex.x.sheets.map(s=>s.name).join('|'));
-  const s2 = ex.x.sheets.find(s=>s.name==='Studio 2'); const flat = JSON.stringify(s2.aoa);
-  ok('FT Excel: lembar Studio 2 tidak memuat data studio lain', flat.includes('FT-2026-0002')&&flat.includes('FT-2026-0006')&&!flat.includes('FT-2026-0001')&&!flat.includes('FILM E'));
+  ok('FT Excel: SATU lembar Rekap (tidak dipecah per studio)', ex.x && ex.x.sheets.length===1 && ex.x.sheets[0].name==='Rekap', ex.x&&ex.x.sheets.map(s=>s.name).join('|'));
+  const s2 = ex.x.sheets[0]; const flat = JSON.stringify(s2.aoa);
+  ok('FT Excel: semua studio ada di lembar yang sama', flat.includes('FT-2026-0002')&&flat.includes('FT-2026-0006')&&flat.includes('FT-2026-0001')&&flat.includes('FILM E'));
   ok('FT: temuan FAIL masuk laporan', flat.includes('Audio pecah'));
   await page.screenshot({path:`shots/v14-${W}-ft.png`, fullPage:false});
   /* studio baru dapat ditambah */
@@ -82,7 +82,7 @@ H.dcp_del = (b) => { calls.push(['dcp_del', b]); return true; };
   ok('FT: tambah Studio 6', chips2.includes('6'), chips2.join());
   /* form baru memuat semua studio */
   await page.click('#ftnew'); await page.waitForTimeout(900);
-  const opts = await page.evaluate(()=>[...document.querySelectorAll('#ftf select[name=studio] option')].map(o=>o.value));
+  const opts = await page.evaluate(()=>[...document.querySelectorAll('#ftchips input[name=stu]')].map(o=>o.value)); /* form multi-studio: kotak centang, bukan select */
   ok('FT form: pilihan studio 1-6', opts.join()==='1,2,3,4,5,6', opts.join());
   await page.evaluate(()=>document.getElementById('ftx').click());
 

@@ -7,7 +7,7 @@
 'use strict';
 var root=document.documentElement,body=document.body;
 var reduce=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
-var DEF=272,KEY='stc_sbw';
+var DEF=244,KEY='stc_sbw2';
 
 function store(k,v){try{if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){}}
 function load(k){try{return localStorage.getItem(k)}catch(e){return null}}

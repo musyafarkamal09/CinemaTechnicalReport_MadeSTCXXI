@@ -207,3 +207,19 @@ body.form-open #phead, body.form-open #view, body.form-open #phero { display: no
 .ft-doc > legend, #app .ft-doc > legend, #modal .ft-doc > legend, :root[data-theme] #modal .mdc-fs.ft-doc legend { font-weight: 800 !important; font-size: 15px !important; color: var(--ink, #1d2538) !important; }
 .ft-dokt { font-weight: 800; }
 h3.ft-dokt { font-size: 15px; }
+
+/* ===== v21: header menyambung ke sidebar, dan berada di belakangnya =====
+   Penyebab celah: figma.css memaksa #side { width: 244px !important }, sedangkan #main memakai padding-left: var(--sbw) (ux.js, bawaan 272px
+   atau hasil geser pengguna). Selisihnya tampak sebagai pita kosong antara sidebar dan header, dan penggeser lebar sidebar tidak berefek.
+   Perbaikan: (1) lebar sidebar mengikuti --sbw; (2) header memanjang ke bawah sidebar (margin negatif), sidebar di depan header.
+   z-index: konten laporan <= 70, header 80, sidebar 85 (shade 84), lembar "Buat laporan" 90. Ini juga memperbaiki header yang menutupi bagian atas sidebar di HP. */
+#side { z-index: 85; }
+#shade { z-index: 84; }
+#nsheet { z-index: 90; }
+@media (min-width: 1024px) {
+  #side { width: min(var(--sbw, 244px), 86vw) !important; }
+  body:not(.sb-off) #main > header { margin-left: calc(-1 * var(--sbw, 244px)); padding-left: calc(var(--sbw, 244px) + 24px) !important; }
+}
+@media (min-width: 1280px) {
+  body:not(.sb-off) #main > header { padding-left: calc(var(--sbw, 244px) + 32px) !important; }
+}

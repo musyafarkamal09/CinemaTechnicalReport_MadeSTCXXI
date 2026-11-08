@@ -69,7 +69,7 @@ check('meterDiff_ null on reset (no negative)', dd.diffs.lwbp===null, JSON.strin
 // 8. Notification hook wraps H.rep_save
 check('H.rep_save wrapped by hook', typeof ctx.H.rep_save==='function');
 // Version string
-check('doGet version string matches current build (v17-data-penonton)', /versi: v17-data-penonton/.test(src));
+check('doGet version string matches current build (v18-penonton-draf-submit)', /versi: v18-penonton-draf-submit/.test(src));
 
 // 9. Data Penonton (audience)
 const bad=(f)=>{try{f();return null}catch(e){return String(e&&e.message||e)}};
@@ -96,6 +96,59 @@ check('audience: terdaftar di PFX/PREFIX/FOLDERS/PHS/MIR', ctx.PFX.audience&&ctx
 const mr=ctx.MIR.audience.row({id:'DP-1',createdAt:0,updatedAt:0,reporter:'T',status:'Aktif'},A1);
 check('audience: baris sheet cocok jumlah kolom header', mr.length===ctx.MIR.audience.head.length, mr.length+' vs '+ctx.MIR.audience.head.length);
 check('audience: kolom numerik/wrap MIR valid', ctx.MIR.audience.num.concat(ctx.MIR.audience.wrap).every(c=>c>=1&&c<=ctx.MIR.audience.head.length));
+
+// akses Data Penonton: semua role melihat semua laporan; laporan jenis lain tetap dibatasi
+const rows=[{id:'DP-1',type:'audience',status:'Aktif',createdAt:1,userId:'u-admin',reporter:'A',title:'',data:'{}'},
+ {id:'LPR-1',type:'issue',status:'Aktif',createdAt:2,userId:'u-admin',reporter:'A',title:'',data:'{}'},
+ {id:'LPR-2',type:'issue',status:'Aktif',createdAt:3,userId:'u-rep',reporter:'R',title:'',data:'{}'}];
+const uRep={role:'REPORTER',userId:'u-rep'},uGs={role:'GUIDE_SECURITY',userId:'u-gs'},uTek={role:'USER',userId:'u-tek'};
+check('audience: Pelapor melihat Data Penonton milik orang lain', ctx.repFilter_({type:'audience'},uRep,rows).length===1);
+check('audience: Guide/Security melihat Data Penonton', ctx.repFilter_({type:'audience'},uGs,rows).length===1);
+check('audience: Teknisi melihat Data Penonton', ctx.repFilter_({type:'audience'},uTek,rows).length===1);
+check('issue: Pelapor tetap hanya melihat laporan sendiri', ctx.repFilter_({type:'issue'},uRep,rows).length===1&&ctx.repFilter_({type:'issue'},uRep,rows)[0].id==='LPR-2');
+
+
+// 10. Data Penonton: draf, submit, batas edit 30 menit setelah submit
+(function(){
+ const DB=[];let seq=0,logs=[];
+ ctx.all_=n=>n==='REPORTS'?DB.map((x,i)=>Object.assign({_row:i+2},x)):[];
+ ctx.add_=(n,o)=>{DB.push(Object.assign({},o));};
+ ctx.upd_=(n,row,o)=>{Object.assign(DB[row-2],o);};
+ ctx.nextId_=()=>'DP-T-'+(++seq);
+ ctx.log_=(u,a)=>logs.push(a);
+ ctx.mirrorSafe_=()=>{};ctx.osSend_=()=>{};
+ const U1={role:'REPORTER',userId:'u1',fullName:'Satu'},U2={role:'GUIDE_SECURITY',userId:'u2',fullName:'Dua'},AD={role:'ADMIN',userId:'ad',fullName:'Adm'};
+ const sh=(n,full)=>Array.from({length:n},(_,i)=>({show:'SHOW'+(i+1),film:'F'+i,tiket:'10',penonton:full===false&&i===4?'':'9'}));
+ const mkS=(n,full)=>['Studio 1','Studio 2','Studio 3','Studio 4'].map(x=>({studio:x,shows:sh(n,full)}));
+ const call=(u,q)=>{try{return ctx.H.rep_save(u,q);}catch(e){return {err:String(e&&e.message||e)};}};
+ const dat='2026-11-07';
+ const a=call(U1,{type:'audience',reqId:'r1',data:{date:dat,studios:[{studio:'Studio 1',shows:sh(2)}]}});
+ check('draf: simpan sebagian berhasil sebagai draf', a.id&&a.draft===true&&JSON.parse(DB[0].data).draft===true, JSON.stringify(a));
+ check('draf: bisa diedit pemilik tanpa batas 30 menit', (DB[0].editDeadline=1, !call(U1,{type:'audience',id:a.id,data:{date:dat,studios:[{studio:'Studio 1',shows:sh(3)}]}}).err));
+ check('draf: out_ editable untuk pemilik, tidak untuk lain', ctx.out_(U1,DB[0],Date.now()+9e9).editable===true&&ctx.out_(U2,DB[0],Date.now()).editable===false&&ctx.out_(U2,DB[0],Date.now()).draft===true);
+ check('draf: pengguna lain tidak boleh edit', /milik sendiri/.test(call(U2,{type:'audience',id:a.id,data:{date:dat,studios:mkS(5)}}).err||''));
+ check('submit: ditolak bila show belum lengkap', /Belum lengkap/.test(call(U1,{type:'audience',id:a.id,submit:true,data:{date:dat,studios:mkS(5,false)}}).err||''));
+ check('submit: ditolak bila hanya 4 show', /Belum lengkap/.test(call(U1,{type:'audience',id:a.id,submit:true,data:{date:dat,studios:mkS(4)}}).err||''));
+ check('submit: tetap draf setelah submit gagal', JSON.parse(DB[0].data).draft===true);
+ const t0=Date.now(),sb=call(U1,{type:'audience',id:a.id,submit:true,data:{date:dat,studios:mkS(5)}});
+ const d0=JSON.parse(DB[0].data);
+ check('submit: lengkap berhasil, draft=false, submittedAt terisi', !sb.err&&d0.draft===false&&d0.submittedAt>=t0, JSON.stringify(sb));
+ check('submit: batas edit 30 menit dihitung dari submit', Math.abs(DB[0].editDeadline-(d0.submittedAt+30*60000))<5, String(DB[0].editDeadline));
+ check('submit: boleh edit dalam 30 menit', !call(U1,{type:'audience',id:a.id,data:{date:dat,studios:mkS(5)}}).err);
+ check('submit: edit setelah submit tidak boleh jadi tidak lengkap', /Belum lengkap/.test(call(U1,{type:'audience',id:a.id,data:{date:dat,studios:mkS(3)}}).err||''));
+ check('submit: tetap terkirim dan deadline tidak diperpanjang', JSON.parse(DB[0].data).draft===false&&Math.abs(DB[0].editDeadline-(d0.submittedAt+30*60000))<5);
+ DB[0].editDeadline=Date.now()-1000;
+ check('submit: edit ditolak setelah 30 menit', /Batas waktu edit/.test(call(U1,{type:'audience',id:a.id,data:{date:dat,studios:mkS(5)}}).err||''));
+ check('submit: Admin tetap boleh edit', !call(AD,{type:'audience',id:a.id,data:{date:dat,studios:mkS(5)}}).err);
+ check('submit: out_ tidak editable pemilik setelah batas', ctx.out_(U1,DB[0],Date.now()).editable===false);
+ const b=call(U2,{type:'audience',reqId:'r2',submit:true,data:{date:dat,studios:mkS(5)}});
+ check('submit langsung saat buat baru lengkap', b.id&&b.submitted===true&&JSON.parse(DB[1].data).draft===false);
+ check('submit langsung buat baru tidak lengkap ditolak', /Belum lengkap/.test(call(U2,{type:'audience',reqId:'r3',submit:true,data:{date:dat,studios:mkS(2)}}).err||''));
+ DB.push({id:'OLD',type:'audience',userId:'u1',reporter:'x',status:'Aktif',createdAt:1,editDeadline:Date.now()+60000,data:JSON.stringify({date:dat,studios:[]})});
+ check('data lama (tanpa flag) dianggap terkirim, aturan 30 menit lama', ctx.isDraft_(DB[2])===false&&ctx.out_(U1,DB[2],Date.now()).editable===true);
+ check('mirror: kolom status menampilkan Draf/Terkirim', ctx.MIR.audience.row({id:'x',createdAt:0,updatedAt:0,reporter:'a',status:'Aktif'},{draft:true,studios:[]}).slice(-1)[0]==='Draf'&&ctx.MIR.audience.row({id:'x',createdAt:0,updatedAt:0,reporter:'a',status:'Aktif'},{draft:false,studios:[]}).slice(-1)[0]==='Terkirim');
+ check('draf: foto boleh diunggah pemilik setelah deadline lama lewat', (()=>{const r={type:'audience',userId:'u1',status:'Aktif',editDeadline:1,data:JSON.stringify({draft:true})};try{ctx.canPhoto_(U1,r);return true;}catch(e){return false;}})());
+})();
 
 const pass=r.filter(x=>x.pass).length;
 console.log(r.map(x=>(x.pass?'PASS ':'FAIL ')+x.name+(x.detail&&!x.pass?' :: '+x.detail:'')).join('\n'));

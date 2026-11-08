@@ -12,9 +12,9 @@ vm.createContext(ctx);vm.runInContext(src,ctx);
 const users=[];
 ctx.all_=n=>n==='USERS'?users:[];
 ctx.upd_=(n,row,o)=>{Object.assign(users.find(u=>u._row===row),o)};
-ctx.log_=()=>{};
+ctx.log_=()=>{};ctx.Utilities.sleep=()=>{};
 const salt='s1',hash=ctx.hash_('Rahasia123',salt);
-users.push({_row:2,userId:'U1',fullName:'Admin',username:'Admin',role:'ADMIN',status:'Aktif',salt,hash,mustChange:'N',failCount:'',lockedAt:''});
+users.push({_row:2,userId:'U1',fullName:'Admin',username:'Admin',role:'USER',status:'Aktif',salt,hash,mustChange:'N',failCount:'',lockedAt:''});
 const r=[];const ck=(n,c)=>r.push([n,!!c]);
 const tryLogin=(u,p)=>{try{return {ok:vm.runInContext('H.login',ctx)({username:u,password:p})}}catch(e){return {err:String(e.message||e)}}};
 ck('username beda huruf besar/kecil ditolak',tryLogin('admin','Rahasia123').err);
@@ -37,5 +37,9 @@ const D=vm.runInContext('Date',ctx),realNow=D.now;D.now=()=>realNow()+31*60*1000
 let idleErr='';try{ctx.session_(tok)}catch(e){idleErr=String(e.message||e)}
 D.now=realNow;
 ck('idle >30 menit ditolak',/tidak aktif|berakhir/i.test(idleErr));
+/* Admin dikecualikan dari blokir (kebijakan di Code.gs): salah 12 kali tetap tidak terkunci dan tetap bisa login dengan password benar */
+users.push({_row:3,userId:'U2',fullName:'Adm',username:'Adm',role:'ADMIN',status:'Aktif',salt,hash,mustChange:'N',failCount:'',lockedAt:''});
+for(let i=1;i<=12;i++)tryLogin('Adm','salah'+i);
+ck('Admin tidak pernah terkunci',!(Number(users[1].lockedAt)>0)&&tryLogin('Adm','Rahasia123').ok);
 r.forEach(x=>console.log((x[1]?'PASS ':'FAIL ')+x[0]));
 const f=r.filter(x=>!x[1]).length;console.log('HASIL: '+(r.length-f)+'/'+r.length+' lulus');process.exit(f?1:0);

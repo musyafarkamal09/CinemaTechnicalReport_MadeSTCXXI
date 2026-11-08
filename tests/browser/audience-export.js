@@ -6,7 +6,7 @@ const R = []; const ck = (n, c, d) => R.push({ n, ok: !!c, d: c ? '' : (d || '')
 const items = [
   { id: 'DP-20261107-0002', type: 'audience', title: 'Data Penonton - 2026-11-07', reporter: 'Budi', createdAt: Date.now(), updatedAt: Date.now(), ph: { n: 0 },
     data: { date: '2026-11-07', note: 'Ramai', totalShow: 2, totalTiket: 30, totalPenonton: 25, studios: [
-      { studio: 'Studio 2', shows: [{ show: 'SHOW1', film: 'Film <b>X</b>', jam: '10:00', tiket: 30, penonton: 25, petugas: 'Sari', ket: '' }] },
+      { studio: 'Studio 2', shows: [{ show: 'SHOW1', film: 'Film <b>X</b>', jam: '10:00', tiket: 30, penonton: 25, petugas: 'Sari', ket: '' }, { show: 'SHOW2', film: 'Film Z', jam: '13:00', tiket: 5, penonton: 9, petugas: 'Sari', ket: '' }] },
       { studio: 'Studio 5', shows: [{ show: 'SHOW6', film: 'Film Y', jam: '', tiket: '', penonton: 4, petugas: '', ket: 'tes' }] }] } },
   { id: 'DP-20261107-0001', type: 'audience', title: 'Data Penonton - 2026-11-07', reporter: 'Musyafar Kamal', createdAt: Date.now() - 1000, updatedAt: Date.now(), ph: { n: 0 },
     data: { date: '2026-11-07', note: '', totalShow: 1, totalTiket: 10, totalPenonton: 8, studios: [{ studio: 'Studio 1', shows: [{ show: 'SHOW1', film: 'Film A', jam: '12:30', tiket: 10, penonton: 8, petugas: 'Budi', ket: 'ok' }] }] } }
@@ -42,25 +42,32 @@ const items = [
   ck('excel: sheet "Data Penonton" dibuat', !!sh, JSON.stringify(cap.sheets.map(s => s.name)));
   const hd = sh && sh.aoa[3], rows = sh ? sh.aoa.slice(4) : [];
   ck('excel: header kolom sesuai tabel kertas', hd && hd.slice(2, 10).join('|') === 'Studio|Show|Nama Film|Jam Show|Tiket Terjual|Penonton Masuk|Petugas|Keterangan', hd && hd.join('|'));
-  ck('excel: satu baris per show (3 baris), urut lama -> baru', rows.length === 3 && rows[0][0] === 'DP-20261107-0001' && rows[2][2] === 'Studio 5', JSON.stringify(rows.map(r => r.slice(0, 4))));
-  ck('excel: angka tersimpan sebagai angka, kosong tetap kosong', rows[0][6] === 10 && rows[0][7] === 8 && rows[2][6] === '' && rows[2][7] === 4, JSON.stringify(rows.map(r => [r[6], r[7]])));
+  ck('excel: satu baris per show (4 baris), urut lama -> baru', rows.length === 4 && rows[0][0] === 'DP-20261107-0001' && rows[3][2] === 'Studio 5', JSON.stringify(rows.map(r => r.slice(0, 4))));
+  ck('excel: angka tersimpan sebagai angka, kosong tetap kosong', rows[0][6] === 10 && rows[0][7] === 8 && rows[3][6] === '' && rows[3][7] === 4, JSON.stringify(rows.map(r => [r[6], r[7]])));
   ck('excel: nama file Data_Penonton', cap.saved.some(n => /^Laporan_Data_Penonton_/.test(n)), JSON.stringify(cap.saved));
   // PDF daftar
   await page.evaluate(() => { window.__cap.tables.length = 0; window.__cap.saved.length = 0; document.querySelector('[data-dlt]').click(); });
   await page.click('#rpdf'); await page.waitForTimeout(800);
-  cap = await page.evaluate(() => ({ t: window.__cap.tables.map(o => ({ head: o.head, body: o.body })), saved: window.__cap.saved }));
+  cap = await page.evaluate(() => ({ t: window.__cap.tables.map(o => ({ head: o.head, body: o.body, st: [0,1,2,3].map(i => { const c = { section: 'body', row: { index: i }, column: { index: 5 }, cell: { raw: '', styles: {} } }; if (o.didParseCell) o.didParseCell(c); const c8 = { section: 'body', row: { index: i }, column: { index: 8 }, cell: { raw: '', styles: {} } }; if (o.didParseCell) o.didParseCell(c8); return { a: c.cell.styles, b: c8.cell.styles }; }) })), saved: window.__cap.saved }));
   const t0 = cap.t[0];
-  ck('pdf daftar: tabel dibuat dengan 10 kolom, 3 baris', t0 && t0.head[0].length === 10 && t0.body.length === 3, JSON.stringify(t0 && [t0.head[0].length, t0.body.length]));
-  ck('pdf daftar: angka format id-ID dan sel kosong', t0 && t0.body[0][6] === '10' && t0.body[2][6] === '' && t0.body[2][7] === '4', JSON.stringify(t0 && t0.body.map(r => [r[6], r[7]])));
+  ck('pdf daftar: tabel dibuat dengan 11 kolom, 3 baris', t0 && t0.head[0].length === 11 && t0.body.length === 4, JSON.stringify(t0 && [t0.head[0].length, t0.body.length]));
+  ck('pdf daftar: angka format id-ID dan sel kosong', t0 && t0.body[0][7] === '10' && t0.body[3][7] === '' && t0.body[3][8] === '4', JSON.stringify(t0 && t0.body.map(r => [r[7], r[7]])));
   ck('pdf daftar: nama file Data_Penonton', cap.saved.some(n => /^Laporan_Data_Penonton_.*\.pdf$/.test(n)), JSON.stringify(cap.saved));
   // PDF laporan tunggal
   await page.evaluate(() => { window.__cap.tables.length = 0; window.__cap.saved.length = 0; });
   await page.locator('[data-d]').first().click(); await page.waitForTimeout(700);
   await page.evaluate(() => { document.querySelector('#modal [data-dlt]').click(); }); await page.click('#dpdf'); await page.waitForTimeout(1200);
-  cap = await page.evaluate(() => ({ t: window.__cap.tables.map(o => ({ head: o.head, body: o.body })), saved: window.__cap.saved }));
+  cap = await page.evaluate(() => ({ t: window.__cap.tables.map(o => ({ head: o.head, body: o.body, st: [0,1,2,3].map(i => { const c = { section: 'body', row: { index: i }, column: { index: 5 }, cell: { raw: '', styles: {} } }; if (o.didParseCell) o.didParseCell(c); const c8 = { section: 'body', row: { index: i }, column: { index: 8 }, cell: { raw: '', styles: {} } }; if (o.didParseCell) o.didParseCell(c8); return { a: c.cell.styles, b: c8.cell.styles }; }) })), saved: window.__cap.saved }));
   const tb = cap.t.find(x => x.head && x.head[0] && x.head[0][0] === 'Studio');
-  ck('pdf tunggal: tabel "Rincian per studio dan show" + baris total', tb && tb.body.length === 3 && tb.body[2][0] === 'Total' && tb.body[2][4] === '30' && tb.body[2][5] === '29', JSON.stringify(tb && tb.body));
-  ck('pdf tunggal: sel kosong jadi "-"', tb && tb.body[1][3] === '-' && tb.body[1][4] === '-', JSON.stringify(tb && tb.body[1]));
+  ck('pdf tunggal: tabel "Rincian per studio dan show" + baris total', tb && tb.body.length === 4 && tb.body[3][0] === 'Total' && tb.body[3][4] === '35' && tb.body[3][5] === '38', JSON.stringify(tb && tb.body));
+  ck('pdf tunggal: sel kosong jadi "-"', tb && tb.body[2][3] === '-' && tb.body[2][4] === '-', JSON.stringify(tb && tb.body[2]));
+  // peringatan penonton berlebih (show 5 tiket, 9 penonton) di Excel dan PDF
+  const hdr = sheets0 => 0;
+  ck('excel daftar: kolom Peringatan hanya di baris berlebih', hd.indexOf('Peringatan') > 0 && rows[0][hd.indexOf('Peringatan')] === '' && rows[2][hd.indexOf('Peringatan')] === 'Penonton melebihi tiket', JSON.stringify([hd, rows.map(r => r.slice(-3))]));
+  const red = x => JSON.stringify(x.fillColor) === '[253,226,226]';
+  ck('pdf daftar: hanya baris berlebih (ke-3) berwarna merah', t0.st.map(x => red(x.b)).join() === 'false,false,true,false' && t0.st[2].b.fontStyle === 'bold', JSON.stringify(t0.st.map(x => x.b)));
+  ck('pdf tunggal: hanya baris SHOW2 berwarna merah', tb.st.map(x => red(x.a)).join() === 'false,true,false,false', JSON.stringify(tb.st.map(x => x.a)));
+  ck('pdf tunggal: ada baris Peringatan di ringkasan', cap.t.some(t => JSON.stringify(t.body).includes('Peringatan')), '');
   ck('tanpa galat JS', errs.length === 0, errs.join(' | '));
   const bad = R.filter(x => !x.ok);
   console.log(R.map(x => (x.ok ? 'PASS ' : 'FAIL ') + x.n + (x.ok ? '' : ' :: ' + x.d)).join('\n')); console.log(`HASIL ekspor: ${R.length - bad.length}/${R.length} lulus`);
