@@ -90,7 +90,7 @@ body.form-open #phead, body.form-open #view, body.form-open #phero { display: no
    Penyebab: container tombol (.bar, .zipbar, .macts, ...) punya animasi transform => stacking context,
    sehingga elemen sesudahnya (daftar kosong, tombol Edit/Arsipkan/Tutup) menimpa menu. */
 .bar,.zipbar,.macts,.mdc-acts,.mdc-foot,.mdc-top,.dsr-h,.mdc-filter,.mi-bfoot,.mi-sib,.ft-rekap,.fact{ position: relative; z-index: 30; }
-.bar:has(.dlm:not(.hidden)),.zipbar:has(.dlm:not(.hidden)),.macts:has(.dlm:not(.hidden)),.mdc-acts:has(.dlm:not(.hidden)),.mdc-foot:has(.dlm:not(.hidden)),.mdc-top:has(.dlm:not(.hidden)),.dsr-h:has(.dlm:not(.hidden)),.mi-bfoot:has(.dlm:not(.hidden)),.mi-sib:has(.dlm:not(.hidden)),.fact:has(.dlm:not(.hidden)){ z-index: 90; }
+.bar:has(.dlm:not(.hidden)),.zipbar:has(.dlm:not(.hidden)),.macts:has(.dlm:not(.hidden)),.mdc-acts:has(.dlm:not(.hidden)),.mdc-foot:has(.dlm:not(.hidden)),.mdc-top:has(.dlm:not(.hidden)),.dsr-h:has(.dlm:not(.hidden)),.mi-bfoot:has(.dlm:not(.hidden)),.mi-sib:has(.dlm:not(.hidden)),.fact:has(.dlm:not(.hidden)){ z-index: 70; }
 .dlw { position: relative; display: inline-block; }
 .dlm { z-index: 100; min-width: 190px; max-width: min(86vw, 280px); max-height: 60vh; overflow-y: auto; }
 .dlm.up { top: auto; bottom: calc(100% + 6px); }
@@ -180,3 +180,30 @@ body.form-open #phead, body.form-open #view, body.form-open #phero { display: no
 #app .ft-pn { border: 1px solid var(--line, #dfe2ea) !important; border-radius: 12px !important; padding: 8px 18px 18px !important; }
 #app .ft-pn > legend { font-size: 14px !important; font-weight: 700 !important; color: var(--brand-ink, #4a2fb0) !important; background: var(--brand-soft, #eeeaff); border-radius: 999px; padding: 4px 14px !important; }
 @media (max-width: 720px) { #app .ft-pn { padding: 6px 12px 14px !important; } .ft-chips .btn { flex: 1 1 140px; } }
+
+/* ===== v20: header tidak boleh tertimpa konten =====
+   Penyebab bug: kontainer laporan (.mdc-top, .mdc-filter, .ft-rekap, ...) memakai z-index 30 untuk menu Download,
+   sama dengan header sticky (z-index 30). Elemen yang muncul belakangan menang, sehingga judul/tabel tampil DI ATAS header saat scroll.
+   Perbaikan: header di atas semua konten halaman (80); konten halaman tetap di bawah (<= 70); modal/panel notifikasi tetap di atas. */
+#main > header { z-index: 80 !important; }
+
+/* ===== v20: Daily Film Testing = SATU laporan per hari berisi banyak studio ===== */
+.ftr-list .mdc-tbl td, .ftr-list .mdc-tbl th { vertical-align: top; }
+.ftr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ftr-chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid var(--line, #ebedf3); background: var(--surface, #fff); color: var(--body, #3b4256); white-space: nowrap; }
+.ftr-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok, #16a34a); flex: none; }
+.ftr-chip.failed i { background: var(--err, #dc2626); }
+.ftr-chip.retest i { background: var(--warn, #d97706); }
+.ftr-sum { font-size: 12px; color: var(--mute, #6b7287); margin-top: 4px; }
+.ftr-day { margin: 0 0 6px; font-weight: 700; }
+.ftr-st { border: 1px solid var(--line, #ebedf3); border-radius: 12px; padding: 14px 16px; margin: 0 0 14px; background: var(--surface, #fff); }
+.ftr-st > header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin: 0 0 8px; }
+.ftr-st > header h3 { margin: 0; font-size: 15px; }
+.ftr-st .mdc-grid { margin-bottom: 8px; }
+.ftr-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.ftr-acts .btn { min-height: 36px; padding: 0 14px; font-size: 12px; }
+.ftr-film { width: 100%; }
+/* judul "Dokumentasi Studio N" harus tegas dan mudah dilihat (formulir, detail, dan unggah foto) */
+.ft-doc > legend, #app .ft-doc > legend, #modal .ft-doc > legend, :root[data-theme] #modal .mdc-fs.ft-doc legend { font-weight: 800 !important; font-size: 15px !important; color: var(--ink, #1d2538) !important; }
+.ft-dokt { font-weight: 800; }
+h3.ft-dokt { font-size: 15px; }
