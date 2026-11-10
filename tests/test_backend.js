@@ -120,6 +120,17 @@ check('issue: Pelapor tetap hanya melihat laporan sendiri', ctx.repFilter_({type
  const U1={role:'REPORTER',userId:'u1',fullName:'Satu'},U2={role:'GUIDE_SECURITY',userId:'u2',fullName:'Dua'},AD={role:'ADMIN',userId:'ad',fullName:'Adm'};
  const sh=(n,full)=>Array.from({length:n},(_,i)=>({show:'SHOW'+(i+1),film:'F'+i,tiket:'10',penonton:full===false&&i===4?'':'9'}));
  const mkS=(n,full)=>['Studio 1','Studio 2','Studio 3','Studio 4'].map(x=>({studio:x,shows:sh(n,full)}));
+ /* akses foto per peran (aksi img) */
+ const PH=[{photoId:'PH-w',reportId:'R-work',fileId:'F1'},{photoId:'PH-p',reportId:'R-pat',fileId:'F2'},{photoId:'PH-a',reportId:'R-aud',fileId:'F3'},{photoId:'PH-i',reportId:'R-iss',fileId:'F4'}];
+ const RP=[{id:'R-work',type:'work',userId:'u1'},{id:'R-pat',type:'patrol',userId:'u1'},{id:'R-aud',type:'audience',userId:'u1'},{id:'R-iss',type:'issue',userId:'u3'}];
+ const oldAll=ctx.all_;ctx.all_=n=>n==='PHOTOS'?PH:n==='REPORTS'?RP:oldAll(n);ctx.DriveApp={getFileById:()=>({getBlob:()=>({getContentType:()=>'image/png',getBytes:()=>[1]})})};ctx.Utilities.base64Encode=()=>'AA==';
+ const img=(u,id)=>{try{return !!ctx.H.img(u,{kind:'foto',id});}catch(e){return false;}};
+ const GS={role:'GUIDE_SECURITY',userId:'g1'},RPT={role:'REPORTER',userId:'u3'};
+ check('img: Guide/Security tidak boleh foto laporan Pekerjaan/Isu', !img(GS,'PH-w')&&!img(GS,'PH-i'));
+ check('img: Guide/Security boleh foto Patroli dan Data Penonton', img(GS,'PH-p')&&img(GS,'PH-a'));
+ check('img: Pelapor boleh Data Penonton dan isunya sendiri, bukan Pekerjaan/Patroli', img(RPT,'PH-a')&&img(RPT,'PH-i')&&!img(RPT,'PH-w')&&!img(RPT,'PH-p'));
+ check('img: Admin boleh semua', img({role:'ADMIN',userId:'a'},'PH-w'));
+ ctx.all_=oldAll;
  const call=(u,q)=>{try{return ctx.H.rep_save(u,q);}catch(e){return {err:String(e&&e.message||e)};}};
  const dat='2026-11-07';
  const a=call(U1,{type:'audience',reqId:'r1',data:{date:dat,studios:[{studio:'Studio 1',shows:sh(2)}]}});
