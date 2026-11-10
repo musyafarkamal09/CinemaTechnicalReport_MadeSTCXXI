@@ -206,6 +206,47 @@
         .catch(function () { img.alt = 'Foto tidak dapat dimuat'; });
     });
   }
+  /* Foto kecil (kotak 84px) di detail Pelaporan: diambil per 6 foto dalam satu panggilan, berupa thumbnail kecil, dan
+     disimpan di memori supaya membuka ulang detail langsung tampil. Klik foto = muat ukuran penuh (juga di-cache). */
+  var PHC = { t: {}, f: {} };
+  function thumbReady(img, url) { img.src = url; img.dataset.ok = '1'; img.classList.remove('ph-wait'); }
+  function loadThumbs(root) {
+    var imgs = [].slice.call((root || document).querySelectorAll('img[data-fid][data-th]')), need = [];
+    imgs.forEach(function (img) {
+      var id = img.dataset.fid;
+      img.onclick = function () { openFull(img); };
+      if (PHC.t[id] || PHC.f[id]) thumbReady(img, PHC.t[id] || PHC.f[id]); else { img.classList.add('ph-wait'); need.push(img); }
+    });
+    for (var i = 0; i < need.length; i += 6) (function (chunk) {
+      api('dcp_photo_batch', { ids: chunk.map(function (x) { return x.dataset.fid; }), thumb: true, quiet: true }).then(function (r) {
+        var by = {}; ((r && r.items) || []).forEach(function (it) { by[it.fotoId] = it; });
+        chunk.forEach(function (img) {
+          var it = by[img.dataset.fid];
+          if (it && it.url) { (it.thumb ? PHC.t : PHC.f)[it.fotoId] = it.url; if (!it.thumb) PHC.t[it.fotoId] = it.url; thumbReady(img, it.url); }
+          else { img.classList.remove('ph-wait'); img.alt = 'Foto tidak dapat dimuat'; }
+        });
+      }).catch(function () { chunk.forEach(function (img) { img.classList.remove('ph-wait'); img.alt = 'Foto tidak dapat dimuat'; }); });
+    })(need.slice(i, i + 6));
+    var first = imgs[0];
+    if (first && !PHC.f[first.dataset.fid]) setTimeout(function () { if (document.body.contains(first)) fetchFull(first.dataset.fid).catch(function () {}); }, 800);
+  }
+  /* Foto ukuran penuh: satu permintaan per foto (tidak ganda), disimpan di memori. Lightbox langsung terbuka memakai
+     thumbnail yang sudah tampil, lalu diganti resolusi penuh begitu selesai diunduh. */
+  var INF = {};
+  function fetchFull(id) {
+    if (PHC.f[id]) return Promise.resolve(PHC.f[id]);
+    if (INF[id]) return INF[id];
+    INF[id] = api('dcp_photo_get', { fotoId: id, quiet: true }).then(function (r) { PHC.f[id] = r.url; delete INF[id]; return r.url; },
+      function (e) { delete INF[id]; throw e; });
+    return INF[id];
+  }
+  function openFull(img) {
+    var id = img.dataset.fid;
+    if (!img.dataset.ok) return;
+    if (PHC.f[id]) { S.lightbox(PHC.f[id]); return; }
+    var lb = S.lightbox(img.src, { note: 'Memuat resolusi penuh...' });
+    fetchFull(id).then(function (u) { lb.set(u); }).catch(function (e) { lb.fail((e && e.message) || 'Foto tidak dapat dimuat.'); });
+  }
   function bindPhotoDel() {
     document.querySelectorAll('[data-pdel]').forEach(function (b) {
       b.onclick = function () {
@@ -1024,5 +1065,5 @@
     });
   }
   /* helper bersama untuk modul Pelaporan DCP (pelaporan.js) */
-  S.pel = { collectPhotos: collectPhotos, uname: uname, photoBox: photoBox, photoBind: photoBind, sendPhotos: sendPhotos, loadPhotos: loadPhotos, canWrite: canWrite, loadMyPerm: loadMyPerm, dlMenu: dlMenu, recSave: recSave, jkt: jkt, KOMP_DEF: KOMP_DEF };
+  S.pel = { collectPhotos: collectPhotos, uname: uname, photoBox: photoBox, photoBind: photoBind, sendPhotos: sendPhotos, loadPhotos: loadPhotos, loadThumbs: loadThumbs, canWrite: canWrite, loadMyPerm: loadMyPerm, dlMenu: dlMenu, recSave: recSave, jkt: jkt, KOMP_DEF: KOMP_DEF };
 })();
