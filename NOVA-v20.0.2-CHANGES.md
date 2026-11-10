@@ -11,9 +11,11 @@
 - Arsip otomatis harian ditandai selesai hanya bila berhasil; bila gagal dicoba ulang paling cepat 1 jam kemudian.
 - Spreadsheet dibuka sekali per permintaan (sebelumnya puluhan kali).
 
+- Foto (aksi `img`): Guide/Security kini hanya dapat membuka foto laporan Patroli dan Data Penonton, sama seperti batas di `rep_get`/`rep_zip`. Sebelumnya batas ini tidak diterapkan di `img`.
+
 ## Frontend dan repo
 - `app.js` 345 KB menjadi 236 KB: gambar latar disimpan sebagai `img/cut-christie.webp` dan `img/cut-barco.webp` (sudah masuk cache offline di `sw.js`).
-- `config.js` dihapus (tidak dipakai). 19 berkas catatan lama dipindah ke `docs/`.
+- `config.js` dihapus (tidak dipakai; alamat API hanya ada di `API_URL` pada `app.js` baris 6). Pesan bantuan di `app.js` diperbarui. 19 berkas catatan lama dipindah ke `docs/`.
 - Tes baru: `tests/browser/audience-shared.js`, `tests/test_auth.js` (kunci sementara), `tests/test_backend.js` (hak akses draf).
 
 ## Belum diubah (keputusan Anda)
