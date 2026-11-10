@@ -23,8 +23,8 @@ ck('login benar berhasil',tryLogin('Admin','Rahasia123').ok);
 for(let i=1;i<=9;i++)tryLogin('Admin','salah'+i);
 ck('9 kali salah: belum terblokir',!(Number(users[0].lockedAt)>0));
 const t10=tryLogin('Admin','salah10');
-ck('kali ke-10: terblokir',Number(users[0].lockedAt)>0&&/terblokir/i.test(t10.err||''));
-ck('terblokir meski password benar',/terblokir/i.test(tryLogin('Admin','Rahasia123').err||''));
+ck('kali ke-10: terblokir',Number(users[0].lockedAt)>0&&/dikunci/i.test(t10.err||''));
+ck('terkunci meski password benar',/dikunci/i.test(tryLogin('Admin','Rahasia123').err||''));
 // reset Admin membuka blokir
 const adm={role:'ADMIN',userId:'U9',fullName:'Admin2'};
 vm.runInContext('H.usr_reset',ctx)(adm,{userId:'U1',password:'BaruBaru123'});
@@ -37,9 +37,20 @@ const D=vm.runInContext('Date',ctx),realNow=D.now;D.now=()=>realNow()+31*60*1000
 let idleErr='';try{ctx.session_(tok)}catch(e){idleErr=String(e.message||e)}
 D.now=realNow;
 ck('idle >30 menit ditolak',/tidak aktif|berakhir/i.test(idleErr));
-/* Admin dikecualikan dari blokir (kebijakan di Code.gs): salah 12 kali tetap tidak terkunci dan tetap bisa login dengan password benar */
+/* kunci sementara: habis sendiri setelah 15 menit, berlaku juga untuk Admin, dan tidak mematikan sesi Admin yang sudah aktif */
 users.push({_row:3,userId:'U2',fullName:'Adm',username:'Adm',role:'ADMIN',status:'Aktif',salt,hash,mustChange:'N',failCount:'',lockedAt:''});
-for(let i=1;i<=12;i++)tryLogin('Adm','salah'+i);
-ck('Admin tidak pernah terkunci',!(Number(users[1].lockedAt)>0)&&tryLogin('Adm','Rahasia123').ok);
+const admTok=tryLogin('Adm','Rahasia123').ok.token;
+for(let i=1;i<=10;i++)tryLogin('Adm','salah'+i);
+ck('Admin ikut terkunci sementara setelah 10x salah',Number(users[1].lockedAt)>0&&/dikunci/i.test(tryLogin('Adm','Rahasia123').err||''));
+ck('sesi Admin yang sudah aktif tidak ikut mati',!!ctx.session_(admTok));
+users.push({_row:4,userId:'U3',fullName:'Usr',username:'Usr',role:'USER',status:'Aktif',salt,hash,mustChange:'N',failCount:'',lockedAt:''});
+const tokU=tryLogin('Usr','Rahasia123').ok.token;
+for(let i=1;i<=10;i++)tryLogin('Usr','salah'+i);
+let lockedSess='';try{ctx.session_(tokU)}catch(e){lockedSess=String(e.message||e)}
+ck('sesi akun non-Admin yang terkunci berakhir',/berakhir/i.test(lockedSess));
+D.now=()=>realNow()+16*60*1000;
+const after=tryLogin('Adm','Rahasia123'),afterU=tryLogin('Usr','Rahasia123');
+D.now=realNow;
+ck('kunci habis sendiri setelah 15 menit dan hitungan salah kembali 0',after.ok&&afterU.ok&&Number(users[1].failCount)===0&&Number(users[1].lockedAt)===0);
 r.forEach(x=>console.log((x[1]?'PASS ':'FAIL ')+x[0]));
 const f=r.filter(x=>!x[1]).length;console.log('HASIL: '+(r.length-f)+'/'+r.length+' lulus');process.exit(f?1:0);

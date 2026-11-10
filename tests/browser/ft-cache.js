@@ -1,0 +1,31 @@
+/* Uji 20.0.1: mengetik filter / memilih studio tidak memanggil server lagi; setelah simpan/buka detail daftar diambil ulang. */
+const { chromium } = require(process.env.PW || 'playwright');
+const { install, handlers } = require('./mockapi');
+const mk = (id, z) => ({ id, tanggal: '2026-11-08', jam: '09:00', film: 'FILM ' + id, studio: z, format: '2D', server: '', projector: '', tester: 'T', status: 'PASSED', checklist: [], masalah: '', parentId: '', batchId: 'B1', ketDok: '', fotoCount: 0, createdAt: 1 });
+const LAP = [mk('FT-1', '1'), mk('FT-2', '2'), mk('FT-3', '3'), mk('FT-4', '4')];
+let calls = 0, detail = 0;
+handlers.ft_list = () => { calls++; return LAP; };
+handlers.ft_report_get = b => { detail++; return { key: 'B1', laporan: LAP, foto: {} }; };
+handlers.dcp_meta = () => ({ formatFt: ['2D'], checklist: [], checklistItem: [], status: [] });
+(async () => {
+  const b = await chromium.launch(), ctx = await b.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { localStorage.setItem('stc_t', 't'); localStorage.setItem('stc_u', JSON.stringify({ userId: 'U1', name: 'Admin', username: 'admin', role: 'ADMIN' })); });
+  const page = await ctx.newPage(); await page.route(/^https?:\/\/(?!localhost)/, r => r.abort()); await install(page);
+  const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.goto((process.env.BASE || 'http://localhost:8766') + '/index.html'); await page.waitForTimeout(1000);
+  await page.evaluate(() => { document.querySelector('#nav a[data-p="ftest"], #tabs a[data-p="ftest"]').click(); }); await page.waitForTimeout(900);
+  const c0 = calls;
+  await page.fill('#ftq', 'FILM FT-2'); await page.waitForTimeout(800);
+  await page.selectOption('#fts', 'PASSED'); await page.waitForTimeout(500);
+  await page.click('.mdc-stab[data-stu="3"]'); await page.waitForTimeout(500);
+  const rowsAfter = await page.$$eval('.ftr-list tbody tr[data-ft-open]', e => e.length);
+  const c1 = calls;
+  await page.click('.ftr-list tbody tr[data-ft-open]'); await page.waitForTimeout(700);
+  await page.evaluate(() => document.querySelector('#modal .btn.sec, #modal [data-back], .bk')?.click());
+  await page.evaluate(() => { const a = document.querySelector('#nav a[data-p="ftest"], #tabs a[data-p="ftest"]'); a && a.click(); }); await page.waitForTimeout(800);
+  const c2 = calls;
+  console.log(JSON.stringify({ c0, c1, c2, rowsAfter, detail, errs }));
+  await b.close();
+  const ok = c0 === 1 && c1 === c0 && rowsAfter === 1 && detail >= 1 && c2 > c1 && !errs.length;
+  console.log(ok ? 'LULUS' : 'GAGAL'); process.exit(ok ? 0 : 1);
+})().catch(e => { console.error(e); process.exit(1); });

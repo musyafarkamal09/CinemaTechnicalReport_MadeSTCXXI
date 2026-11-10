@@ -9,7 +9,8 @@ for W in desktop tablet phone; do
   node tests/browser/v16.js $W | grep -E 'FAIL|HASIL'
   node tests/browser/audience.js $W | grep -E 'FAIL|HASIL'
   node tests/browser/audience-draft.js $W | grep -E "FAIL|HASIL"
+  node tests/browser/audience-shared.js $W | grep -E "FAIL|HASIL"
   node tests/browser/ft-dok.js $W | grep -E "FAIL|LULUS|GAGAL"
   node tests/browser/ft-laporan-satu.js $W | grep -E "FAIL|LULUS|GAGAL"
 done
-for t in ac-download-sidebar ats-countdown pdf-foto audience-export ft-multistudio ft-export-foto ft-laporan-satu; do echo "== $t"; node tests/browser/$t.js | grep -E "FAIL|SEMUA|HASIL|LULUS|GAGAL"; done
+for t in ac-download-sidebar ats-countdown pdf-foto audience-export ft-multistudio ft-export-foto ft-laporan-satu ft-cache; do echo "== $t"; node tests/browser/$t.js | grep -E "FAIL|SEMUA|HASIL|LULUS|GAGAL"; done

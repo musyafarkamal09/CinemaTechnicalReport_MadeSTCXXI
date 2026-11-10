@@ -69,7 +69,7 @@ check('meterDiff_ null on reset (no negative)', dd.diffs.lwbp===null, JSON.strin
 // 8. Notification hook wraps H.rep_save
 check('H.rep_save wrapped by hook', typeof ctx.H.rep_save==='function');
 // Version string
-check('doGet version string matches current build (v18-penonton-draf-submit)', /versi: v18-penonton-draf-submit/.test(src));
+check('doGet version string matches current build (v20.0.2-penonton-bersama)', /versi: v20.0.2-penonton-bersama/.test(src));
 
 // 9. Data Penonton (audience)
 const bad=(f)=>{try{f();return null}catch(e){return String(e&&e.message||e)}};
@@ -125,8 +125,12 @@ check('issue: Pelapor tetap hanya melihat laporan sendiri', ctx.repFilter_({type
  const a=call(U1,{type:'audience',reqId:'r1',data:{date:dat,studios:[{studio:'Studio 1',shows:sh(2)}]}});
  check('draf: simpan sebagian berhasil sebagai draf', a.id&&a.draft===true&&JSON.parse(DB[0].data).draft===true, JSON.stringify(a));
  check('draf: bisa diedit pemilik tanpa batas 30 menit', (DB[0].editDeadline=1, !call(U1,{type:'audience',id:a.id,data:{date:dat,studios:[{studio:'Studio 1',shows:sh(3)}]}}).err));
- check('draf: out_ editable untuk pemilik, tidak untuk lain', ctx.out_(U1,DB[0],Date.now()+9e9).editable===true&&ctx.out_(U2,DB[0],Date.now()).editable===false&&ctx.out_(U2,DB[0],Date.now()).draft===true);
- check('draf: pengguna lain tidak boleh edit', /milik sendiri/.test(call(U2,{type:'audience',id:a.id,data:{date:dat,studios:mkS(5)}}).err||''));
+ const U3={role:'REPORTER',userId:'u3',fullName:'Tiga'};
+ check('draf: out_ editable untuk pemilik dan akun non-Pelapor lain, tidak untuk Pelapor lain', ctx.out_(U1,DB[0],Date.now()+9e9).editable===true&&ctx.out_(U2,DB[0],Date.now()).editable===true&&ctx.out_(U2,DB[0],Date.now()).own===false&&ctx.out_(U3,DB[0],Date.now()).editable===false&&ctx.out_(U3,DB[0],Date.now()).draft!==undefined);
+ check('draf: Pelapor lain tidak boleh edit', /milik sendiri/.test(call(U3,{type:'audience',id:a.id,data:{date:dat,studios:mkS(5)}}).err||''));
+ check('draf: Guide/Security lain boleh mengisi dan mengubah draf', (()=>{const r=call(U2,{type:'audience',id:a.id,data:{date:dat,studios:[{studio:'Studio 1',shows:sh(4)}]}});return !r.err&&DB[0].userId==='u1'&&JSON.parse(DB[0].data).studios[0].shows.length===4;})());
+ check('draf: simpan ditolak bila data sudah diubah orang lain sejak dibuka', /baru saja diubah/.test(call(U1,{type:'audience',id:a.id,baseAt:1,data:{date:dat,studios:[{studio:'Studio 1',shows:sh(2)}]}}).err||'')&&!call(U1,{type:'audience',id:a.id,baseAt:DB[0].updatedAt,data:{date:dat,studios:[{studio:'Studio 1',shows:sh(3)}]}}).err);
+ check('draf: foto boleh diunggah akun non-Pelapor lain, bukan Pelapor lain', (()=>{const r={type:'audience',userId:'u1',status:'Aktif',editDeadline:1,data:JSON.stringify({draft:true})};try{ctx.canPhoto_(U2,r);}catch(e){return false;}try{ctx.canPhoto_(U3,r);return false;}catch(e){return true;}})());
  check('submit: ditolak bila show belum lengkap', /Belum lengkap/.test(call(U1,{type:'audience',id:a.id,submit:true,data:{date:dat,studios:mkS(5,false)}}).err||''));
  check('submit: ditolak bila hanya 4 show', /Belum lengkap/.test(call(U1,{type:'audience',id:a.id,submit:true,data:{date:dat,studios:mkS(4)}}).err||''));
  check('submit: tetap draf setelah submit gagal', JSON.parse(DB[0].data).draft===true);
@@ -135,11 +139,13 @@ check('issue: Pelapor tetap hanya melihat laporan sendiri', ctx.repFilter_({type
  check('submit: lengkap berhasil, draft=false, submittedAt terisi', !sb.err&&d0.draft===false&&d0.submittedAt>=t0, JSON.stringify(sb));
  check('submit: batas edit 30 menit dihitung dari submit', Math.abs(DB[0].editDeadline-(d0.submittedAt+30*60000))<5, String(DB[0].editDeadline));
  check('submit: boleh edit dalam 30 menit', !call(U1,{type:'audience',id:a.id,data:{date:dat,studios:mkS(5)}}).err);
+ check('terkirim: akun lain (bukan pemilik/Admin) tidak boleh edit', /milik sendiri|Batas waktu/.test(call(U2,{type:'audience',id:a.id,data:{date:dat,studios:mkS(5)}}).err||'')&&ctx.out_(U2,DB[0],Date.now()).editable===false);
  check('submit: edit setelah submit tidak boleh jadi tidak lengkap', /Belum lengkap/.test(call(U1,{type:'audience',id:a.id,data:{date:dat,studios:mkS(3)}}).err||''));
  check('submit: tetap terkirim dan deadline tidak diperpanjang', JSON.parse(DB[0].data).draft===false&&Math.abs(DB[0].editDeadline-(d0.submittedAt+30*60000))<5);
  DB[0].editDeadline=Date.now()-1000;
  check('submit: edit ditolak setelah 30 menit', /Batas waktu edit/.test(call(U1,{type:'audience',id:a.id,data:{date:dat,studios:mkS(5)}}).err||''));
  check('submit: Admin tetap boleh edit', !call(AD,{type:'audience',id:a.id,data:{date:dat,studios:mkS(5)}}).err);
+ check('Admin: out_ editable pada laporan terkirim lewat batas', ctx.out_(AD,DB[0],Date.now()).editable===true);
  check('submit: out_ tidak editable pemilik setelah batas', ctx.out_(U1,DB[0],Date.now()).editable===false);
  const b=call(U2,{type:'audience',reqId:'r2',submit:true,data:{date:dat,studios:mkS(5)}});
  check('submit langsung saat buat baru lengkap', b.id&&b.submitted===true&&JSON.parse(DB[1].data).draft===false);

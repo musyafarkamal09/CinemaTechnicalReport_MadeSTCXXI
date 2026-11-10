@@ -642,7 +642,13 @@
      Studio boleh 4 atau lebih dan opsional (centang yang dites). Tampilan, detail, dan ekspor memakai satu laporan,
      bukan satu laporan per studio. Di server tiap studio tetap satu baris (FT_LAPORAN) agar data lama tidak berubah. */
   var FST = { q: '', status: '', from: '', to: '', sel: null };
-  var FT_TMP = null, FT_VIEW = null;
+  var FT_TMP = null, FT_VIEW = null, FT_CACHE = null;
+  /* daftar testing disimpan 30 detik di memori: mengetik filter atau memilih studio tidak lagi memanggil server.
+     Setiap membuka detail (yang selalu terjadi setelah simpan, hapus, atau foto) membuang cache agar daftar selalu segar. */
+  function ftRows() {
+    if (FT_CACHE && Date.now() - FT_CACHE.at < 30000) return Promise.resolve(FT_CACHE.rows);
+    return api('ft_list', { quiet: true }).then(function (rows) { FT_CACHE = { rows: rows || [], at: Date.now() }; return FT_CACHE.rows; });
+  }
   function studioKey(a, b) { var x = Number(a), y = Number(b); if (!isNaN(x) && !isNaN(y) && x !== y) return x - y; return String(a) < String(b) ? -1 : String(a) > String(b) ? 1 : 0; }
   function studioList(data) {
     var set = { '1': 1, '2': 1, '3': 1, '4': 1 };
@@ -725,7 +731,7 @@
 
   window.vFt = function () {
     var v = $('view');
-    Promise.all([api('ft_list', { quiet: true }), getMeta(), loadMyPerm()]).then(function (r) {
+    Promise.all([ftRows(), getMeta(), loadMyPerm()]).then(function (r) {
       var all = r[0] || [], studios = studioList(all);
       var sel = (FST.sel || studios).filter(function (z) { return studios.indexOf(z) >= 0; });
       if (!sel.length) sel = studios.slice();
@@ -815,6 +821,7 @@
 
   /* ---------- detail: SATU laporan memuat semua studio ---------- */
   function ftDetail(id) {
+    FT_CACHE = null;
     getMeta().then(function () { return api('ft_report_get', { id: id }); }).then(function (r) {
       var items = (META && META.checklistItem) || [], rp = ftGroup(r.laporan || [])[0], FOTO = r.foto || {};
       if (!rp) { toast('Laporan tidak ditemukan.', 1); return; }

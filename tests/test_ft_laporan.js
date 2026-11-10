@@ -48,32 +48,65 @@ let e2='';try{ctx.sheetAudit_({role:'USER'},{});}catch(e){e2=e.message;}
 check('audit: hanya Admin',/Akses ditolak/.test(e2));
 check('audit web tidak pernah menghapus sheet',!/deleteSheet/.test(L('dcp.gs').slice(L('dcp.gs').indexOf('function sheetAudit_'),L('dcp.gs').indexOf('var SHEET_MARK'))));
 
-/* hapus sheet tidak terpakai: hanya yang tidak dipakai DAN merah; backup dulu; sheet dipakai tidak pernah dihapus */
+
+/* temuan audit 1: nama bawaan JavaScript bukan aksi (tidak membocorkan hash/salt) */
+let er='';try{ctx.route_({action:'constructor',token:'x'});}catch(e){er=e.message;}
+check('route_: "constructor" ditolak sebagai aksi tidak dikenal',/Aksi tidak dikenal/.test(er),er);
+er='';try{ctx.route_({action:'toString'});}catch(e){er=e.message;}
+check('route_: "toString" ditolak',/Aksi tidak dikenal/.test(er),er);
+er='';try{ctx.route_({action:'hasOwnProperty'});}catch(e){er=e.message;}
+check('route_: "hasOwnProperty" ditolak',/Aksi tidak dikenal/.test(er),er);
+/* temuan audit 2: studio ganda dalam satu laporan ditolak (tambah studio ke laporan yang ada) */
+{
+ const added=[];const base=[mk('A1','1',{batchId:'B1'}),mk('A2','2',{batchId:'B1'}),mk('L1','1',{createdAt:10}),mk('L2','5',{createdAt:11})];
+ ctx.dcpRows_=n=>n==='FT_LAPORAN'?base.map(x=>({...x})):[];ctx.dcpAdd_=(n,o)=>{added.push(o);};ctx.dcpUpd_=()=>{};
+ const U={role:'ADMIN',userId:'1',fullName:'A'},ck=vm.runInContext('ftItemIds_()',ctx).map(i=>({id:i.id,val:'PASS'}));
+ const mkq=(z,b,x)=>({tanggal:'2026-11-08',jam:'09:00',film:'F',studio:z,format:'2D',tester:'T',checklist:ck,batchId:b,...x});
+ const tryS=q=>{try{return {id:ctx.ftSave_(U,q)};}catch(e){return {err:e.message};}};
+ check('tambah studio yang sudah ada di batch ditolak',/sudah ada di laporan ini/.test(tryS(mkq('2','B1')).err||''));
+ check('studio sama dengan huruf/spasi beda juga ditolak',/sudah ada/.test(tryS(mkq(' 2 ','B1')).err||''));
+ check('studio baru ke batch diterima',!!tryS(mkq('3','B1')).id&&added.length===1&&added[0].batchId==='B1',JSON.stringify(added.map(a=>a.studio)));
+ check('laporan lama sehari (kunci D...): studio ada ditolak, studio baru diterima',/sudah ada/.test(tryS(mkq('1','D2026-11-08')).err||'')&&!!tryS(mkq('6','D2026-11-08')).id);
+ check('batch baru (kunci belum ada) bebas',!!tryS(mkq('1','FBBARU')).id);
+ /* ubah nomor studio menabrak studio lain dalam laporan yang sama */
+ ctx.dcpRows_=n=>n==='FT_LAPORAN'?base.map(x=>({...x,createdByUserId:'1'})):[];
+ check('ubah studio 2 menjadi 1 (sudah ada) ditolak',/sudah ada/.test(tryS(mkq('1','B1',{id:'A2'})).err||''));
+ check('ubah studio 2 menjadi 7 diterima',!!tryS(mkq('7','B1',{id:'A2'})).id);
+ check('simpan ulang tanpa ganti studio diterima',!!tryS(mkq('2','B1',{id:'A2'})).id);
+ /* temuan audit 4: batch membaca sheet sekali */
+ let reads=0;const rows2=[];ctx.dcpRows_=n=>{if(n==='FT_LAPORAN')reads++;return rows2.map(x=>({...x}));};
+ ctx.dcpAdd_=(n,o)=>{rows2.push(o);};
+ const rb=ctx.ftBatchSave_(U,{batchId:'FBX',items:['1','2','3','4','5'].map(z=>mkq(z,'',{}))});
+ check('batch 5 studio: sheet dibaca sekali dan ID berurutan unik',reads===1&&new Set(rb.ids).size===5&&rb.ids.map(i=>i.slice(-4)).join()==='0001,0002,0003,0004,0005',reads+' '+rb.ids.join());
+}
+
+/* pembersihan sheet (Code.gs): sheet modul DCP/Film Testing TIDAK PERNAH dianggap tidak terpakai; backup dulu; minimal satu sheet tersisa */
 const logs=[];ctx.Logger={log:m=>logs.push(m)};
-const order=[];
-const mkS=(n,rows,color)=>({n,getName:()=>n,getLastRow:()=>rows,getTabColor:()=>color||null,setTabColor(c){color=c;this.col=c;},get col2(){return color;}});
-const sh2=[mkS('USERS',5,'#dc2626'),mkS('Sheet1',1,'#dc2626'),mkS('Catatan saya',3,null),mkS('Eksperimen',9,'#DC2626'),mkS('FT_LAPORAN',4,'#00ff00')];
-const deleted=[];
-ctx.ss_=()=>({getId:()=>'SSID',getName:()=>'NOVA',getSheets:()=>sh2.filter(x=>deleted.indexOf(x.n)<0),deleteSheet:s=>{order.push('hapus '+s.n);deleted.push(s.n);}});
-ctx.DriveApp={getFileById:id=>({makeCopy:nm=>{order.push('backup');ctx.__bak=nm;return {getUrl:()=>'https://drive/bak'};}})};
-const hs=ctx.hapusSheetTidakTerpakai();
-check('hapus: hanya sheet tidak terpakai DAN merah (Sheet1, Eksperimen)',deleted.join()==='Sheet1,Eksperimen',deleted.join());
-check('hapus: sheet dipakai bertab merah (USERS) tidak dihapus',deleted.indexOf('USERS')<0);
-check('hapus: sheet tidak terpakai tanpa merah dilewati (Catatan saya)',hs.dilewati.join()==='Catatan saya'&&deleted.indexOf('Catatan saya')<0);
+const DCPN=['DCP_TRANSAKSI','DCP_FOTO','USER_PERMS','FT_LAPORAN','FT_FOTO'];
+check('registri Code.gs memuat semua sheet DCP/Film Testing',DCPN.every(n=>ctx.sheetPakai_().hasOwnProperty(n)),Object.keys(ctx.sheetPakai_()).join());
+const order=[],deleted=[];
+const mkS=n=>({n,getName:()=>n,getLastRow:()=>5,getLastColumn:()=>3,hideSheet(){order.push('sembunyi '+n);}});
+const sh2=['USERS','FT_LAPORAN','DCP_TRANSAKSI','USER_PERMS','DCP_FOTO','FT_FOTO','REPORTS','Sheet1','Eksperimen'].map(mkS);
+ctx.ss_=()=>({getId:()=>'SSID',getName:()=>'NOVA',getSheets:()=>sh2.filter(x=>deleted.indexOf(x.n)<0),getSheetByName:n=>sh2.filter(x=>x.n===n)[0],setActiveSheet(){},deleteSheet:s=>{order.push('hapus '+s.n);deleted.push(s.n);}});
+ctx.DriveApp={getFileById:()=>({makeCopy:nm=>{order.push('backup');ctx.__bak=nm;return {getUrl:()=>'https://drive/bak'};}})};
+const per=ctx.periksaSheetTidakTerpakai();
+check('periksa: hanya Sheet1 dan Eksperimen yang tidak terpakai (DCP/Testing TIDAK ikut)',per.join()==='Sheet1,Eksperimen',per.join());
+ctx.sembunyikanSheetTidakTerpakai();
+check('sembunyikan: tidak menyentuh sheet DCP/Testing',order.join('|')==='sembunyi Sheet1|sembunyi Eksperimen',order.join('|'));
+order.length=0;
+ctx.hapusSheetTidakTerpakai();
+check('hapus: hanya Sheet1 dan Eksperimen; semua sheet DCP/Testing aman',deleted.join()==='Sheet1,Eksperimen'&&DCPN.every(n=>deleted.indexOf(n)<0),deleted.join());
 check('hapus: backup dibuat SEBELUM penghapusan pertama',order[0]==='backup'&&/^BACKUP sebelum hapus sheet /.test(ctx.__bak),order.join('|'));
-check('hapus: hasil memuat jumlah baris dan URL backup',hs.dihapus[0]==='Sheet1 (0 baris)'&&hs.backup==='https://drive/bak'&&hs.dihapus[1]==='Eksperimen (8 baris)',JSON.stringify(hs.dihapus));
-order.length=0;deleted.length=0;
+deleted.length=0;order.length=0;
 ctx.DriveApp={getFileById:()=>({makeCopy:()=>{throw new Error('Drive penuh');}})};
 let eb='';try{ctx.hapusSheetTidakTerpakai();}catch(e){eb=e.message;}
 check('hapus: backup gagal -> tidak ada sheet dihapus',/Drive penuh/.test(eb)&&deleted.length===0,eb+' '+deleted.join());
-const only=[mkS('Sheet1',1,'#dc2626')];
-ctx.ss_=()=>({getId:()=>'X',getName:()=>'N',getSheets:()=>only,deleteSheet:()=>{order.push('x');}});
+const only=[mkS('Sheet1')];
+ctx.ss_=()=>({getId:()=>'X',getName:()=>'N',getSheets:()=>only,getSheetByName:()=>null,setActiveSheet(){},deleteSheet:()=>{order.push('x');}});
 let e3='';try{ctx.hapusSheetTidakTerpakai();}catch(e){e3=e.message;}
 check('hapus: tidak boleh menghapus semua sheet',/minimal satu sheet/.test(e3)&&order.length===0,e3);
-const sh3=[mkS('USERS',1,'#dc2626'),mkS('FT_LAPORAN',1,'#00ff00'),mkS('Sheet1',1,null)];
-ctx.ss_=()=>({getSheets:()=>sh3});
-ctx.sinkronSheetTidakTerpakai();
-check('sinkron: tanda merah lama pada sheet dipakai dibersihkan, warna lain dipertahankan, sheet tak terpakai jadi merah',sh3[0].col2===null&&sh3[1].col2==='#00ff00'&&sh3[2].col2==='#dc2626',[sh3[0].col2,sh3[1].col2,sh3[2].col2].join());
-check('hapus: tidak ada hapus lewat tombol web (hanya fungsi editor)',!/deleteSheet/.test(L('dcp.gs').slice(L('dcp.gs').indexOf('var DCP_H'))));
+const dsrc=L('dcp.gs');
+check('dcp.gs tidak lagi mendefinisikan fungsi pembersih bernama sama (tidak bentrok dengan Code.gs)',!/function hapusSheetTidakTerpakai|function sinkronSheetTidakTerpakai/.test(dsrc));
+check('tombol web tidak menghapus',!/deleteSheet/.test(dsrc.slice(dsrc.indexOf('function sheetAudit_'),dsrc.indexOf('var DCP_H'))));
 r.forEach(z=>console.log((z.c?'PASS ':'FAIL ')+z.a+(z.c?'':' -> '+z.d)));
 const f=r.filter(z=>!z.c); console.log('\nHASIL: '+(r.length-f.length)+'/'+r.length+' lulus'); process.exit(f.length?1:0);
