@@ -880,7 +880,7 @@ function mDiag(loc){var host=$('mres');if(!host)return;
    if(last[k]!==undefined&&v<last[k].v)rst.push({id:o.id,loc:o.loc,m:m[1],date:o.date,from:last[k].v,to:v});last[k]={v:v}})});
   var locs={};ok.forEach(function(o){locs[o.lk]=o.loc});var dates=ok.map(function(o){return o.date}).sort(),
    h='<div class="card mdiag"><b>Pemeriksaan data meteran</b><p>'+ok.length+' dari '+items.length+' laporan meteran terbaca'+(ok.length?' · '+Object.keys(locs).length+' lokasi · '+dd(dates[0])+' – '+dd(dates[dates.length-1]):'')+'.</p>'+
-   (items.length?'':'<p class="mwarn">Backend tidak mengembalikan laporan meteran. Periksa URL API di config.js dan pastikan Code.gs terbaru sudah di-deploy ulang (Deploy &gt; Kelola deployment &gt; Edit &gt; Versi baru).</p>')+
+   (items.length?'':'<p class="mwarn">Backend tidak mengembalikan laporan meteran. Periksa URL API (API_URL di app.js) dan pastikan Code.gs terbaru sudah di-deploy ulang (Deploy &gt; Kelola deployment &gt; Edit &gt; Versi baru).</p>')+
    (bad.length?'<p class="mwarn">Tidak terbaca ('+bad.length+'): '+bad.slice(0,8).map(function(b){return esc(b.id)+' ('+b.why+')'}).join(', ')+(bad.length>8?' …':'')+'</p>':'')+
    (rst.length?'<p class="mwarn">Angka lebih kecil dari pencatatan sebelumnya (tidak dihitung sebagai pemakaian; periksa salah ketik atau meteran diganti): '+rst.slice(0,6).map(function(c){return esc(c.id)+' '+esc(c.loc)+' '+c.m+' '+mfmt(c.from)+' → '+mfmt(c.to)}).join('; ')+(rst.length>6?' …':'')+'</p>':'')+
    (ok.length&&!bad.length&&!rst.length?'<p class="mok">Semua laporan meteran terbaca dengan benar.</p>':'')+'</div>';
