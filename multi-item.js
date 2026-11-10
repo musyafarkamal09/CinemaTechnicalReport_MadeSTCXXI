@@ -24,9 +24,10 @@
       h += '<label>Format<select class="mi-fmt">' + FMT.map(function (f) { return '<option>' + f + '</option>'; }).join('') + '</select></label></div>' +
         '<div class="mi-kelbox">' + kelHtml(KOMP.Besar) + '</div>';
     } else {
+      var rn = 'mij' + n + '_' + uid();
       h += '<div class="pel-jlist mi-jenis" role="radiogroup" aria-label="Jenis DCP"><span class="mi-lbl">Jenis DCP</span>' +
-        '<label class="mdc-cbx"><input type="radio" class="mi-jd" name="mij' + n + '_' + uid() + '" value="Besar" checked><span><b>Besar</b> <small>(HDD, USB, Kabel Power, Adaptor)</small></span></label>' +
-        '<label class="mdc-cbx"><input type="radio" class="mi-jd" value="Kecil"><span><b>Kecil</b> <small>(HDD, USB)</small></span></label></div></div>' +
+        '<label class="mdc-cbx"><input type="radio" class="mi-jd" name="' + rn + '" value="Besar" checked><span><b>Besar</b> <small>(HDD, USB, Kabel Power, Adaptor)</small></span></label>' +
+        '<label class="mdc-cbx"><input type="radio" class="mi-jd" name="' + rn + '" value="Kecil"><span><b>Kecil</b> <small>(HDD, USB)</small></span></label></div></div>' +
         '<div class="mi-kelbox">' + kelHtml(KOMP.Besar) + '</div>';
     }
     h += '<label>Keterangan item<textarea class="mi-ket" rows="2" maxlength="2000"></textarea></label>' +
@@ -61,7 +62,7 @@
           var it = { film: v('.mi-film'), kodeDisk: v('.mi-kd'), ph: v('.mi-ph'), keterangan: v('.mi-ket') };
           if (!it.film || !it.kodeDisk || !it.ph) { err = 'Item ' + no + ': judul film, kode disk, dan PH wajib diisi (atau hapus item).'; return; }
           if (mode === 'dcp') it.format = v('.mi-fmt'); else { var jd = el.querySelector('.mi-jd:checked'); it.jenisDcp = jd ? jd.value : 'Besar'; }
-          var kr = [].map.call(el.querySelectorAll('.mi-kr'), function (r) {
+          var kr = [].map.call(el.querySelectorAll('.mdc-kr'), function (r) {
             var cb = r.querySelector('.mi-kc');
             return { name: cb.getAttribute('data-n'), status: cb.checked ? 'Lengkap' : 'Tidak Ada', note: r.querySelector('.mi-kn').value.trim() };
           });
