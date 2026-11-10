@@ -397,7 +397,7 @@ label, #app .mdc-form label, #modal .mdc-form label { font-size: var(--t-xs); fo
   table.dtl tbody { display: block; }
   table.dtl tr:first-child:has(th) { display: none; }
   table.dtl tr { display: grid; grid-template-columns: 1fr; gap: 0; margin: 0 0 10px; border: 1px solid var(--line); border-radius: var(--r-l); background: var(--surface-2); overflow: hidden; }
-  table.dtl td, table.dtl th { display: grid; grid-template-columns: minmax(96px, 38%) minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 8px 12px; border: 0; border-top: 1px solid var(--line-soft); text-align: left; white-space: normal !important; overflow-wrap: anywhere; font-size: var(--t-sm); }
+  table.dtl td, table.dtl th { display: grid; grid-template-columns: minmax(118px, 42%) minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 8px 12px; border: 0; border-top: 1px solid var(--line-soft); text-align: left; white-space: normal !important; overflow-wrap: anywhere; font-size: var(--t-sm); }
   table.dtl td::before { content: attr(data-l); color: var(--mute); font-size: var(--t-xs); font-weight: 600; }
   table.dtl td.dtl-h { display: block; border-top: 0; background: var(--brand-soft); color: var(--ink); font-weight: 700; font-size: var(--t-md); }
   table.dtl td.dtl-h::before { content: none; }
@@ -427,4 +427,26 @@ label, #app .mdc-form label, #modal .mdc-form label { font-size: var(--t-xs); fo
   #modal input[type=file], #modal .acr input, #modal .acr select, #modal .acr textarea { max-width: 100%; width: 100%; box-sizing: border-box; min-width: 0; }
   #modal input[type=file] { font-size: 13px; }
   .rsp { overflow-wrap: anywhere; line-height: 1.55; }
+}
+
+/* ---- v20.0.3b: perbaikan dari foto HP nyata ---- */
+@media (max-width: 767px) {
+  /* Daftar laporan: sel ringkasan (status, "4 show · 68 tiket", daftar studio) mengalir sebagai teks biasa, bukan dipecah jadi kolom flex */
+  #app table.rt td.sm { display: block; text-align: left; padding: 10px 0; line-height: 1.5; color: var(--ink); }
+  #app table.rt td.sm .st { margin: 0 6px 4px 0; vertical-align: middle; font-size: 11px; }
+  #app table.rt td.sm small { display: block; margin-top: 2px; font-size: var(--t-xs); line-height: 1.45; color: var(--mute); }
+  #app table.rt td:first-child { font-size: var(--t-xs); }
+  #app table.rt td[data-l]::before { font-size: 10.5px; flex: none; }
+  #app table.rt td.act { display: flex; flex-wrap: wrap; gap: 8px; justify-content: stretch; padding: 10px 0 6px; }
+  #app table.rt td.act .btn { flex: 1 1 120px; min-height: 44px; }
+  /* tanpa kartu di dalam kartu: pembungkus daftar dibuat polos */
+  #app .scroll.cards { border: 0; background: transparent; box-shadow: none; }
+  #app table.rt tr { margin: 0 0 10px; padding: 4px 14px; background: var(--surface); }
+}
+@media (max-width: 640px) {
+  /* detail laporan: isi kartu diberi jarak dari tepi (sebelumnya menempel ke garis kartu) */
+  #modal .mbox table.dtl td, #modal .mbox table.dtl th { padding: 9px 14px !important; }
+  #modal .mbox table.dtl td.dtl-h { padding: 11px 14px !important; }
+  #modal .mbox table.dtl tr.dtl-t { padding: 11px 14px !important; }
+  #modal .mbox table.dtl tr.dtl-t th { padding: 0 !important; }
 }
