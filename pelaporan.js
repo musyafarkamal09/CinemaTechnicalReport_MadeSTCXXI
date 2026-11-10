@@ -1,7 +1,8 @@
 /* Outlet Operation System - modul Pelaporan DCP (frontend).
    Satu DCP = satu data utama (judul, PH, kode disk) dengan riwayat transaksi MASUK dan KELUAR.
    Dimuat setelah modul-dcp.js (memakai helper foto dan izin dari window.STC.pel).
-   Validasi, kunci data, dan audit tetap ditegakkan di server (dcp.gs: pel_list, pel_save, pel_validasi). */
+   Tanpa validasi manual: DCP Masuk otomatis berstatus Lengkap bila laporan (satu batch) memiliki minimal 1 foto;
+   DCP Keluar hanya didata (Tercatat), foto opsional. Aturan akses dan audit tetap ditegakkan di server (dcp.gs: pel_list, pel_save). */
 (function () {
   var S = window.STC;
   var P = S.pel;
@@ -15,25 +16,45 @@
   function komp(j) { return j === 'Kecil' ? KOMP_KECIL : KOMP_BESAR; }
   /* nama outlet tempat aplikasi ini dipakai (sama dengan judul di sidebar) */
   var OUTLET_SAYA = 'Sukaramai Trade Center XXI';
-  var STATUS = ['Draft', 'Tervalidasi', 'Lama'];
+  var STATUS = ['Menunggu foto', 'Lengkap', 'Tercatat', 'Tervalidasi', 'Lama'];
   var ROWS = [];
   var DST = { q: '', status: '', dari: '', sampai: '' };
 
-  Object.assign(S.DESC, { pel: 'Pelaporan DCP: riwayat masuk dan keluar per kode disk, dengan validasi dan dokumentasi' });
+  Object.assign(S.DESC, { pel: 'Pelaporan DCP: riwayat masuk dan keluar per kode disk, dengan dokumentasi foto' });
   S.IC.pel = '<svg class="ic" viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>';
 
   function q(s) { return esc(s); }
   function me() { return S.getU() || {}; }
   function myName() { var u = me(); return u.name || u.fullName || u.username || '-'; }
   function isLama(r) { return r.modul !== 'PEL'; }
-  function statusOf(r) { return isLama(r) ? 'Lama' : (r.verifiedAt ? 'Tervalidasi' : 'Draft'); }
+  /* jumlah foto per laporan: satu laporan = satu batchId (bisa banyak item DCP). Satu foto cukup untuk seluruh item. */
+  var _fcRows = null, _fc = {};
+  function batchFoto(r) {
+    if (!r.batchId) return (r.foto || []).length;
+    if (_fcRows !== ROWS) {
+      _fcRows = ROWS; _fc = {};
+      ROWS.forEach(function (x) { if (x.batchId) _fc[x.batchId] = (_fc[x.batchId] || 0) + (x.foto || []).length; });
+    }
+    return _fc[r.batchId] || 0;
+  }
+  /* tanpa validasi manual: Masuk = Lengkap bila ada foto; Keluar = Tercatat. 'Tervalidasi' hanya untuk data yang sudah divalidasi sebelumnya. */
+  function statusOf(r) {
+    if (isLama(r)) return 'Lama';
+    if (r.verifiedAt) return 'Tervalidasi';
+    if (r.jenis === 'KELUAR') return 'Tercatat';
+    return batchFoto(r) > 0 ? 'Lengkap' : 'Menunggu foto';
+  }
   function owner(r) { var u = me(); return u.role === 'ADMIN' || String(r.pelaporId) === String(u.userId); }
   function key(r) { return String(r.tanggal) + ' ' + String(r.jam) + ' ' + String(r.createdAt || 0).padStart(15, '0'); }
+  /* urutan tampilan: tanggal & jam terbaru di atas (sortAsc tetap dipakai untuk logika posisi/riwayat) */
+  function sortDesc(a) {
+    return a.slice().sort(function (x, y) { var p = key(x), k = key(y); return p < k ? 1 : p > k ? -1 : 0; });
+  }
   function sortAsc(a) {
     return a.slice().sort(function (x, y) { var p = key(x), k = key(y); return p < k ? -1 : p > k ? 1 : 0; });
   }
   function stBadge(s) {
-    var cls = s === 'Tervalidasi' ? 'selesai' : s === 'Draft' ? 'diproses' : 'na';
+    var cls = (s === 'Tervalidasi' || s === 'Lengkap') ? 'selesai' : s === 'Menunggu foto' ? 'diproses' : 'na';
     return '<span class="mdc-st mdc-' + cls + '">' + q(s === 'Lama' ? 'Data lama (baca saja)' : s) + '</span>';
   }
 
@@ -74,9 +95,9 @@
 
   /* ---------- unduh Excel / PDF: isi sesuai filter yang sedang dipakai ---------- */
   function plExport(fmt) {
-    var rows = ROWS.filter(match);
+    var rows = sortDesc(ROWS.filter(match));
     if (!rows.length) { toast('Tidak ada data untuk diunduh.', 1); return; }
-    var head = ['ID', 'Jenis', 'Tanggal', 'Jam', 'Kode disk', 'Judul film', 'PH', 'Outlet', 'Outlet tujuan', 'Penerima', 'Pelapor', 'Datang dari', 'Pengirim', 'Kelengkapan', 'Status validasi', 'Divalidasi oleh', 'Catatan', 'Jenis DCP'];
+    var head = ['ID', 'Jenis', 'Tanggal', 'Jam', 'Kode disk', 'Judul film', 'PH', 'Outlet', 'Outlet tujuan', 'Penerima', 'Pelapor', 'Datang dari', 'Pengirim', 'Kelengkapan', 'Status laporan', 'Divalidasi oleh (data lama)', 'Catatan', 'Jenis DCP'];
     var body = rows.map(function (r) {
       var kel = (r.kelengkapan || []).map(function (c) { return c.name + ': ' + c.status + (c.note ? ' (' + c.note + ')' : ''); }).join('; ');
       return [r.id, r.jenis === 'KELUAR' ? 'Keluar' : 'Masuk', r.tanggal, r.jam, r.kodeDisk, r.film, r.ph, r.outlet, r.jenis === 'KELUAR' ? (r.outletTujuan || '') : '', r.penerima, r.pelapor, r.asalDari || '', r.namaPengirim || '', kel || 'Tidak diisi (data lama)', statusOf(r), r.verifiedBy || '', r.keterangan, r.jenisDcp || 'Besar']
@@ -126,16 +147,16 @@
     all.forEach(function (g) {
       var p = posisi(g);
       if (p.here) n.di++; else n.jalan++;
-      g.hist.forEach(function (r) { if (statusOf(r) === 'Draft') n.draft++; if (statusOf(r) === 'Tervalidasi') n.valid++; });
+      g.hist.forEach(function (r) { var st = statusOf(r); if (st === 'Menunggu foto') n.draft++; if (st === 'Lengkap' || st === 'Tervalidasi') n.valid++; });
     });
     var kpi = function (l, x, c) { return '<div class="mdc-kpi ' + (c || '') + '"><small>' + q(l) + '</small><b>' + (Number(x) || 0) + '</b></div>'; };
     var h = '<div class="mdc-top"><div class="mdc-kpis">' +
       kpi('Kode disk', n.disk) + kpi('Ada di outlet ini', n.di, n.di ? 'warn' : '') + kpi('Sudah dikirim', n.jalan, n.jalan ? 'ok' : '') +
-      kpi('Draft', n.draft, n.draft ? 'warn' : '') + kpi('Tervalidasi', n.valid) + '</div>' +
+      kpi('Menunggu foto', n.draft, n.draft ? 'warn' : '') + kpi('Lengkap', n.valid) + '</div>' +
       '<div class="mdc-acts">' + (enabled ? '<button type="button" class="btn" id="plMasuk">+ Catat DCP Masuk</button><button type="button" class="btn sec" id="plKeluar">+ Catat DCP Keluar</button>' : '') + P.dlMenu('pl') + '</div></div>' +
       '<div class="mdc-filter pel-filter">' +
       '<input id="plQ" type="search" placeholder="Cari film, PH, kode disk, outlet, penerima" value="' + q(DST.q) + '" aria-label="Cari">' +
-      '<select id="plS" aria-label="Status validasi"><option value="">Semua status</option>' +
+      '<select id="plS" aria-label="Status laporan"><option value="">Semua status</option>' +
       STATUS.map(function (s) { return '<option value="' + s + '"' + (DST.status === s ? ' selected' : '') + '>' + (s === 'Lama' ? 'Data lama' : s) + '</option>'; }).join('') +
       '</select>' +
       '<label class="pel-date">Dari <input id="plD1" type="date" value="' + q(DST.dari) + '"></label>' +
@@ -150,13 +171,14 @@
   function renderBody() {
     var body = $('plBody');
     if (!body) return;
-    var shown = groups().filter(function (g) { return g.hist.some(match); });
+    var shown = groups().filter(function (g) { return g.hist.some(match); })
+      .sort(function (a, b) { var p = key(a.last), k = key(b.last); return p < k ? 1 : p > k ? -1 : 0; });
     body.innerHTML = shown.length ? shown.map(function (g) {
-      var p = posisi(g), cnt = g.hist.length, valid = g.hist.filter(function (r) { return statusOf(r) === 'Tervalidasi'; }).length;
+      var p = posisi(g), cnt = g.hist.length, wait = g.hist.filter(function (r) { return statusOf(r) === 'Menunggu foto'; }).length;
       var last = g.last;
       return '<tr data-pel-open="' + q(g.kd) + '" tabindex="0"><td class="mdc-mono">' + q(g.kd) + '</td><td>' + q(g.film) + '</td><td>' + q(g.ph) + '</td>' +
         '<td><span class="mdc-st mdc-' + (p.cls === 'ok' ? 'selesai' : 'warn') + '">' + q(p.txt) + '</span></td>' +
-        '<td>' + cnt + ' transaksi · ' + valid + ' tervalidasi</td><td>' + q(last.tanggal) + ' ' + q(last.jam) + '</td></tr>';
+        '<td>' + cnt + ' transaksi' + (wait ? ' · ' + wait + ' menunggu foto' : '') + '</td><td>' + q(last.tanggal) + ' ' + q(last.jam) + '</td></tr>';
     }).join('') : '<tr><td colspan="6" class="mdc-empty">Tidak ada data yang cocok dengan filter.</td></tr>';
   }
 
@@ -203,15 +225,20 @@
     if (r.keterangan) rows += line('Catatan', q(r.keterangan));
     if (r.verifiedAt) rows += line('Divalidasi', q(r.verifiedBy || '-') + ' · ' + q(dt(r.verifiedAt)));
     if (r.alasanBatal) rows += line('Alasan batal validasi terakhir', q(r.alasanBatal) + ' (' + q(r.batalBy || '-') + ', ' + q(dt(r.batalAt)) + ')');
+    var shared = null;
+    if (!dok.length && r.batchId) {
+      shared = ROWS.filter(function (x) { return x.batchId === r.batchId && x.id !== r.id && (x.foto || []).length; })[0] || null;
+      if (shared) dok = shared.foto;
+    }
     var photos = dok.length
-      ? '<div class="pel-ph">' + dok.map(function (f) { return '<img data-fid="' + q(f.fotoId) + '" alt="Dokumentasi ' + (masuk ? 'masuk' : 'keluar') + '" loading="lazy">'; }).join('') + '</div>'
-      : '<p class="mdc-note">Belum ada dokumentasi foto.</p>';
+      ? (shared ? '<p class="mdc-note">Dokumentasi satu laporan (diunggah pada item ' + q(shared.id) + ').</p>' : '') +
+        '<div class="pel-ph">' + dok.map(function (f) { return '<img data-fid="' + q(f.fotoId) + '" data-th="1" alt="Dokumentasi ' + (masuk ? 'masuk' : 'keluar') + '" loading="lazy">'; }).join('') + '</div>'
+      : '<p class="mdc-note">' + (masuk ? 'Belum ada dokumentasi foto. Unggah minimal 1 foto agar laporan berstatus Lengkap.' : 'Belum ada dokumentasi foto (opsional untuk DCP keluar).') + '</p>';
     var acts = '';
     if (enabled && !isLama(r) && owner(r)) {
       if (!r.verifiedAt) {
         acts += '<button type="button" class="btn sec" data-pel-act="edit" data-id="' + q(r.id) + '">Ubah</button>';
-        acts += '<button type="button" class="btn sec" data-pel-act="foto" data-id="' + q(r.id) + '">Tambah foto</button>';
-        acts += '<button type="button" class="btn" data-pel-act="validasi" data-id="' + q(r.id) + '">Validasi</button>';
+        acts += '<button type="button" class="btn sec" data-pel-act="foto" data-id="' + q(r.id) + '">' + (dok.length ? 'Tambah foto (opsional)' : 'Unggah foto') + '</button>';
       } else {
         acts += '<button type="button" class="btn sec" data-pel-act="batal" data-id="' + q(r.id) + '">Batalkan validasi</button>';
       }
@@ -247,7 +274,7 @@
     var h = '<h3>Kode disk ' + q(g.kd) + '</h3>' +
       '<p class="mdc-note">' + q(g.film) + ' · PH ' + q(g.ph) + '</p>' +
       '<div class="pel-sum">Posisi saat ini: <span class="mdc-st mdc-' + (p.cls === 'ok' ? 'selesai' : 'warn') + '">' + q(p.txt) + '</span> · ' + g.hist.length + ' transaksi</div>' +
-      '<div class="pel-tl" aria-label="Riwayat DCP">' + g.hist.map(function (r) { return nodeHtml(r, enabled); }).join('') + '</div>' + batchHtml(g) +
+      '<div class="pel-tl" aria-label="Riwayat DCP">' + sortDesc(g.hist).map(function (r) { return nodeHtml(r, enabled); }).join('') + '</div>' + batchHtml(g) +
       '<div class="mdc-foot"><button type="button" class="btn sec" id="plx">Tutup</button>' +
       (enabled ? '<button type="button" class="btn sec" id="plAddM">+ Masuk</button><button type="button" class="btn" id="plAddK">+ Keluar</button>' : '') + '</div>';
     modal(h);
@@ -255,7 +282,7 @@
     var a = $('plAddM'), b = $('plAddK');
     if (a) a.onclick = function () { openForm('MASUK', null, g.kd); };
     if (b) b.onclick = function () { openForm('KELUAR', null, g.kd); };
-    P.loadPhotos();
+    P.loadThumbs(document.getElementById('mbox') || document);
     bindBatch(g);
     document.querySelectorAll('#mbox [data-pel-act]').forEach(function (btn) {
       btn.onclick = function () { act(btn.getAttribute('data-pel-act'), btn.getAttribute('data-id'), g.kd); };
@@ -269,14 +296,6 @@
     if (!r) { toast('Transaksi tidak ditemukan.', 1); return; }
     if (a === 'edit') return openForm(r.jenis, r, kd);
     if (a === 'foto') return pickPhotos(r, kd);
-    if (a === 'validasi') {
-      if (!confirm('Validasi laporan ini? Setelah divalidasi, data tidak dapat diubah langsung sebelum validasi dibatalkan.')) return;
-      api('pel_validasi', { id: id, aksi: 'validasi' }).then(function () {
-        toast('Laporan divalidasi.');
-        return reload().then(function () { refresh(kd); });
-      }).catch(function (e) { toast(e.message, 1); });
-      return;
-    }
     if (a === 'batal') return openBatal(r, kd);
   }
 
@@ -305,7 +324,7 @@
 
   /* ---------- batalkan validasi: alasan wajib ---------- */
   function openBatal(r, kd) {
-    modal('<h3>Batalkan validasi</h3><p class="mdc-note">Laporan kembali ke status Draft dan dapat diubah. Alasan dicatat di jejak audit.</p>' +
+    modal('<h3>Batalkan validasi</h3><p class="mdc-note">Data lama ini kembali dapat diubah dan ditambah foto. Alasan dicatat di jejak audit.</p>' +
       '<form id="plbf" class="mdc-form" novalidate><label>Alasan pembatalan<textarea name="alasan" required minlength="5" maxlength="500" rows="3" placeholder="mis. Foto keluar kurang jelas"></textarea></label>' +
       '<div class="mdc-foot"><button type="button" class="btn sec" id="plbx">Tutup</button><button type="submit" class="btn">Batalkan validasi</button></div></form>');
     $('plbx').onclick = function () { openDetail(kd); };
@@ -405,7 +424,7 @@
     h += '<p class="mdc-note" id="plInfo"></p>' +
       '<div class="pel-auto"><span>Tanggal & waktu: otomatis saat disimpan</span><span>Pelapor: ' + q(myName()) + '</span></div>' +
       '<label>Catatan<textarea name="keterangan" maxlength="2000" rows="3">' + q(rec ? rec.keterangan : '') + '</textarea></label>' +
-      jenisBlock(rec) + (rec || kd ? '' : '<div id="mi-host"></div>') + (rec ? '' : P.photoBox('pel')) + '<p class="mdc-err" id="plerr" role="alert"></p>' +
+      jenisBlock(rec) + (rec || kd ? '' : '<div id="mi-host"></div>') + (rec ? '' : '<p class="mdc-note">' + (masuk ? 'Unggah minimal 1 foto agar laporan berstatus Lengkap. Satu foto sudah cukup untuk seluruh item dalam laporan; foto tambahan opsional.' : 'DCP keluar hanya didata, tanpa validasi. Foto bersifat opsional.') + '</p>' + P.photoBox('pel')) + '<p class="mdc-err" id="plerr" role="alert"></p>' +
       '<div class="mdc-foot"><button type="button" class="btn sec" id="plcancel">Batal</button><button type="submit" class="btn" id="plsave">Simpan laporan</button></div></form>';
     modal(h);
     var pb = rec ? null : P.photoBind('pel');
@@ -496,8 +515,8 @@
       call.then(function (ids) {
         var id = ids[0]; saved = { id: id };
         var files = pb ? pb.get() : [];
-        var finish = function () { toast(rec ? 'Laporan diperbarui.' : (ids.length > 1 ? ids.length + ' item DCP tersimpan dalam satu laporan.' : 'Laporan tersimpan.')); reload().then(function () { refresh(body.kodeDisk); }); };
-        if (files.length) P.sendPhotos(id, files, 'Foto DCP ' + (masuk ? 'Masuk' : 'Keluar'), 'dcp_photo_save', finish); else finish();
+        var finish = function (noPhoto) { toast((rec ? 'Laporan diperbarui.' : (ids.length > 1 ? ids.length + ' item DCP tersimpan dalam satu laporan.' : 'Laporan tersimpan.')) + (noPhoto === true ? ' Unggah 1 foto agar laporan berstatus Lengkap.' : '')); reload().then(function () { refresh(body.kodeDisk); }); };
+        if (files.length) P.sendPhotos(id, files, 'Foto DCP ' + (masuk ? 'Masuk' : 'Keluar'), 'dcp_photo_save', finish); else finish(!rec && masuk);
       }).catch(function (er) {
         btn.disabled = false;
         toast(er.message, 1); $('plerr').textContent = er.message;
