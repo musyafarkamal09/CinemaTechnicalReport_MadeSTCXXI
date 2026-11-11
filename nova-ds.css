@@ -450,3 +450,37 @@ label, #app .mdc-form label, #modal .mdc-form label { font-size: var(--t-xs); fo
   #modal .mbox table.dtl tr.dtl-t { padding: 11px 14px !important; }
   #modal .mbox table.dtl tr.dtl-t th { padding: 0 !important; }
 }
+
+/* ---- v20.1.0 Data Penonton per-show: laporan harian, status, progres, review migrasi ---- */
+.pn-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.pn-b { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: var(--t-xs, 12px); font-weight: 700; line-height: 1.6; border: 1px solid transparent; white-space: nowrap; }
+.pn-ok { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
+.pn-no { background: var(--warn-bg); color: var(--warn); border-color: var(--warn); }
+.pn-pg { margin-top: 6px; min-width: 150px; }
+.pn-pg small { display: block; margin-top: 3px; color: var(--mute); font-size: var(--t-xs, 12px); }
+.pn-bar { height: 8px; border-radius: 999px; background: var(--line-2); overflow: hidden; }
+.pn-bar > i { display: block; height: 100%; background: var(--ok); border-radius: 999px; transition: width .25s ease; }
+.pn-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 10px 0 12px; }
+.pn-k { padding: 10px 12px; border: 1px solid var(--line-2); border-radius: var(--r-m); background: var(--surface); }
+.pn-k > small { display: block; margin-bottom: 4px; color: var(--mute); font-size: var(--t-xs, 12px); font-weight: 600; }
+.pn-k > b { font-size: 20px; color: var(--ink); }
+.pn-live { background: var(--bg, var(--surface)); }
+@media (min-width: 1100px) { .pn-live { position: sticky; top: 0; z-index: 3; } }
+.pn-adm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px; font-size: var(--t-sm); color: var(--mute); }
+.pn-dot { display: inline-block; width: 9px; height: 9px; margin-left: 4px; border-radius: 50%; vertical-align: middle; }
+.pn-dot.ok { background: var(--ok); } .pn-dot.no { background: var(--line-2); border: 1px solid var(--mute); }
+.pn-lock { opacity: .78; background: var(--surface-2); }
+.pn-lock input { cursor: not-allowed; }
+.pn-t tr.pn-empty td { color: var(--mute); }
+.pn-t tr.pn-tot td { background: var(--surface-2); }
+.pn-list td.sm { max-width: 260px; }
+.pn-rv { margin: 0 0 14px; padding: 12px; border: 1px solid var(--line-2); border-radius: var(--r-l); background: var(--surface); }
+.pn-why { margin: 0 0 8px; color: var(--err); font-weight: 600; }
+.pn-why small { color: var(--mute); font-weight: 500; }
+.pn-rvf { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 8px; }
+.pn-rv .fact { margin-top: 6px; }
+@media (max-width: 720px) { .pn-sum { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pn-pg { min-width: 0; } }
+@media (min-width: 721px) { #app .pn-t th, #app .pn-t td { padding: 10px 14px; } #app .pn-t td:nth-child(4), #app .pn-t td:nth-child(5), #app .pn-t td:nth-child(6), #app .pn-t th:nth-child(4), #app .pn-t th:nth-child(5), #app .pn-t th:nth-child(6) { text-align: right; } }
+#app .pn-t td:nth-child(4) { white-space: nowrap; }
+
+@media (min-width: 721px) { #app .pn-t { min-width: 820px; } #app .pn-t td:first-child, #app .pn-t th:first-child { white-space: nowrap; } #app .pn-t td:nth-child(3) { min-width: 170px; } #app .pn-t td:nth-child(7) { min-width: 120px; } }

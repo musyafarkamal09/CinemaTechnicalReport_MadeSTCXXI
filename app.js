@@ -161,14 +161,14 @@ function go(p){if(soonOf(p)){toast(SOON_MSG);return}if(!$('modal').classList.con
  $('view').innerHTML='<div class="mdc-alert bad" role="alert"><b>Modul '+nama+' belum termuat.</b><br>Muat ulang halaman (Ctrl+F5 atau tarik ke bawah di HP). Jika tetap, pastikan berkas modul sudah diunggah ke repo.</div>'
 }
 
- ({dashboard:vDash,pengumuman:vAnn,ats:vAts,film:vFilm,dcp:function(){modOr_('vDcp','DCP Management')},ftest:function(){modOr_('vFt','Daily Film Testing')},pel:function(){modOr_('vPel','Pelaporan DCP')},patrol:function(){vRep('patrol')},audience:function(){vRep('audience')},work:function(){vRep('work')},issue:function(){vRep('issue')},meter:function(){vRep('meter')},ac:function(){vRep('ac')},purchase:function(){vRep('purchase')},glosarium:vGloss,penyimpanan:vStore,pengguna:vUsers,audit:vAudit,pengaturan:vSet})[p]()}
+ ({dashboard:vDash,pengumuman:vAnn,ats:vAts,film:vFilm,dcp:function(){modOr_('vDcp','DCP Management')},ftest:function(){modOr_('vFt','Daily Film Testing')},pel:function(){modOr_('vPel','Pelaporan DCP')},patrol:function(){vRep('patrol')},audience:function(){modOr_('vPnt','Data Penonton')},work:function(){vRep('work')},issue:function(){vRep('issue')},meter:function(){vRep('meter')},ac:function(){vRep('ac')},purchase:function(){vRep('purchase')},glosarium:vGloss,penyimpanan:vStore,pengguna:vUsers,audit:vAudit,pengaturan:vSet})[p]()}
 
 /* ---- banner halaman: foto proyektor dengan potongan berbeda per halaman (hanya tampilan) ---- */
 var PH={pengumuman:['christie','80% 62%','a'],ats:['christie','24% 58%','b'],work:['barco','30% 52%','a'],issue:['christie','14% 40%','w'],meter:['barco','100% 8%','g'],ac:['christie','50% 4%','a'],purchase:['barco','8% 62%','b'],pengguna:['','','a'],audit:['','','b'],pengaturan:['','','g']};
 IC.glosarium='<svg class="ic" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19V5M8 8h7M8 12h5"/></svg>';
 IC.audience='<svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M17 14a5 5 0 0 1 4 6"/></svg>';
 IC.penyimpanan='<svg class="ic" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
-Object.assign(DESC,{audience:'Catat tiket terjual dan penonton masuk per show di setiap studio, lengkap dengan petugas dan keterangan.',glosarium:'Istilah teknis proyektor, suara, dan operasional bioskop',penyimpanan:'Penyimpanan berkas multi-format (dokumen, spreadsheet, gambar, data)'});
+Object.assign(DESC,{audience:'Catat tiket terjual dan penonton masuk per show. Semua show pada tanggal yang sama digabung menjadi satu laporan harian.',glosarium:'Istilah teknis proyektor, suara, dan operasional bioskop',penyimpanan:'Penyimpanan berkas multi-format (dokumen, spreadsheet, gambar, data)'});
 Object.assign(PH,{audience:['christie','50% 24%','b'],glosarium:['barco','60% 40%','g'],penyimpanan:['christie','40% 50%','b']});
 function pHero(p){var el=$('phero');if(!el)return;if(p==='dashboard'){el.className='hidden';el.innerHTML='';return}
  var m=MENU.filter(function(x){return x[0]===p})[0]||[0,''],c=PH[p]||['','','a'],img=c[0]?'<picture class="ph-img" aria-hidden="true"><img src="'+CUT[c[0]]+'" alt="" decoding="async" style="object-position:'+c[1]+'"></picture>':'';
@@ -1473,5 +1473,5 @@ if(TOKEN){var cu=null,pg=LS.getItem('stc_p')||'dashboard';try{cu=JSON.parse(LS.g
   if(!U){$('lerr').textContent='Gagal memulihkan sesi: '+x.message}else toast('Koneksi ke server bermasalah: '+x.message,1)})}
 setInterval(function(){if(TOKEN&&U)api('me').then(function(r){if(r&&r.token){TOKEN=r.token;LS.setItem('stc_t',TOKEN)}}).catch(function(){})},15*60*1000);
 /* ekspor helper untuk modul tambahan (modul-dcp.js); tidak mengubah perilaku aplikasi */
-window.STC={now:now,api:api,modal:modal,closeM:closeM,toast:toast,esc:esc,dt:dt,$:$,DESC:DESC,IC:IC,lightbox:lightbox,getU:function(){return U}};
+window.STC={now:now,api:api,modal:modal,closeM:closeM,toast:toast,esc:esc,dt:dt,$:$,DESC:DESC,IC:IC,lightbox:lightbox,getU:function(){return U},detail:detail};
 })();
