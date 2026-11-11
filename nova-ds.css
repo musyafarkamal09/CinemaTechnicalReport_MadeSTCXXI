@@ -484,3 +484,102 @@ label, #app .mdc-form label, #modal .mdc-form label { font-size: var(--t-xs); fo
 #app .pn-t td:nth-child(4) { white-space: nowrap; }
 
 @media (min-width: 721px) { #app .pn-t { min-width: 820px; } #app .pn-t td:first-child, #app .pn-t th:first-child { white-space: nowrap; } #app .pn-t td:nth-child(3) { min-width: 170px; } #app .pn-t td:nth-child(7) { min-width: 120px; } }
+
+/* ===== Revisi tampilan: Daily Monitoring AC + Data Penonton (mobile) — tetap NOVA v20.1.0 ===== */
+/* -- Daftar AC: ringkasan area sebagai chip berwarna (status + suhu + penanda AC eror) -- */
+.acchips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 0 100%; margin-top: 4px; }
+.acchip { display: inline-flex; align-items: baseline; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--ok); background: var(--ok-bg); color: var(--ok); font-size: 12px; line-height: 1.55; white-space: nowrap; }
+.acchip b { font-weight: 700; color: var(--ink); }
+.acchip em { font-style: normal; font-weight: 600; }
+.acchip.warm { border-color: var(--err-bd); background: var(--err-bg); color: var(--err); }
+.acchip.cold { border-color: var(--info); background: var(--info-bg); color: var(--info); }
+.acchip.na { border-color: var(--line-2); background: var(--surface-2); color: var(--mute); }
+.acchip.err { box-shadow: 0 0 0 1px var(--err); }
+.acchip i { font-style: normal; font-weight: 800; color: var(--err); }
+
+/* -- Form AC: ringkasan progres + status langsung per area -- */
+.acsb { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin: 0 0 12px; padding: 10px 14px; border: 1px solid var(--line-2); border-radius: var(--r-m); background: var(--surface-2); color: var(--mute); font-size: var(--t-sm); }
+.acsb b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.acsb .w, .acsb .w b { color: var(--err); font-weight: 700; }
+#acs .acr-st { display: inline-flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; justify-content: flex-end; min-width: 0; }
+#acs .acr-st .st { font-size: 11px; }
+#acs .acr-ph { color: var(--mute); font-size: var(--t-xs); white-space: nowrap; }
+#acs > .acr.is-done:not(.is-err) { border-left: 4px solid var(--ok); }
+#acs > .acr.is-err { border-left: 4px solid var(--err); }
+@media (min-width: 700px) {
+  #acs > .acr.is-cond > .acc-l { grid-column: span 2; }
+}
+@media (max-width: 699px) {
+  #acs { gap: 10px; }
+  #acs > .acr { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 12px; }
+  #acs > .acr > .acr-h { display: grid; grid-template-columns: 28px minmax(0, 1fr) 40px; gap: 6px 10px; align-items: center; order: 0; }
+  #acs > .acr > .acr-h select { grid-column: 2; grid-row: 1; width: 100%; }
+  #acs > .acr > .acr-h .rm { grid-column: 3; grid-row: 1; }
+  #acs > .acr > .acr-h .acr-st { grid-column: 2 / 4; grid-row: 2; justify-content: flex-start; }
+  #acs > .acr > .ao { order: 1; }
+  #acs > .acr > .acr-g:not(.acr-t) { order: 2; grid-column: 1 / -1; }
+  #acs > .acr > .acr-g.acr-t { order: 3; grid-column: 1 / -1; }
+  #acs > .acr > .acc-l { order: 4; grid-column: 1 / -1; }
+  #acs > .acr > .acc-n { order: 5; font-size: var(--t-xs) !important; }
+  #acs > .acr > .an { order: 6; grid-column: 1 / -1; }
+  #acs > .acr > .aerr { order: 7; grid-column: 1; justify-self: stretch; justify-content: flex-start; min-height: 44px; margin: 0; padding: 6px 10px; font-size: 13px; }
+  #acs > .acr > .pick { order: 8; grid-column: 2; }
+  #acs > .acr > .pick .btn { min-height: 44px; padding-left: 8px; padding-right: 8px; font-size: 13px; }
+  #acs > .acr > .ph { order: 9; grid-column: 1 / -1; }
+  /* kondisi + suhu sebaris bila lebar cukup: merk | suhu, lalu kondisi */
+  #acs > .acr > .acr-g:not(.acr-t) { grid-column: 1; }
+  #acs > .acr > .acr-g.acr-t { grid-column: 2; }
+  #acs > .acr.is-cond > .acr-g:not(.acr-t) { grid-column: 1 / -1; }
+  #acs > .acr > input.vh { display: none; }
+  .acbar { position: static; }
+  #rfm:has(#acs) > .fact { position: sticky; bottom: calc(env(safe-area-inset-bottom, 0px) + 76px); z-index: 5; margin-left: -4px; margin-right: -4px; padding: 10px 4px; background: var(--surface); border-top: 1px solid var(--line-2); box-shadow: 0 -6px 14px rgba(27, 22, 48, .06); }
+}
+
+/* -- Data Penonton: kartu laporan harian di HP -- */
+.pn-cards { display: none; }
+@media (max-width: 767px) {
+  #app .pn-tw { display: none; }
+  .pn-cards { display: grid; gap: 12px; margin: 0 0 12px; }
+  .pn-card { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--line-2); border-radius: var(--r-l); background: var(--surface); box-shadow: 0 1px 2px rgba(27, 22, 48, .05); }
+  .pn-ch { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .pn-ch b { display: block; color: var(--ink); font-size: var(--t-md); }
+  .pn-ch small { color: var(--mute); font-size: var(--t-xs); }
+  .pn-card .pn-pg { margin: 0; min-width: 0; }
+  .pn-ct { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .pn-ct > div { padding: 8px 12px; border-radius: var(--r-m); background: var(--surface-2); }
+  .pn-ct small, .pn-cp small { display: block; color: var(--mute); font-size: var(--t-xs); font-weight: 600; }
+  .pn-ct b { color: var(--ink); font-size: 20px; font-variant-numeric: tabular-nums; }
+  .pn-cp { margin: 0; color: var(--ink); font-size: var(--t-sm); line-height: 1.45; }
+  .pn-ca { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; }
+  .pn-ca .btn { min-height: 44px; justify-content: center; margin: 0; padding-left: 14px; padding-right: 14px; }
+
+  /* Laporan harian (modal): satu show = kartu ringkas (tidak lagi 8 baris label-nilai) */
+  #app .pn-t tr:not(.pn-tot) { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 10px; align-items: center; margin: 0 0 8px; padding: 10px 12px; }
+  #app .pn-t tr:not(.pn-tot) > td { display: block; padding: 0; text-align: left; min-width: 0; }
+  #app .pn-t tr:has(> th) { display: none; }
+  #app .pn-t td[data-l="Show"]::before, #app .pn-t td[data-l="Status"]::before, #app .pn-t td[data-l="Nama film"]::before, #app .pn-t td[data-l="Jam"]::before { content: none; }
+  #app .pn-t td[data-l="Show"] { grid-column: 1 / 2; grid-row: 1; color: var(--ink); font-size: var(--t-md); }
+  #app .pn-t td[data-l="Status"] { grid-column: 2 / 4; grid-row: 1; }
+  #app .pn-t td[data-l="Jam"] { grid-column: 4 / 5; grid-row: 1; text-align: right; color: var(--mute); font-variant-numeric: tabular-nums; }
+  #app .pn-t td[data-l="Nama film"] { grid-column: 1 / -1; grid-row: 2; color: var(--ink); font-weight: 600; font-size: var(--t-md); line-height: 1.35; white-space: normal; }
+  #app .pn-t td[data-l="Tiket"], #app .pn-t td[data-l="Penonton"] { grid-row: 3; grid-column: span 2; padding: 6px 10px; border-radius: var(--r-m); background: var(--surface-2); color: var(--ink); font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  #app .pn-t td[data-l="Tiket"]::before, #app .pn-t td[data-l="Penonton"]::before { content: attr(data-l); display: block; color: var(--mute); font-size: var(--t-xs); font-weight: 600; letter-spacing: 0; text-transform: none; }
+  #app .pn-t td[data-l="Petugas"] { grid-row: 4; }
+  #app .pn-t td[data-l="Keterangan"] { grid-row: 5; }
+  #app .pn-t td[data-l="Petugas"], #app .pn-t td[data-l="Keterangan"] { grid-column: 1 / -1; color: var(--mute); font-size: var(--t-sm); line-height: 1.4; }
+  #app .pn-t td[data-l="Petugas"]::before, #app .pn-t td[data-l="Keterangan"]::before { content: attr(data-l) ": "; font-weight: 600; letter-spacing: 0; text-transform: none; font-size: var(--t-sm); }
+  #app .pn-t tr.pn-empty > td:nth-child(n+3) { display: none; }
+  #app .pn-t tr > td.pn-nk { display: none; }
+  #app .pn-t tr.aud-over-r { background: var(--err-bg); border-color: var(--err-bd); }
+  #app .pn-t tr.aud-over-r > td { background: transparent; }
+  #app .pn-t tr.aud-over-r > td[data-l="Penonton"] { background: transparent; color: var(--err); box-shadow: inset 0 0 0 1px var(--err-bd); }
+  #app .pn-t tr.pn-empty { background: var(--surface-2); }
+  #app .pn-t tr.pn-tot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 14px; margin: 0 0 14px; padding: 10px 12px; background: var(--brand-soft); border-color: var(--brand-300); }
+  #app .pn-t tr.pn-tot > td { display: block; padding: 0; text-align: left; background: transparent; color: var(--ink); font-size: var(--t-sm); }
+  #app .pn-t tr.pn-tot > td:first-child { flex: 1 1 100%; font-size: var(--t-md); }
+  #app .pn-t tr.pn-tot > td[data-l="Tiket"]::before, #app .pn-t tr.pn-tot > td[data-l="Penonton"]::before { content: attr(data-l) ": "; font-weight: 500; color: var(--mute); text-transform: none; letter-spacing: 0; font-size: var(--t-sm); display: inline; }
+  #app .pn-t tr.pn-tot > td:last-child { display: none; }
+  #modal .fact:has(#pn-dpdf) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  #modal .fact:has(#pn-dpdf) .btn { width: 100%; min-height: 44px; margin: 0; }
+  #modal .fact:has(#pn-dpdf) #pn-edit { grid-column: 1 / -1; }
+}
