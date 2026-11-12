@@ -44,28 +44,20 @@
       var box = $('rl'); if (!box) return;
       box.className = '';
       if (curU().role === 'ADMIN') admBar(r.reviewCount || 0);
-      box.innerHTML = r.items.length ? '<div class="scroll cards pn-tw"><table class="rt pn-list"><tr><th>Tanggal</th><th>Status & progres</th><th>Total</th><th>Petugas</th><th>Aksi</th></tr>' +
+      box.innerHTML = r.items.length ? '<div class="scroll cards"><table class="rt pn-list"><tr><th>Tanggal</th><th>Status & progres</th><th>Total</th><th>Petugas</th><th>Aksi</th></tr>' +
         r.items.map(function (x) {
           return '<tr><td data-l="Tanggal"><b>' + esc(dshort(x.date)) + '</b><br><small>' + esc(dlong(x.date).split(',')[0]) + '</small></td>' +
             '<td data-l="Status">' + badge(x.status) + prog(x.progress) + '</td>' +
             '<td data-l="Total"><b>' + NF.format(x.total.tiket) + '</b> tiket<br><b>' + NF.format(x.total.penonton) + '</b> penonton</td>' +
             '<td data-l="Petugas" class="sm">' + (x.petugas.length ? esc(x.petugas.join(', ')) : '<small>Belum ada</small>') + '</td>' +
-            '<td class="act"><button class="btn sec" data-d="' + esc(x.date) + '">Lihat laporan</button> <button class="btn sec" data-pdf="' + esc(x.date) + '" title="Download laporan harian (PDF)">PDF</button> <button class="btn" data-e="' + esc(x.date) + '">' + (x.status === 'Terisi' ? 'Ubah' : 'Isi show') + '</button></td></tr>';
-        }).join('') + '</table></div><div class="pn-cards">' + r.items.map(cardHtml).join('') + '</div><div class="pg"><button class="btn sec" id="pn-pp"' + (r.page < 2 ? ' disabled' : '') + '>‹</button> Hal. ' + r.page + ' / ' + Math.max(1, Math.ceil(r.total / r.size)) + ' (' + r.total + ') <button class="btn sec" id="pn-pn"' + (r.page * r.size >= r.total ? ' disabled' : '') + '>›</button></div>'
+            '<td class="act"><button class="btn sec" data-d="' + esc(x.date) + '">Lihat laporan</button> <button class="btn sec" data-p="' + esc(x.date) + '">PDF</button> <button class="btn" data-e="' + esc(x.date) + '">' + (x.status === 'Terisi' ? 'Ubah' : 'Isi show') + '</button></td></tr>';
+        }).join('') + '</table></div><div class="pg"><button class="btn sec" id="pn-pp"' + (r.page < 2 ? ' disabled' : '') + '>‹</button> Hal. ' + r.page + ' / ' + Math.max(1, Math.ceil(r.total / r.size)) + ' (' + r.total + ') <button class="btn sec" id="pn-pn"' + (r.page * r.size >= r.total ? ' disabled' : '') + '>›</button></div>'
         : '<div class="empty"><b>Belum ada laporan harian</b>Ubah filter pencarian atau klik "Isi data penonton" untuk mulai mencatat.</div>';
       [].forEach.call(box.querySelectorAll('[data-d]'), function (b) { b.onclick = function () { openDay(b.dataset.d); }; });
+      [].forEach.call(box.querySelectorAll('[data-p]'), function (b) { b.onclick = function () { var t0 = b.textContent; b.disabled = true; b.textContent = '...'; api('aud_day', { date: b.dataset.p }).then(dayPdf).catch(function (x) { toast(x.message, 1); }).then(function () { b.disabled = false; b.textContent = t0; }); }; });
       [].forEach.call(box.querySelectorAll('[data-e]'), function (b) { b.onclick = function () { openForm(b.dataset.e); }; });
-      [].forEach.call(box.querySelectorAll('[data-pdf]'), function (b) { b.onclick = function () { dayPdf(b.dataset.pdf, null, b); }; });
       if ($('pn-pp')) { $('pn-pp').onclick = function () { F.page--; load(); }; $('pn-pn').onclick = function () { F.page++; load(); }; }
     }).catch(function (x) { if ($('rl')) errBox(x, $('rl'), load); });
-  }
-  function cardHtml(x) {
-    var d = esc(x.date), ok = x.status === 'Terisi';
-    return '<article class="pn-card"><div class="pn-ch"><div><b>' + esc(dshort(x.date)) + '</b><small>' + esc(dlong(x.date).split(',')[0]) + '</small></div>' + badge(x.status) + '</div>' +
-      prog(x.progress) +
-      '<div class="pn-ct"><div><small>Tiket terjual</small><b>' + NF.format(x.total.tiket) + '</b></div><div><small>Penonton masuk</small><b>' + NF.format(x.total.penonton) + '</b></div></div>' +
-      '<p class="pn-cp"><small>Petugas</small>' + (x.petugas.length ? esc(x.petugas.join(', ')) : 'Belum ada') + '</p>' +
-      '<div class="pn-ca"><button class="btn sec" data-d="' + d + '">Lihat</button><button class="btn sec" data-pdf="' + d + '" aria-label="Download PDF laporan ' + d + '">PDF</button><button class="btn" data-e="' + d + '">' + (ok ? 'Ubah' : 'Isi show') + '</button></div></article>';
   }
   function admBar(n) {
     var el = $('pn-adm'); if (!el) return;
@@ -79,33 +71,106 @@
     api('aud_day', { date: date }).then(function (d) { modal(dayHtml(d)); wireDay(d); }).catch(function (x) { modal('<div class="empty">' + esc(x.message) + '</div>'); });
   }
   function dayHtml(d) {
-    var over = [];
+    var over = [], adm = curU().role === 'ADMIN';
     var h = '<h3>Laporan Harian Data Penonton<span class="mid">' + esc(dlong(d.date)) + '</span></h3>' +
       '<div class="pn-sum"><div class="pn-k"><small>Status</small>' + badge(d.status) + '</div>' +
       '<div class="pn-k"><small>Progres</small>' + prog(d.progress) + '</div>' +
       '<div class="pn-k"><small>Tiket terjual</small><b>' + NF.format(d.total.tiket) + '</b></div>' +
       '<div class="pn-k"><small>Penonton masuk</small><b>' + NF.format(d.total.penonton) + '</b></div></div>' +
       '<p class="acs"><b>Petugas:</b> ' + (d.petugas.length ? esc(d.petugas.join(', ')) : 'Belum ada') + '</p>';
+    if (adm && d.progress.filled) h += '<div class="pn-delbar"><label><input type="checkbox" id="pn-all"> Pilih semua show terisi</label><button type="button" class="btn danger" id="pn-del" disabled>Reset terpilih (0)</button></div>';
     d.studios.forEach(function (a) {
-      h += '<h4>' + esc(a.studio) + ' ' + badge(a.status) + ' <small>' + a.filled + '/' + a.total + ' show</small></h4><div class="scroll cards"><table class="rt pn-t"><tr><th>Show</th><th>Status</th><th>Nama film</th><th>Jam</th><th>Tiket</th><th>Penonton</th><th>Petugas</th><th>Keterangan</th></tr>';
+      h += '<h4>' + esc(a.studio) + ' ' + badge(a.status) + ' <small>' + a.filled + '/' + a.total + ' show</small></h4><div class="scroll cards"><table class="rt pn-t"><tr><th>Show</th><th>Status</th><th>Nama film</th><th>Jam</th><th>Tiket</th><th>Penonton</th><th>Petugas</th><th>Keterangan</th>' + (adm ? '<th>Aksi</th>' : '') + '</tr>';
       a.shows.forEach(function (w) {
         var ok = w.status === 'Terisi'; if (w.over) over.push(a.studio + ' ' + w.show);
-        h += '<tr class="' + (ok ? '' : 'pn-empty') + (w.over ? ' aud-over-r' : '') + '"><td data-l="Show"><b>' + esc(w.show) + '</b>' + (w.over ? ' <span title="Penonton melebihi tiket">&#9888;</span>' : '') + '</td><td data-l="Status">' + badge(w.status) + '</td>' +
+        h += '<tr class="' + (ok ? '' : 'pn-empty') + (w.over ? ' aud-over-r' : '') + '"><td data-l="Show">' + (adm && ok ? '<label class="pn-sel"><input type="checkbox" data-del="' + esc(a.studio + '|' + w.show) + '" aria-label="Pilih ' + esc(a.studio + ' ' + w.show) + '"> <b>' + esc(w.show) + '</b></label>' : '<b>' + esc(w.show) + '</b>') + (w.over ? ' <span title="Penonton melebihi tiket">&#9888;</span>' : '') + '</td><td data-l="Status">' + badge(w.status) + '</td>' +
           '<td data-l="Nama film" class="dtl-w">' + esc(ok ? w.film : '-') + '</td><td data-l="Jam">' + esc(ok ? (w.jam || '-') : '-') + '</td><td data-l="Tiket">' + (ok ? nf(w.tiket) : '-') + '</td><td data-l="Penonton">' + (ok ? nf(w.penonton) : '-') + '</td>' +
-          '<td data-l="Petugas"' + (ok && w.petugas ? '' : ' class="pn-nk"') + '>' + esc(ok ? (w.petugas || '-') : '-') + '</td><td data-l="Keterangan" class="dtl-w' + (ok && w.ket ? '' : ' pn-nk') + '">' + esc(ok ? (w.ket || '-') : '-') + (ok && w.sourceId ? ' <button type="button" class="lnk" data-src="' + esc(w.sourceId) + '">Sumber ' + esc(w.sourceId) + '</button>' : '') + '</td></tr>';
+          '<td data-l="Petugas">' + esc(ok ? (w.petugas || '-') : '-') + '</td><td data-l="Keterangan" class="dtl-w">' + esc(ok ? (w.ket || '-') : '-') + (ok && w.sourceId ? ' <button type="button" class="lnk" data-src="' + esc(w.sourceId) + '">Sumber ' + esc(w.sourceId) + '</button>' : '') + '</td>' +
+          (adm ? '<td data-l="Aksi" class="pn-act">' + (ok ? '<button type="button" class="btn sec pn-ed" data-ed="' + esc(a.studio + '|' + w.show) + '">Koreksi</button><button type="button" class="btn sec pn-rs" data-rs="' + esc(a.studio + '|' + w.show) + '">Reset</button>' : '') + '</td>' : '') + '</tr>';
       });
-      h += '<tr class="pn-tot"><td colspan="4" data-l="Total"><b>Total ' + esc(a.studio) + '</b></td><td data-l="Tiket"><b>' + NF.format(a.tiket) + '</b></td><td data-l="Penonton"><b>' + NF.format(a.penonton) + '</b></td><td colspan="2"></td></tr></table></div>';
+      h += '<tr class="pn-tot"><td colspan="4" data-l="Total"><b>Total ' + esc(a.studio) + '</b></td><td data-l="Tiket"><b>' + NF.format(a.tiket) + '</b></td><td data-l="Penonton"><b>' + NF.format(a.penonton) + '</b></td><td colspan="' + (adm ? 3 : 2) + '"></td></tr></table></div>';
     });
     if (d.catatan && d.catatan.length) h += '<p class="acs"><b>Catatan (data lama):</b> ' + esc(d.catatan.join(' | ')) + '</p>';
     if (over.length) h = h.replace('<p class="acs"><b>Petugas', '<div class="ac-errbox">&#9888; Penonton masuk melebihi tiket terjual pada: <b>' + esc(over.join('; ')) + '</b></div><p class="acs"><b>Petugas');
-    h += '<div class="fact"><button class="btn" id="pn-edit">' + (d.status === 'Terisi' ? 'Ubah data' : 'Isi / lengkapi show') + '</button><button class="btn sec" id="pn-dpdf">Download PDF</button><button class="btn sec" id="pn-close">Tutup</button></div>';
+    h += '<div class="fact"><button class="btn" id="pn-edit">' + (d.status === 'Terisi' ? 'Ubah data' : 'Isi / lengkapi show') + '</button><button class="btn sec" id="pn-dpdf">Unduh PDF</button><button class="btn sec" id="pn-close">Tutup</button></div>';
     return h;
   }
   function wireDay(d) {
     if ($('pn-close')) $('pn-close').onclick = closeM;
     if ($('pn-edit')) $('pn-edit').onclick = function () { openForm(d.date); };
-    if ($('pn-dpdf')) $('pn-dpdf').onclick = function () { dayPdf(d.date, d, $('pn-dpdf')); };
+    if ($('pn-dpdf')) $('pn-dpdf').onclick = function () { dayPdf(d); };
+    wireDel(d);
+    [].forEach.call(document.querySelectorAll('[data-ed]'), function (b) { b.onclick = function () { var k = b.dataset.ed.split('|'); openForm(d.date, { studio: k[0], show: k[1] }); }; });
+    [].forEach.call(document.querySelectorAll('[data-rs]'), function (b) { b.onclick = function () { var k = b.dataset.rs.split('|'); resetShow(d, k[0], k[1], b); }; });
     [].forEach.call(document.querySelectorAll('[data-src]'), function (b) { b.onclick = function () { if (S.detail) S.detail(b.dataset.src, function () {}); }; });
+  }
+
+  /* ---------- PDF per laporan harian (format seragam, A4 portrait, 2 studio per halaman) ---------- */
+  function dayPdf(d) {
+    if (!window.jspdf || !window.jspdf.jsPDF || !window.NovaPDF) { toast('Library PDF belum termuat. Periksa koneksi internet lalu coba lagi.', 1); return; }
+    var P = d.progress, blocks = [{ t: 'pairs', rows: [
+      ['Tanggal', dlong(d.date)],
+      ['Status', d.status + ' - ' + P.filled + ' dari ' + P.total + ' show terisi (' + P.pct + '%)'],
+      ['Total tiket / penonton', NF.format(d.total.tiket) + ' tiket  |  ' + NF.format(d.total.penonton) + ' penonton'],
+      ['Petugas', d.petugas.length ? d.petugas.join(', ') : '-']] }];
+    d.studios.forEach(function (a, i) {
+      if (i && i % 2 === 0) blocks.push({ t: 'page' });
+      var flags = a.shows.map(function (w) { return { ok: w.status === 'Terisi', over: !!w.over }; });
+      blocks.push({
+        t: 'table', title: a.studio + '  (' + a.filled + '/' + a.total + ' show)', fs: 8,
+        head: ['Show', 'Nama Film', 'Jam', 'Tiket', 'Penonton', 'Petugas', 'Keterangan'],
+        rows: a.shows.map(function (w) { var ok = w.status === 'Terisi'; return [w.show, ok ? w.film : 'Belum terisi', ok ? (w.jam || '-') : '-', ok ? NF.format(w.tiket) : '-', ok ? NF.format(w.penonton) : '-', ok ? (w.petugas || '-') : '-', ok ? ((w.over ? '[!] Penonton > tiket. ' : '') + (w.ket || '')) : '-']; }),
+        foot: ['Total', '', '', NF.format(a.tiket), NF.format(a.penonton), '', ''],
+        colStyles: { 0: { cellWidth: 16 }, 2: { cellWidth: 13, halign: 'center' }, 3: { cellWidth: 17, halign: 'right' }, 4: { cellWidth: 20, halign: 'right' }, 5: { cellWidth: 30 } },
+        onCell: function (h) {
+          var f = flags[h.row.index];
+          if (h.section === 'head' && (h.column.index === 3 || h.column.index === 4)) h.cell.styles.halign = 'right';
+          if (h.section === 'foot' && (h.column.index === 3 || h.column.index === 4)) h.cell.styles.halign = 'right';
+          if (h.section !== 'body' || !f) return;
+          if (!f.ok) { h.cell.styles.textColor = [130, 124, 150]; h.cell.styles.fontStyle = 'italic'; }
+          if (f.over) { h.cell.styles.fillColor = [253, 226, 226]; if (h.column.index === 3 || h.column.index === 4) h.cell.styles.fontStyle = 'bold'; }
+        } });
+    });
+    if (d.catatan && d.catatan.length) blocks.push({ t: 'note', text: 'Catatan (data lama): ' + d.catatan.join(' | ') });
+    var doc = window.NovaPDF.render({ title: 'Laporan Harian Data Penonton', id: dshort(d.date), user: curU().name || '', orient: 'portrait', blocks: blocks });
+    doc.save('Laporan_Harian_Data_Penonton_' + d.date + '.pdf');
+  }
+
+  /* ---------- Admin: reset satu show (aud_del di server, Admin saja; isian show dikosongkan, struktur laporan harian tetap) ---------- */
+  function resetShow(d, studio, show, btn) {
+    if (curU().role !== 'ADMIN') return;
+    var w = null; d.studios.forEach(function (a) { if (a.studio === studio) a.shows.forEach(function (x) { if (x.show === show) w = x; }); });
+    if (!w) return;
+    if (!window.confirm('Reset ' + studio + ' ' + show + ' tanggal ' + dshort(d.date) + '?\n\nFilm: ' + (w.film || '-') + '\nTiket: ' + nf(w.tiket) + '  |  Penonton: ' + nf(w.penonton) + '\nPetugas: ' + (w.petugas || '-') + '\n\nIsian show ini dikosongkan (kembali Belum Terisi) dan dapat diisi ulang petugas lain. Show lain, tanggal lain, dan laporan harian tidak berubah. Lanjutkan?')) return;
+    if (btn) btn.disabled = true;
+    api('aud_del', { date: d.date, studio: studio, show: show }).then(function () {
+      toast(studio + ' ' + show + ' berhasil di-reset. Show dapat diisi ulang.');
+      openDay(d.date); if ($('rl')) load();
+    }).catch(function (x) { if (btn) btn.disabled = false; toast(x.message, 1); });
+  }
+  /* ---------- Admin: hapus satu atau beberapa show (aud_del per show; show lain tidak tersentuh) ---------- */
+  function wireDel(d) {
+    var bx = [].slice.call(document.querySelectorAll('[data-del]')), del = $('pn-del'), all = $('pn-all');
+    if (!del || !bx.length) return;
+    function upd() {
+      var n = bx.filter(function (b) { return b.checked; }).length;
+      del.disabled = !n; del.textContent = 'Reset terpilih (' + n + ')'; all.checked = n === bx.length; all.indeterminate = n > 0 && n < bx.length;
+    }
+    bx.forEach(function (b) { b.onchange = upd; });
+    all.onchange = function () { bx.forEach(function (b) { b.checked = all.checked; }); upd(); };
+    del.onclick = function () {
+      var sel = bx.filter(function (b) { return b.checked; }).map(function (b) { var k = b.dataset.del.split('|'); return { studio: k[0], show: k[1] }; });
+      if (!sel.length) return;
+      var info = {}; d.studios.forEach(function (a) { a.shows.forEach(function (w) { info[a.studio + '|' + w.show] = w.film; }); });
+      if (!window.confirm('Reset ' + sel.length + ' data show tanggal ' + dshort(d.date) + '?\n\n' + sel.map(function (x) { return '- ' + x.studio + ' ' + x.show + ' (' + (info[x.studio + '|' + x.show] || '-') + ')'; }).join('\n') + '\n\nIsian show di atas dikosongkan (kembali Belum Terisi). Show lain, tanggal lain, dan laporan harian tidak berubah; petugas lain dapat mengisinya kembali. Lanjutkan?')) return;
+      del.disabled = true; all.disabled = true; var fail = [], ok = 0;
+      sel.reduce(function (p, x) {
+        return p.then(function () { return api('aud_del', { date: d.date, studio: x.studio, show: x.show, quiet: 1 }).then(function () { ok++; }, function (e) { fail.push(x.studio + ' ' + x.show + ': ' + e.message); }); });
+      }, Promise.resolve()).then(function () {
+        toast(fail.length ? ok + ' show di-reset, ' + fail.length + ' gagal: ' + fail.join('; ') : ok + ' data show berhasil di-reset.', !!fail.length);
+        openDay(d.date); if ($('rl')) load();
+      });
+    };
   }
 
   /* ---------- formulir per show ---------- */
@@ -128,11 +193,11 @@
       '<div class="aud-head" aria-hidden="true"><span>Show</span><span>Nama film</span><span>Jam show</span><span>Tiket terjual</span><span>Penonton masuk</span><span>Petugas</span><span>Keterangan</span></div>' +
       '<div class="aud-rows">' + a.shows.map(function (w) { return rowHtml(a.studio, w); }).join('') + '</div><button type="button" class="btn sec aud-as">+ Tambah show</button></section>';
   }
-  function openForm(date) {
+  function openForm(date, focus) {
     modal(window.OOS ? OOS.skel('detail') : '<div class="empty">Memuat...</div>');
-    api('aud_day', { date: date }).then(function (d) { renderForm(d); }).catch(function (x) { modal('<div class="empty">' + esc(x.message) + '</div>'); });
+    api('aud_day', { date: date }).then(function (d) { renderForm(d, focus); }).catch(function (x) { modal('<div class="empty">' + esc(x.message) + '</div>'); });
   }
-  function renderForm(d) {
+  function renderForm(d, focus) {
     modal('<h3>Isi Data Penonton<span class="mid">per show</span></h3><form id="pnf" novalidate>' +
       '<label for="pnd">Tanggal *</label><input type="date" id="pnd" value="' + esc(d.date) + '" max="' + esc(today()) + '" required>' +
       '<p class="info">Setiap show (Tanggal + Studio + Show) hanya punya satu data. Anda boleh mengisi seluruh show, atau berbagi dengan petugas lain. Show yang sudah diisi petugas lain tampil terkunci; isi yang masih kosong. Data baru dapat diubah pengisinya selama 30 menit, selanjutnya oleh Admin.</p>' +
@@ -141,7 +206,7 @@
       '<div class="acbar"><button type="button" class="btn sec" id="pn-as">+ Tambah studio</button></div>' +
       '<p class="merr" id="pn-warn" role="status" style="display:none"></p><div class="merr" id="re" role="alert"></div>' +
       '<div class="fact"><button type="submit" class="btn" id="pn-save">Simpan</button><button type="button" class="btn sec" id="pn-cancel">Batal</button></div></form>');
-    wireForm(d);
+    wireForm(d, focus);
   }
   function rowVals(r) {
     var g = function (c) { return r.querySelector(c).value.trim(); };
@@ -154,7 +219,7 @@
     if (!o) return !!(v.film || v.jam || v.tiket !== '' || v.penonton !== '' || v.petugas || v.ket);
     return ['film', 'jam', 'tiket', 'penonton', 'petugas', 'ket'].some(function (k) { return String(v[k]) !== String(o[k] == null ? '' : o[k]); });
   }
-  function wireForm(d0) {
+  function wireForm(d0, focus) {
     var fm = $('pnf'), list = $('aud-list'), date = d0.date;
     function num(el) { var v = el.value.trim(); return /^\d+$/.test(v) ? +v : 0; }
     function sync() {
@@ -235,60 +300,10 @@
       });
     };
     sync();
-  }
-
-  /* ---------- PDF laporan harian (satu tanggal) ----------
-     Hanya membaca aud_day (atau data yang sedang tampil) dan menggambar PDF di browser. Tidak ada penulisan data. */
-  function pdfReady() {
-    return !!(window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API && window.jspdf.jsPDF.API.autoTable && window.NovaPDF);
-  }
-  function dayPdf(date, d0, btn) {
-    if (!pdfReady()) { toast('Library PDF belum termuat. Periksa koneksi internet lalu coba lagi.', 1); return; }
-    var b0 = btn ? btn.textContent : '';
-    if (btn) { btn.disabled = true; btn.textContent = 'Menyiapkan...'; }
-    function done() { if (btn) { btn.disabled = false; btn.textContent = b0; } }
-    (d0 ? Promise.resolve(d0) : api('aud_day', { date: date })).then(function (d) {
-      var doc = buildDayPdf(d);
-      doc.save('Laporan_Data_Penonton_' + d.date + '.pdf');
-      toast('PDF laporan ' + dshort(d.date) + ' berhasil dibuat.');
-    }).catch(function (x) { toast('Gagal membuat PDF: ' + (x && x.message ? x.message : x), 1); }).then(done);
-  }
-  function buildDayPdf(d) {
-    var over = [], blocks = [], N = function (v) { return v === '' || v == null ? '-' : NF.format(+v); };
-    var pg = d.progress || { filled: 0, total: 0, pct: 0 };
-    blocks.push({ t: 'pairs', keyW: 48, rows: [
-      ['Tanggal laporan', dlong(d.date)],
-      ['Status pengisian', d.status + ' (' + pg.filled + ' dari ' + pg.total + ' show, ' + pg.pct + '%)'],
-      ['Total tiket terjual', N(d.total.tiket)],
-      ['Total penonton masuk', N(d.total.penonton)],
-      ['Petugas', d.petugas && d.petugas.length ? d.petugas.join(', ') : 'Belum ada']
-    ] });
-    blocks.push({ t: 'table', title: 'Ringkasan per studio', fs: 9,
-      head: ['Studio', 'Status', 'Show terisi', 'Tiket terjual', 'Penonton masuk'],
-      rows: d.studios.map(function (a) { return [a.studio, a.status, a.filled + ' / ' + a.total, N(a.tiket), N(a.penonton)]; }),
-      foot: ['Total', d.status, pg.filled + ' / ' + pg.total, N(d.total.tiket), N(d.total.penonton)],
-      colStyles: { 0: { cellWidth: 40 }, 1: { cellWidth: 40 }, 2: { halign: 'center' }, 3: { halign: 'right' }, 4: { halign: 'right' } } });
-    d.studios.forEach(function (a) {
-      var flags = a.shows.map(function (w) { return { ok: w.status === 'Terisi', over: !!w.over }; });
-      a.shows.forEach(function (w) { if (w.over) over.push(a.studio + ' ' + w.show); });
-      blocks.push({ t: 'table', title: a.studio + '  -  ' + a.status + ' (' + a.filled + ' / ' + a.total + ' show)', fs: 8.5,
-        head: ['Show', 'Status', 'Nama film', 'Jam', 'Tiket', 'Penonton', 'Petugas', 'Keterangan'],
-        rows: a.shows.map(function (w) {
-          var ok = w.status === 'Terisi';
-          return [w.show, w.status, ok ? w.film : '-', ok ? (w.jam || '-') : '-', ok ? N(w.tiket) : '-', ok ? N(w.penonton) : '-', ok ? (w.petugas || '-') : '-', ok ? (w.ket || '-') : '-'];
-        }),
-        foot: ['Total', '', '', '', N(a.tiket), N(a.penonton), '', ''],
-        colStyles: { 0: { cellWidth: 17, fontStyle: 'bold' }, 1: { cellWidth: 21 }, 2: { cellWidth: 40 }, 3: { cellWidth: 12, halign: 'center' }, 4: { cellWidth: 15, halign: 'right' }, 5: { cellWidth: 18, halign: 'right' }, 6: { cellWidth: 26 } },
-        onCell: function (h) {
-          if (h.section !== 'body') return;
-          var f = flags[h.row.index]; if (!f) return;
-          if (!f.ok) h.cell.styles.textColor = [130, 124, 150];
-          if (f.over) { h.cell.styles.fillColor = [253, 226, 226]; if (h.column.index === 4 || h.column.index === 5) { h.cell.styles.fontStyle = 'bold'; h.cell.styles.textColor = [176, 30, 30]; } }
-        } });
-    });
-    if (over.length) blocks.push({ t: 'note', text: 'Perhatian: penonton masuk melebihi tiket terjual pada ' + over.join('; ') + ' (baris ditandai merah). Data ditampilkan apa adanya sesuai laporan.' });
-    if (d.catatan && d.catatan.length) blocks.push({ t: 'note', text: 'Catatan (data lama): ' + d.catatan.join(' | ') });
-    return window.NovaPDF.render({ title: 'Laporan Harian Data Penonton', id: dshort(d.date), user: curU().name || '', orient: 'portrait', blocks: blocks });
+    if (focus) {
+      var sec = list.querySelector('.aud-st[data-s="' + focus.studio + '"]'), row = sec && sec.querySelector('.aud-row[data-show="' + focus.show + '"]');
+      if (row) { row.classList.add('pn-focus'); row.scrollIntoView({ block: 'center' }); var fi = row.querySelector('.af-film'); if (fi && !fi.disabled) fi.focus(); }
+    }
   }
 
   /* ---------- unduh Excel / PDF ---------- */
@@ -374,5 +389,4 @@
 
   window.vPnt = vPnt;
   window.pntOpenForm = function () { openForm(today()); };
-  window.pntBuildDayPdf = buildDayPdf;
 })();

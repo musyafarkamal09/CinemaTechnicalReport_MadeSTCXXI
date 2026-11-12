@@ -73,6 +73,7 @@
       });
       var apc = document.getElementById('apc');
       if (apc) apc.textContent = 'Foto: ' + PH.length + ' / 50';
+      var acl = document.getElementById('acs'); if (acl) acl.dispatchEvent(new Event('change'));
       if (window.toast) toast('Foto draf laporan dipulihkan (' + PH.length + ' foto).');
     }).catch(function () {});
   };
