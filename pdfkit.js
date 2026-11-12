@@ -172,16 +172,16 @@
     return doc;
   }
 
-  /* foto: URL data: -> {data(JPEG),w,h}; maksimum sisi 1400px agar PDF tidak membengkak */
+  /* foto: URL data: -> {data(JPEG),w,h}; maksimum sisi 2400px, JPEG q0.92 (rasio asli, tanpa crop) */
   function loadPhoto(url, caption) {
     return new Promise(function (res) {
       var im = new Image();
       im.onload = function () {
         try {
-          var s = Math.min(1, 1400 / Math.max(im.naturalWidth, im.naturalHeight)), cv = document.createElement('canvas');
+          var s = Math.min(1, 2400 / Math.max(im.naturalWidth, im.naturalHeight)), cv = document.createElement('canvas');
           cv.width = Math.round(im.naturalWidth * s); cv.height = Math.round(im.naturalHeight * s);
           var cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(im, 0, 0, cv.width, cv.height);
-          res({ data: cv.toDataURL('image/jpeg', .82), w: cv.width, h: cv.height, caption: caption });
+          res({ data: cv.toDataURL('image/jpeg', .92), w: cv.width, h: cv.height, caption: caption });
         } catch (e) { res(null); }
       };
       im.onerror = function () { res(null); };

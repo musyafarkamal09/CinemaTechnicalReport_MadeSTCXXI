@@ -682,3 +682,32 @@ table.acd tr.acd-e td { background: color-mix(in srgb, var(--err) 5%, transparen
   #app .pn-t td:nth-child(8) { min-width: 100px; }
   #app .pn-t td.pn-act { width: 84px; padding-inline: 6px; }
 }
+
+/* v20.1.1 DCP: foto (skeleton, error, zoom) + tata letak detail/ form tidak meluber di HP */
+.mdc-ph img.ph-wait,.pel-ph img.ph-wait{animation:pelph 1.1s ease-in-out infinite;background:var(--surface-2,#ece9f6)}
+.mdc-ph img[data-ok],.pel-ph img[data-ok]{cursor:zoom-in}
+.mdc-ph img[data-err],.pel-ph img[data-err]{cursor:pointer;object-fit:contain;background:var(--surface-2,#ece9f6)}
+.mdc-ph figure{position:relative;min-width:0}
+.mdc-ph figcaption{overflow-wrap:anywhere}
+.mdc-pdel{margin-top:4px}
+#modal .mdc-grid b,#modal .pel-dl dd,#modal .mdc-note{overflow-wrap:anywhere;min-width:0}
+#modal .mdc-tbl{max-width:100%}
+#modal .pel-card{min-width:0;max-width:100%}
+#modal .pel-acts .btn,#modal .mi-acts .btn{min-height:40px}
+@media (max-width:640px){
+  #modal .pel-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #modal .pel-acts .btn{width:100%;justify-content:center}
+  #modal .mdc-foot{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #modal .mdc-foot .btn,#modal .mdc-foot .dlw{width:100%}
+  #modal .mdc-foot .btn:last-child:nth-child(odd){grid-column:1/-1}
+  #modal .mdc-ph{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}
+}
+/* v20.1.1 chip status tidak pecah/melebar; kolom Aksi item rapi */
+#app .mdc-st,#modal .mdc-st{white-space:nowrap;flex:0 0 auto;width:auto}
+.mdc-chk li>span:first-child{flex:1 1 160px}
+.mdc-chk li .mdc-st{flex:0 0 auto}
+@media (min-width:641px){
+#modal .mdc-tbl.stack td{vertical-align:middle}
+#modal .mdc-tbl.stack td.mi-acts{display:table-cell;white-space:nowrap}
+#modal .mdc-tbl.stack td.mi-acts .btn{display:inline-flex;margin:0 4px 0 0;vertical-align:middle}
+}

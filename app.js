@@ -41,7 +41,7 @@ function api(a,p){var q=!!(p&&p.quiet),sp=a==='login',O=window.OOS;if(!q&&O)O.bu
 function api0(a,p){
  p=p||{};var qt=p.quiet,qn=qt?function(){}:conn;delete p.quiet;p.action=a;p.token=TOKEN;qn('Memuat data...');
  if(navigator.onLine===false){qn('Gagal terhubung');return Promise.reject(new Error('Tidak ada koneksi internet. Periksa jaringan Anda lalu coba lagi.'))}
- var ac=window.AbortController?new AbortController():null,to=ac?setTimeout(function(){ac.abort()},a==='photo_save'||a==='rep_zip'||a==='rep_export'||a==='store_save'||a==='store_get'?120000:45000):0;
+ var ac=window.AbortController?new AbortController():null,to=ac?setTimeout(function(){ac.abort()},a==='photo_save'||a==='dcp_photo_save'||a==='ft_photo_save'||a==='dcp_photo_get'||a==='rep_zip'||a==='rep_export'||a==='store_save'||a==='store_get'?120000:45000):0;
   return fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(p),signal:ac?ac.signal:undefined})
  .then(function(r){clearTimeout(to);return r.json().catch(function(){qn('Gagal');throw new Error('Respons server tidak valid. Pastikan Web App Apps Script sudah di-deploy ulang (versi baru).')})},function(e){clearTimeout(to);qn('Gagal terhubung');throw new Error(e&&e.name==='AbortError'?'Koneksi terlalu lambat (waktu habis). Periksa sinyal lalu coba lagi.':'Gagal terhubung ke server. Periksa koneksi lalu coba lagi.')})
  .then(function(j){qn('Terhubung');if(j.now)SKEW=j.now-Date.now();

@@ -17,7 +17,7 @@
   /* nama outlet tempat aplikasi ini dipakai (sama dengan judul di sidebar) */
   var OUTLET_SAYA = 'Sukaramai Trade Center XXI';
   var STATUS = ['Menunggu foto', 'Lengkap', 'Tercatat', 'Tervalidasi', 'Lama'];
-  var ROWS = [];
+  var ROWS = [], FROM_DCP = false;
   var DST = { q: '', status: '', dari: '', sampai: '', tab: 'stc' };
 
   Object.assign(S.DESC, { pel: 'Pelaporan DCP: riwayat masuk dan keluar per kode disk, dengan dokumentasi foto' });
@@ -246,13 +246,15 @@
         '<div class="pel-ph">' + dok.map(function (f) { return '<img data-fid="' + q(f.fotoId) + '" data-th="1" alt="Dokumentasi ' + (masuk ? 'masuk' : 'keluar') + '" loading="lazy">'; }).join('') + '</div>'
       : '<p class="mdc-note">' + (masuk ? 'Belum ada dokumentasi foto. Unggah minimal 1 foto agar laporan berstatus Lengkap.' : 'Belum ada dokumentasi foto (opsional untuk DCP keluar).') + '</p>';
     var acts = '';
-    if (enabled && !isLama(r) && owner(r)) {
-      if (!r.verifiedAt) {
+    /* Admin: kuasa penuh atas semua baris (juga data lama/DCP Management, tervalidasi, milik pengguna lain). Pengguna lain: hanya laporan miliknya yang belum tervalidasi. */
+    var adm = me().role === 'ADMIN';
+    if (enabled && (adm || (!isLama(r) && owner(r)))) {
+      if (!r.verifiedAt || adm) {
         acts += '<button type="button" class="btn sec" data-pel-act="edit" data-id="' + q(r.id) + '">Ubah</button>';
-        acts += '<button type="button" class="btn sec" data-pel-act="foto" data-id="' + q(r.id) + '">' + (dok.length ? 'Tambah foto (opsional)' : 'Unggah foto') + '</button>';
-      } else {
-        acts += '<button type="button" class="btn sec" data-pel-act="batal" data-id="' + q(r.id) + '">Batalkan validasi</button>';
+        acts += '<button type="button" class="btn sec" data-pel-act="foto" data-id="' + q(r.id) + '">' + (dok.length ? 'Tambah foto' + (adm ? '' : ' (opsional)') : 'Unggah foto') + '</button>';
       }
+      if (r.verifiedAt && !isLama(r)) acts += '<button type="button" class="btn sec" data-pel-act="batal" data-id="' + q(r.id) + '">Batalkan validasi</button>';
+      if (adm) acts += '<button type="button" class="btn danger" data-pel-act="hapus" data-id="' + q(r.id) + '">Hapus</button>';
     }
     return '<div class="pel-node ' + (masuk ? 'in' : 'out') + '"><div class="pel-dot" aria-hidden="true"></div>' +
       '<article class="pel-card"><div class="pel-head"><span class="pel-jenis">' + (masuk ? 'DCP MASUK' : 'DCP KELUAR') + ' · ' + q(r.id) + '</span>' + stBadge(s) + '</div>' +
@@ -305,7 +307,15 @@
   function act(a, id, kd) {
     var r = findRow(id);
     if (!r) { toast('Transaksi tidak ditemukan.', 1); return; }
-    if (a === 'edit') return openForm(r.jenis, r, kd);
+    if (a === 'edit') {
+      if (!isLama(r)) return openForm(r.jenis, r, kd);
+      /* baris DCP Management: formulir Management (satu sumber data, aturan server sama) */
+      return api('dcp_get', { id: r.id }).then(function (d) { S.dcpUI.form(d.transaksi.jenis, d.transaksi); }).catch(function (e) { toast(e.message, 1); });
+    }
+    if (a === 'hapus') {
+      if (!confirm('Hapus ' + (r.jenis === 'MASUK' ? 'DCP Masuk ' : 'DCP Keluar ') + r.id + ' (' + r.film + ', ' + r.kodeDisk + ')? Foto ikut dihapus dan tindakan ini tidak dapat dibatalkan.')) return;
+      return api('dcp_del', { id: r.id }).then(function () { toast('Transaksi dihapus.'); return reload().then(function () { refresh(kd); }); }).catch(function (e) { toast(e.message, 1); });
+    }
     if (a === 'foto') return pickPhotos(r, kd);
     if (a === 'batal') return openBatal(r, kd);
   }
@@ -313,6 +323,7 @@
   /* setelah perubahan: perbarui daftar (bila terbuka) lalu tampilkan detail kode disk */
   function refresh(kd) {
     if ($('plBody')) shell();
+    if (FROM_DCP) { FROM_DCP = false; closeM(); if (S.dcpUI) S.dcpUI.reload(); return; } /* diubah dari DCP Management: kembali ke Management */
     if (kd && groupOf(kd)) openDetail(kd);
     else closeM();
   }
@@ -637,4 +648,11 @@
       });
     };
   }
+  /* dipakai DCP Management: ubah baris Pelaporan (modul PEL) dengan formulir Pelaporan */
+  S.pelUI = { edit: function (id) {
+    return reload().then(function () {
+      var r = findRow(id); if (!r) { toast('Transaksi tidak ditemukan.', 1); return; }
+      FROM_DCP = true; openForm(r.jenis, r, r.kodeDisk);
+    }).catch(function (e) { toast(e.message, 1); });
+  } };
 })();

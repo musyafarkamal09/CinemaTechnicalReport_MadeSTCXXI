@@ -19,7 +19,6 @@
   var FMT_DCP = ['2D', '3D', 'ATMOS', '3D-ATMOS', '2D-ATMOS', 'Lainnya'];
   var FMT_FT = ['2D', '3D', 'ATMOS', '3D-ATMOS', 'Lainnya'];
   var STAT_DCP = ['Diproses', 'Selesai', 'Bermasalah'];
-  var MAX_IMG = 4000000;
 
   function q(s) { return esc(s); }
   function tnow() { return new Date(S.now ? S.now() : Date.now()); } /* jam server, sama di semua perangkat */
@@ -40,45 +39,61 @@
     return api('dcp_meta', { quiet: true }).then(function (m) { META = m; return m; });
   }
 
-  /* ---------- foto: perkecil di perangkat agar di bawah batas server ---------- */
-  function shrink(file) {
+  /* ---------- foto: file ASLI dikirim apa adanya (tanpa kompresi). Hanya berkas non-JPG/PNG/WebP (mis. HEIC) atau di atas
+     batas server (MAX_ORI) diubah ke JPEG kualitas tinggi (sisi maks 4096px, q 0.95) dan pengguna diberi tahu. ---------- */
+  var MAX_ORI = 10 * 1024 * 1024, MAX_REQ = 8 * 1024 * 1024;
+  function readUrl(file) {
     return new Promise(function (res, rej) {
       var fr = new FileReader();
       fr.onerror = function () { rej(new Error('Gagal membaca berkas ' + file.name)); };
-      fr.onload = function () {
+      fr.onload = function () { res(fr.result); };
+      fr.readAsDataURL(file);
+    });
+  }
+  function reencode(file) {
+    return readUrl(file).then(function (src) {
+      return new Promise(function (res, rej) {
         var img = new Image();
         img.onerror = function () { rej(new Error('Berkas ' + file.name + ' bukan gambar yang didukung.')); };
         img.onload = function () {
-          var max = 1600, w = img.width, h = img.height, k = Math.min(1, max / Math.max(w, h));
-          var c = document.createElement('canvas');
-          c.width = Math.round(w * k); c.height = Math.round(h * k);
+          var k = Math.min(1, 4096 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+          c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
           c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-          var url = c.toDataURL('image/jpeg', 0.85);
-          res(url);
+          res(c.toDataURL('image/jpeg', 0.95));
         };
-        img.src = fr.result;
-      };
-      fr.readAsDataURL(file);
+        img.src = src;
+      });
     });
+  }
+  function prepPhoto(file, kind) {
+    var native = /^image\/(jpeg|png|webp)$/.test(file.type || '') && file.size <= MAX_ORI;
+    return (native ? readUrl(file) : reencode(file).then(function (u) { prepPhoto.re = (prepPhoto.re || 0) + 1; return u; }))
+      .then(function (u) { return { b64: u, kind: kind || 'Foto', capturedAt: file.lastModified || Date.now() }; });
   }
   function sendPhotos(id, files, kind, save, done) {
     var list = Array.prototype.slice.call(files || []);
     if (!list.length) return;
     toast('Mengunggah ' + list.length + ' foto...');
-    var out = [];
+    prepPhoto.re = 0;
     Promise.all(list.map(function (f) {
-      if (f.size > 20 * 1024 * 1024) return Promise.reject(new Error(f.name + ' terlalu besar.'));
-      return shrink(f).then(function (u) { return { b64: u, kind: kind || 'Foto', capturedAt: f.lastModified || Date.now() }; });
+      if (f.size > 40 * 1024 * 1024) return Promise.reject(new Error(f.name + ' terlalu besar (maks 40 MB).'));
+      return prepPhoto(f, kind);
     })).then(function (arr) {
-      var batches = [];
-      for (var i = 0; i < arr.length; i += 6) batches.push(arr.slice(i, i + 6));
+      /* batch: maks 6 foto dan ~8 MB per permintaan agar tidak melewati batas Apps Script / waktu habis */
+      var batches = [], cur = [], sz = 0;
+      arr.forEach(function (p) {
+        var b = p.b64.length * 0.75;
+        if (cur.length && (cur.length >= 6 || sz + b > MAX_REQ)) { batches.push(cur); cur = []; sz = 0; }
+        cur.push(p); sz += b;
+      });
+      if (cur.length) batches.push(cur);
       return batches.reduce(function (p, b) {
         return p.then(function (acc) {
           return api(save, { id: id, photos: b }).then(function (r) { acc.added += r.added; acc.failed += r.failed; return acc; });
         });
       }, Promise.resolve({ added: 0, failed: 0 }));
     }).then(function (r) {
-      toast(r.failed ? 'Sebagian foto gagal (' + r.failed + ')' : 'Foto tersimpan (' + r.added + ')', !!r.failed);
+      toast((r.failed ? 'Sebagian foto gagal (' + r.failed + ')' : 'Foto tersimpan (' + r.added + ')') + (prepPhoto.re ? ' - ' + prepPhoto.re + ' foto diubah ke JPEG kualitas tinggi (format/ukuran tidak didukung apa adanya)' : ''), !!r.failed);
       done && done();
     }).catch(function (e) { toast(e.message, 1); done && done(); });
   }
@@ -199,40 +214,68 @@
     });
   }
 
-  function loadPhotos() {
-    document.querySelectorAll('img[data-fid]').forEach(function (img) {
-      api(img.dataset.fk === 'ft' ? 'ft_photo_get' : 'dcp_photo_get', { fotoId: img.dataset.fid, quiet: true })
-        .then(function (r) { img.src = r.url; })
-        .catch(function () { img.alt = 'Foto tidak dapat dimuat'; });
+  /* ---------- muat foto DCP: skeleton saat memuat, 3 permintaan paralel (6 foto per permintaan), coba ulang otomatis
+     2x, gambar pengganti + ketuk-untuk-ulang bila tetap gagal. Cache memori: membuka ulang detail langsung tampil.
+     Server juga menyimpan thumbnail di CacheService, jadi pembukaan kedua tidak lagi menyentuh Drive.
+     shortcut: cache hanya di memori halaman (tidak ada Cache Storage, agar foto tidak tertinggal di perangkat bersama), upgrade bila perlu offline. */
+  var PHC = { t: {}, f: {} }, INF = {}, POOL = 0, PQ = [];
+  var BLANK = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  var ERRIMG = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120"><rect width="160" height="120" fill="#ece9f6"/><text x="80" y="56" font-size="12" text-anchor="middle" fill="#5b5670" font-family="sans-serif">Foto gagal dimuat</text><text x="80" y="76" font-size="12" font-weight="bold" text-anchor="middle" fill="#6246d9" font-family="sans-serif">Ketuk untuk coba lagi</text></svg>');
+  function delay(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function pump() { while (POOL < 3 && PQ.length) { POOL++; PQ.shift()().then(fin, fin); } }
+  function fin() { POOL--; pump(); }
+  function thumbReady(img, url) { img.src = url; img.dataset.ok = '1'; delete img.dataset.err; img.classList.remove('ph-wait'); }
+  function thumbFail(img) { img.classList.remove('ph-wait'); img.src = ERRIMG; img.dataset.err = '1'; delete img.dataset.ok; img.title = 'Ketuk untuk coba lagi'; }
+  function thumbWait(img) { img.classList.add('ph-wait'); delete img.dataset.err; img.removeAttribute('title'); img.src = BLANK; }
+  function fetchChunk(chunk, tries) {
+    chunk = chunk.filter(function (i) { return document.body.contains(i); });
+    if (!chunk.length) return Promise.resolve();
+    return api('dcp_photo_batch', { ids: chunk.map(function (x) { return x.dataset.fid; }), thumb: true, quiet: true }).then(function (r) {
+      var by = {}, again = [];
+      ((r && r.items) || []).forEach(function (it) { by[it.fotoId] = it; });
+      chunk.forEach(function (img) {
+        var it = by[img.dataset.fid];
+        if (it && it.url) { (it.thumb ? PHC.t : PHC.f)[it.fotoId] = it.url; if (!it.thumb) PHC.t[it.fotoId] = it.url; thumbReady(img, it.url); }
+        else if (it && it.error && !/dimuat/.test(it.error)) { thumbFail(img); img.alt = it.error; } /* galat tetap (tidak ditemukan / tanpa izin): jangan diulang */
+        else again.push(img);
+      });
+      if (again.length) return tries < 2 ? delay(1200 * (tries + 1)).then(function () { return fetchChunk(again, tries + 1); }) : again.forEach(thumbFail);
+    }, function () {
+      return tries < 2 ? delay(1200 * (tries + 1)).then(function () { return fetchChunk(chunk, tries + 1); }) : chunk.forEach(thumbFail);
     });
   }
-  /* Foto kecil (kotak 84px) di detail Pelaporan: diambil per 6 foto dalam satu panggilan, berupa thumbnail kecil, dan
-     disimpan di memori supaya membuka ulang detail langsung tampil. Klik foto = muat ukuran penuh (juga di-cache). */
-  var PHC = { t: {}, f: {} };
-  function thumbReady(img, url) { img.src = url; img.dataset.ok = '1'; img.classList.remove('ph-wait'); }
   function loadThumbs(root) {
     var imgs = [].slice.call((root || document).querySelectorAll('img[data-fid][data-th]')), need = [];
     imgs.forEach(function (img) {
       var id = img.dataset.fid;
-      img.onclick = function () { openFull(img); };
-      if (PHC.t[id] || PHC.f[id]) thumbReady(img, PHC.t[id] || PHC.f[id]); else { img.classList.add('ph-wait'); need.push(img); }
+      img.onclick = function () {
+        if (img.dataset.err) { thumbWait(img); PQ.push(function () { return fetchChunk([img], 0); }); pump(); return; }
+        openFull(img);
+      };
+      if (PHC.t[id] || PHC.f[id]) thumbReady(img, PHC.t[id] || PHC.f[id]); else { thumbWait(img); need.push(img); }
     });
-    for (var i = 0; i < need.length; i += 6) (function (chunk) {
-      api('dcp_photo_batch', { ids: chunk.map(function (x) { return x.dataset.fid; }), thumb: true, quiet: true }).then(function (r) {
-        var by = {}; ((r && r.items) || []).forEach(function (it) { by[it.fotoId] = it; });
-        chunk.forEach(function (img) {
-          var it = by[img.dataset.fid];
-          if (it && it.url) { (it.thumb ? PHC.t : PHC.f)[it.fotoId] = it.url; if (!it.thumb) PHC.t[it.fotoId] = it.url; thumbReady(img, it.url); }
-          else { img.classList.remove('ph-wait'); img.alt = 'Foto tidak dapat dimuat'; }
-        });
-      }).catch(function () { chunk.forEach(function (img) { img.classList.remove('ph-wait'); img.alt = 'Foto tidak dapat dimuat'; }); });
-    })(need.slice(i, i + 6));
-    var first = imgs[0];
-    if (first && !PHC.f[first.dataset.fid]) setTimeout(function () { if (document.body.contains(first)) fetchFull(first.dataset.fid).catch(function () {}); }, 800);
+    for (var i = 0; i < need.length; i += 6) (function (chunk) { PQ.push(function () { return fetchChunk(chunk, 0); }); })(need.slice(i, i + 6));
+    pump();
   }
-  /* Foto ukuran penuh: satu permintaan per foto (tidak ganda), disimpan di memori. Lightbox langsung terbuka memakai
-     thumbnail yang sudah tampil, lalu diganti resolusi penuh begitu selesai diunduh. */
-  var INF = {};
+  /* Detail DCP/Testing: foto DCP lewat jalur thumbnail+cache yang sama; foto Testing satu per satu dengan skeleton dan coba ulang */
+  function loadFt(img, t) {
+    t = t || 0;
+    if (!document.body.contains(img)) return;
+    thumbWait(img);
+    api('ft_photo_get', { fotoId: img.dataset.fid, quiet: true }).then(function (r) { thumbReady(img, r.url); },
+      function () { if (t < 2) delay(1200 * (t + 1)).then(function () { loadFt(img, t + 1); }); else thumbFail(img); });
+  }
+  function loadPhotos() {
+    var ft = [];
+    document.querySelectorAll('img[data-fid]').forEach(function (img) { if (img.dataset.fk === 'ft') ft.push(img); else img.dataset.th = '1'; });
+    loadThumbs(document);
+    ft.forEach(function (img) {
+      img.onclick = function () { if (img.dataset.err) loadFt(img, 0); else if (img.dataset.ok) S.lightbox(img.src); };
+      loadFt(img, 0);
+    });
+  }
+  /* Foto ukuran penuh (file asli): satu permintaan per foto, tidak ganda, disimpan di memori. Lightbox langsung terbuka
+     dengan thumbnail yang sudah tampil, lalu diganti file asli begitu selesai diunduh. */
   function fetchFull(id) {
     if (PHC.f[id]) return Promise.resolve(PHC.f[id]);
     if (INF[id]) return INF[id];
@@ -305,7 +348,7 @@
         main = main.concat(t.title ? [[t.title]] : [], [t.head], t.rows, [[]]);
       });
       var ws = XLSX.utils.aoa_to_sheet(main);
-      ws['!cols'] = [{ wch: 26 }, { wch: 36 }, { wch: 18 }, { wch: 40 }, { wch: 14 }];
+      ws['!cols'] = Array.apply(null, Array(main.reduce(function (n, r) { return Math.max(n, r.length); }, 1))).map(function (_, ci) { var m = 10; main.forEach(function (r, ri) { if (ri > 2) m = Math.max(m, Math.min(48, String(r[ci] == null ? '' : r[ci]).length + 2)); }); return { wch: m }; });
       XLSX.utils.book_append_sheet(wb, ws, sheetName(ex.mainSheet || 'Laporan', used));
       sep.forEach(function (t) {
         var s2 = XLSX.utils.aoa_to_sheet([[t.title || t.sheet], []].concat([t.head], t.rows));
@@ -317,9 +360,10 @@
   }
   /* ambil foto (data URL) untuk sekumpulan transaksi -> [{title, list:[{data,w,h,caption}]}]; gagal dimuat dilewati */
   function collectPhotos(entries, getKind) {
-    var out = [];
+    var out = [], gagal = 0;
+    function get1(p, t) { return api(getKind, { fotoId: p.fotoId, quiet: true }).catch(function (e) { return t < 1 ? delay(800).then(function () { return get1(p, t + 1); }) : Promise.reject(e); }); }
     function one(p, en) {
-      return api(getKind, { fotoId: p.fotoId, quiet: true }).then(function (r) { return window.NovaPDF.loadPhoto(r.url, (p.kind || 'Foto') + ' - ' + en.label); }).catch(function () { return null; });
+      return get1(p, 0).then(function (r) { return window.NovaPDF.loadPhoto(r.url, (p.kind || 'Foto') + ' - ' + en.label); }).then(function (x) { if (!x) gagal++; return x; }, function () { gagal++; return null; });
     }
     return entries.reduce(function (chain, en) {
       return chain.then(function () {
@@ -333,7 +377,7 @@
           if (list.length) out.push({ title: en.title || ('Foto dokumentasi - ' + en.label), list: list });
         });
       });
-    }, Promise.resolve()).then(function () { return out; });
+    }, Promise.resolve()).then(function () { if (gagal) toast(gagal + ' foto gagal dimuat dan tidak masuk PDF. Coba unduh ulang.', 1); return out; });
   }
   function dcpExport(fmt) {
     api('dcp_list', { q: DST.q, jenis: DST.jenis, status: DST.status }).then(function (rows) {
@@ -442,7 +486,7 @@
       host.innerHTML = h;
       var by = {}; items.forEach(function (r) { by[r.id] = r; });
       [].forEach.call(host.querySelectorAll('[data-mi-open]'), function (b) { b.onclick = function () { dcpDetail(b.getAttribute('data-mi-open')); }; });
-      [].forEach.call(host.querySelectorAll('[data-mi-edit]'), function (b) { b.onclick = function () { var r = by[b.getAttribute('data-mi-edit')]; dcpForm(r.jenis, r); }; });
+      [].forEach.call(host.querySelectorAll('[data-mi-edit]'), function (b) { b.onclick = function () { editRow(by[b.getAttribute('data-mi-edit')]); }; });
       [].forEach.call(host.querySelectorAll('[data-mi-del]'), function (b) {
         b.onclick = function () {
           var r = by[b.getAttribute('data-mi-del')];
@@ -528,7 +572,7 @@
       if ($('mdcpdf')) $('mdcpdf').onclick = function () { dcpOneExport(x, 'pdf', r.foto); };
       var kindPh = x.jenis === 'KELUAR' ? 'Foto DCP Keluar' : 'Foto DCP Masuk';
       ['dcpphg', 'dcpphc'].forEach(function (id) { if ($(id)) $(id).onchange = function (e) { var fl = Array.prototype.slice.call(e.target.files || []); e.target.value = ''; sendPhotos(x.id, fl, kindPh, 'dcp_photo_save', function () { dcpDetail(x.id); }); }; });
-      if ($('dcpedit')) $('dcpedit').onclick = function () { dcpForm(x.jenis, x); };
+      if ($('dcpedit')) $('dcpedit').onclick = function () { editRow(x); };
       if ($('dcpver')) $('dcpver').onclick = function () { api('dcp_verify_save', { id: x.id }).then(function () { toast('DCP diverifikasi'); dcpDetail(x.id); }).catch(function (e) { toast(e.message, 1); }); };
       if ($('dcpin')) $('dcpin').onclick = function () { dcpForm('MASUK', null, x); };
       if ($('dcpdel')) $('dcpdel').onclick = function () {
@@ -538,6 +582,8 @@
     }).catch(function (e) { toast(e.message, 1); });
   }
 
+  /* satu sumber data: baris Pelaporan (modul PEL) diubah dengan formulir Pelaporan, baris Management dengan formulir ini */
+  function editRow(r) { if (r.modul === 'PEL' && S.pelUI) S.pelUI.edit(r.id); else dcpForm(r.jenis, r); }
   function dcpForm(jenis, row, keluarRef, ctx) {
     getMeta().then(function (m) {
       var sd = ctx && ctx.seed ? ctx.seed : null;
@@ -1065,5 +1111,6 @@
     });
   }
   /* helper bersama untuk modul Pelaporan DCP (pelaporan.js) */
+  S.dcpUI = { form: dcpForm, detail: dcpDetail, reload: function () { return vDcp(); } };
   S.pel = { collectPhotos: collectPhotos, uname: uname, photoBox: photoBox, photoBind: photoBind, sendPhotos: sendPhotos, loadPhotos: loadPhotos, loadThumbs: loadThumbs, canWrite: canWrite, loadMyPerm: loadMyPerm, dlMenu: dlMenu, recSave: recSave, jkt: jkt, KOMP_DEF: KOMP_DEF };
 })();
