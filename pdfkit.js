@@ -114,7 +114,7 @@
     function defCap(g, idx, x, yy, w) {
       if (!g.caption) return;
       doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(30, 27, 46);
-      doc.text(doc.splitTextToSize('Foto ' + (idx + 1) + ' - ' + clean(g.caption), w).slice(0, 2), x, yy + 4);
+      doc.text(doc.splitTextToSize((idx + 1) + '. ' + clean(g.caption), w).slice(0, 2), x, yy + 4);
     }
     if (plan.startNew) { doc.addPage(); cur++; }
     if (o.headH && o.drawHead) o.drawHead(plan.startNew ? o.top : o.y);
@@ -139,7 +139,7 @@
     function need(h) { if (y + h > BOT) { doc.addPage(); y = TOP; } }
     (spec.blocks || []).forEach(function (b) {
       if (b.t === 'page') { doc.addPage(); y = TOP; return; }
-      if (b.t === 'h') { need(12); heading(doc, b.text, M, y + 4, b.size); y += 9; return; }
+      if (b.t === 'h') { need(b.keep || 12); heading(doc, b.text, M, y + 4, b.size); y += 9; return; }
       if (b.t === 'note') {
         doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor.apply(doc, c.mute);
         var ln = doc.splitTextToSize(clean(b.text), W - 2 * M); need(ln.length * 4.5 + 2); doc.text(ln, M, y + 3); y += ln.length * 4.5 + 3; return;
@@ -149,10 +149,9 @@
         y = doc.lastAutoTable.finalY + 7; return;
       }
       if (b.t === 'table') {
-        /* tabel kecil tidak dipecah antarhalaman: pindah halaman bila tidak muat utuh */
-        var est = (b.rows.length + 1) * ((b.fs || 8.5) * 0.45 + 4.2) + (b.title ? 7 : 0);
-        if (b.rows.length <= 12 && y + est > BOT && y > TOP + 1) { doc.addPage(); y = TOP; }
-        if (b.title) { need(24); heading(doc, b.title, M, y + 4); y += 7; }
+        /* tabel kecil (<= 8 baris) dijaga utuh di satu halaman; judul tidak ditinggal sendirian di dasar halaman */
+        if (b.rows.length <= 8) need(b.rows.length * 7 + 22); else if (b.title) need(24);
+        if (b.title) { heading(doc, b.title, M, y + 4); y += 7; }
         doc.autoTable({
           startY: y, margin: { left: M, right: M, top: TOP, bottom: FOOT + 2 }, head: [b.head.map(clean)], body: cleanRows(b.rows), foot: b.foot ? [b.foot.map(clean)] : undefined,
           theme: 'grid', showHead: 'everyPage', rowPageBreak: 'avoid',

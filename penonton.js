@@ -78,12 +78,11 @@
       '<div class="pn-k"><small>Tiket terjual</small><b>' + NF.format(d.total.tiket) + '</b></div>' +
       '<div class="pn-k"><small>Penonton masuk</small><b>' + NF.format(d.total.penonton) + '</b></div></div>' +
       '<p class="acs"><b>Petugas:</b> ' + (d.petugas.length ? esc(d.petugas.join(', ')) : 'Belum ada') + '</p>';
-    if (adm && d.progress.filled) h += '<div class="pn-delbar"><label><input type="checkbox" id="pn-all"> Pilih semua show terisi</label><button type="button" class="btn danger" id="pn-del" disabled>Reset terpilih (0)</button></div>';
     d.studios.forEach(function (a) {
       h += '<h4>' + esc(a.studio) + ' ' + badge(a.status) + ' <small>' + a.filled + '/' + a.total + ' show</small></h4><div class="scroll cards"><table class="rt pn-t"><tr><th>Show</th><th>Status</th><th>Nama film</th><th>Jam</th><th>Tiket</th><th>Penonton</th><th>Petugas</th><th>Keterangan</th>' + (adm ? '<th>Aksi</th>' : '') + '</tr>';
       a.shows.forEach(function (w) {
         var ok = w.status === 'Terisi'; if (w.over) over.push(a.studio + ' ' + w.show);
-        h += '<tr class="' + (ok ? '' : 'pn-empty') + (w.over ? ' aud-over-r' : '') + '"><td data-l="Show">' + (adm && ok ? '<label class="pn-sel"><input type="checkbox" data-del="' + esc(a.studio + '|' + w.show) + '" aria-label="Pilih ' + esc(a.studio + ' ' + w.show) + '"> <b>' + esc(w.show) + '</b></label>' : '<b>' + esc(w.show) + '</b>') + (w.over ? ' <span title="Penonton melebihi tiket">&#9888;</span>' : '') + '</td><td data-l="Status">' + badge(w.status) + '</td>' +
+        h += '<tr class="' + (ok ? '' : 'pn-empty') + (w.over ? ' aud-over-r' : '') + '"><td data-l="Show">' + '<b>' + esc(w.show) + '</b>' + (w.over ? ' <span title="Penonton melebihi tiket">&#9888;</span>' : '') + '</td><td data-l="Status">' + badge(w.status) + '</td>' +
           '<td data-l="Nama film" class="dtl-w">' + esc(ok ? w.film : '-') + '</td><td data-l="Jam">' + esc(ok ? (w.jam || '-') : '-') + '</td><td data-l="Tiket">' + (ok ? nf(w.tiket) : '-') + '</td><td data-l="Penonton">' + (ok ? nf(w.penonton) : '-') + '</td>' +
           '<td data-l="Petugas">' + esc(ok ? (w.petugas || '-') : '-') + '</td><td data-l="Keterangan" class="dtl-w">' + esc(ok ? (w.ket || '-') : '-') + (ok && w.sourceId ? ' <button type="button" class="lnk" data-src="' + esc(w.sourceId) + '">Sumber ' + esc(w.sourceId) + '</button>' : '') + '</td>' +
           (adm ? '<td data-l="Aksi" class="pn-act">' + (ok ? '<button type="button" class="btn sec pn-ed" data-ed="' + esc(a.studio + '|' + w.show) + '">Koreksi</button><button type="button" class="btn sec pn-rs" data-rs="' + esc(a.studio + '|' + w.show) + '">Reset</button>' : '') + '</td>' : '') + '</tr>';
@@ -148,29 +147,18 @@
       openDay(d.date); if ($('rl')) load();
     }).catch(function (x) { if (btn) btn.disabled = false; toast(x.message, 1); });
   }
-  /* ---------- Admin: hapus satu atau beberapa show (aud_del per show; show lain tidak tersentuh) ---------- */
+  /* ---------- Admin: Multi-Select (komponen NOVA bersama): reset beberapa show sekaligus (aud_del per show; show lain tidak tersentuh) ---------- */
   function wireDel(d) {
-    var bx = [].slice.call(document.querySelectorAll('[data-del]')), del = $('pn-del'), all = $('pn-all');
-    if (!del || !bx.length) return;
-    function upd() {
-      var n = bx.filter(function (b) { return b.checked; }).length;
-      del.disabled = !n; del.textContent = 'Reset terpilih (' + n + ')'; all.checked = n === bx.length; all.indeterminate = n > 0 && n < bx.length;
-    }
-    bx.forEach(function (b) { b.onchange = upd; });
-    all.onchange = function () { bx.forEach(function (b) { b.checked = all.checked; }); upd(); };
-    del.onclick = function () {
-      var sel = bx.filter(function (b) { return b.checked; }).map(function (b) { var k = b.dataset.del.split('|'); return { studio: k[0], show: k[1] }; });
-      if (!sel.length) return;
-      var info = {}; d.studios.forEach(function (a) { a.shows.forEach(function (w) { info[a.studio + '|' + w.show] = w.film; }); });
-      if (!window.confirm('Reset ' + sel.length + ' data show tanggal ' + dshort(d.date) + '?\n\n' + sel.map(function (x) { return '- ' + x.studio + ' ' + x.show + ' (' + (info[x.studio + '|' + x.show] || '-') + ')'; }).join('\n') + '\n\nIsian show di atas dikosongkan (kembali Belum Terisi). Show lain, tanggal lain, dan laporan harian tidak berubah; petugas lain dapat mengisinya kembali. Lanjutkan?')) return;
-      del.disabled = true; all.disabled = true; var fail = [], ok = 0;
-      sel.reduce(function (p, x) {
-        return p.then(function () { return api('aud_del', { date: d.date, studio: x.studio, show: x.show, quiet: 1 }).then(function () { ok++; }, function (e) { fail.push(x.studio + ' ' + x.show + ': ' + e.message); }); });
-      }, Promise.resolve()).then(function () {
-        toast(fail.length ? ok + ' show di-reset, ' + fail.length + ' gagal: ' + fail.join('; ') : ok + ' data show berhasil di-reset.', !!fail.length);
-        openDay(d.date); if ($('rl')) load();
-      });
-    };
+    var M = window.STC && STC.msel, host = $('mbox'), sum = host && host.querySelector('.pn-sum');
+    if (!M || !sum || curU().role !== 'ADMIN') return;
+    var a = document.createElement('div'); a.className = 'msel-top'; sum.parentNode.insertBefore(a, sum);
+    var info = {}; d.studios.forEach(function (st) { st.shows.forEach(function (w) { info[st.studio + '|' + w.show] = w.film; }); });
+    M.mount({ key: 'pn', admin: true, host: host, rows: 'table.pn-t tr', id: function (el) { var b = el.querySelector('[data-rs]'); return b ? b.dataset.rs : ''; },
+      anchor: a, reload: function () { openDay(d.date); if ($('rl')) load(); },
+      actions: [{ label: 'Reset show', danger: true, run: function (keys) {
+        if (!window.confirm('Reset ' + keys.length + ' data show tanggal ' + dshort(d.date) + '?\n\n' + keys.map(function (k) { return '- ' + k.replace('|', ' ') + ' (' + (info[k] || '-') + ')'; }).join('\n') + '\n\nIsian show di atas dikosongkan (kembali Belum Terisi). Show lain tidak tersentuh.')) return false;
+        return M.seq(keys, function (k) { var x = k.split('|'); return api('aud_del', { date: d.date, studio: x[0], show: x[1], quiet: 1 }); }, 'Mereset');
+      } }] });
   }
 
   /* ---------- formulir per show ---------- */
@@ -331,20 +319,19 @@
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([HD].concat(flat(r))), 'Detail Show');
     XLSX.writeFile(wb, 'Data_Penonton_' + r.from + '_sd_' + r.to + '.xlsx');
   }
+  /* PDF rentang: memakai penyusun bersama NovaPDF (header/footer, pembersihan teks, tabel tidak menggantung, kolom rapi) */
   function toPdf(r) {
-    if (!window.jspdf || !window.jspdf.jsPDF) { toast('Library PDF belum termuat. Periksa koneksi internet lalu coba lagi.', 1); return; }
-    var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
-    if (!doc.autoTable) { toast('Library PDF belum termuat. Periksa koneksi internet lalu coba lagi.', 1); return; }
-    doc.setFontSize(14); doc.text('Laporan Harian Data Penonton', 14, 14); doc.setFontSize(9); doc.text(r.from + ' s/d ' + r.to, 14, 19);
-    var y = 24;
-    r.days.forEach(function (d, i) {
-      if (i && y > 170) { doc.addPage(); y = 14; }
-      doc.setFontSize(10); doc.text(d.date + '  |  ' + d.status + '  |  ' + d.progress.filled + '/' + d.progress.total + ' show  |  Tiket ' + NF.format(d.total.tiket) + '  |  Penonton ' + NF.format(d.total.penonton) + '  |  Petugas: ' + (d.petugas.join(', ') || '-'), 14, y);
-      var body = []; d.studios.forEach(function (a) { a.shows.forEach(function (w) { var ok = w.status === 'Terisi'; body.push([a.studio, w.show, w.status, ok ? w.film : '', ok ? w.jam : '', ok ? w.tiket : '', ok ? w.penonton : '', ok ? w.petugas : '', ok ? w.ket : '']); }); });
-      doc.autoTable({ startY: y + 2, head: [['Studio', 'Show', 'Status', 'Nama Film', 'Jam', 'Tiket', 'Penonton', 'Petugas', 'Keterangan']], body: body, styles: { fontSize: 7, cellPadding: 1 }, headStyles: { fillColor: [37, 22, 79] }, margin: { left: 14, right: 14 } });
-      y = doc.lastAutoTable.finalY + 8; if (y > 180) { doc.addPage(); y = 14; }
+    if (!window.jspdf || !window.jspdf.jsPDF || !window.NovaPDF) { toast('Library PDF belum termuat. Periksa koneksi internet lalu coba lagi.', 1); return; }
+    var blocks = [{ t: 'pairs', rows: [['Periode', r.from + ' s/d ' + r.to], ['Jumlah hari', String(r.days.length)], ['Dicetak oleh', curU().name || '-']] }];
+    r.days.forEach(function (d) {
+      var body = [];
+      d.studios.forEach(function (a) { a.shows.forEach(function (w) { var ok = w.status === 'Terisi'; body.push([a.studio, w.show, w.status, ok ? w.film : '', ok ? w.jam : '', ok ? w.tiket : '', ok ? w.penonton : '', ok ? w.petugas : '', ok ? w.ket : '']); }); });
+      blocks.push({ t: 'h', text: dlong(d.date) + '  |  ' + d.status, keep: 48 });
+      blocks.push({ t: 'note', text: d.progress.filled + '/' + d.progress.total + ' show terisi  |  Tiket ' + NF.format(d.total.tiket) + '  |  Penonton ' + NF.format(d.total.penonton) + '  |  Petugas: ' + (d.petugas.join(', ') || '-') });
+      blocks.push({ t: 'table', head: ['Studio', 'Show', 'Status', 'Nama Film', 'Jam', 'Tiket', 'Penonton', 'Petugas', 'Keterangan'], rows: body, fs: 8,
+        colStyles: { 0: { cellWidth: 24 }, 1: { cellWidth: 20 }, 2: { cellWidth: 22 }, 4: { cellWidth: 14 }, 5: { cellWidth: 16, halign: 'right' }, 6: { cellWidth: 20, halign: 'right' }, 7: { cellWidth: 32 } } });
     });
-    doc.save('Data_Penonton_' + r.from + '_sd_' + r.to + '.pdf');
+    window.NovaPDF.render({ title: 'Laporan Harian Data Penonton', id: r.from + ' s/d ' + r.to, user: curU().name || '', orient: 'landscape', blocks: blocks }).save('Data_Penonton_' + r.from + '_sd_' + r.to + '.pdf');
   }
 
   /* ---------- Admin: migrasi data lama + review ---------- */

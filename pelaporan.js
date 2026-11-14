@@ -94,19 +94,31 @@
   }
 
   /* ---------- unduh Excel / PDF: isi sesuai filter yang sedang dipakai ---------- */
-  function plExport(fmt) {
+  function kelRingkas(k) {
+    k = k || []; if (!k.length) return 'Tidak diisi';
+    var bad = k.filter(function (c) { return c.status !== 'Lengkap' && c.status !== 'Tidak Diperlukan'; });
+    return bad.length ? 'Kurang: ' + bad.map(function (c) { return c.name + (c.note ? ' (' + c.note + ')' : ''); }).join(', ') : 'Lengkap';
+  }
+  function plExport(fmt, kds) {
     var rows = sortDesc(ROWS.filter(match));
+    if (kds) rows = rows.filter(function (r) { return kds.indexOf(r.kodeDisk) >= 0; });
     if (!rows.length) { toast('Tidak ada data untuk diunduh.', 1); return; }
-    var head = ['ID', 'Jenis', 'Tanggal', 'Jam', 'Kode disk', 'Judul film', 'PH', 'Outlet', 'Outlet tujuan', 'Penerima', 'Pelapor', 'Datang dari', 'Pengirim', 'Kelengkapan', 'Status laporan', 'Divalidasi oleh (data lama)', 'Catatan', 'Jenis DCP', 'No. resi', 'Tgl kirim'];
+    var head = ['ID', 'Jenis', 'Tanggal', 'Jam', 'Kode disk', 'Judul film', 'PH', 'Outlet', 'Outlet tujuan', 'Penerima', 'Pelapor', 'Datang dari', 'Pengirim', 'Kelengkapan', 'Status laporan', 'Divalidasi oleh (data lama)', 'Catatan', 'Jenis DCP', 'Tujuan', 'No. resi', 'Tgl kirim'];
     var body = rows.map(function (r) {
       var kel = (r.kelengkapan || []).map(function (c) { return c.name + ': ' + c.status + (c.note ? ' (' + c.note + ')' : ''); }).join('; ');
-      return [r.id, r.jenis === 'KELUAR' ? 'Keluar' : 'Masuk', r.tanggal, r.jam, r.kodeDisk, r.film, r.ph, r.outlet, r.jenis === 'KELUAR' ? (r.outletTujuan || '') : '', r.penerima, r.pelapor, r.asalDari || '', r.namaPengirim || '', kel || 'Tidak diisi (data lama)', statusOf(r), r.verifiedBy || '', r.keterangan, r.jenisDcp || 'Besar', r.noResi || '', r.tglKirim || '']
+      return [r.id, r.jenis === 'KELUAR' ? 'Keluar' : 'Masuk', r.tanggal, r.jam, r.kodeDisk, r.film, r.ph, r.outlet, r.jenis === 'KELUAR' ? (r.outletTujuan || '') : '', r.penerima, r.pelapor, r.asalDari || '', r.namaPengirim || '', kel || 'Tidak diisi (data lama)', statusOf(r), r.verifiedBy || '', r.keterangan, r.jenisDcp || 'Besar', r.jenis === 'KELUAR' ? (r.tipeKeluar === 'PUSAT' ? 'Kantor Pusat' : 'Pindah outlet') : '', r.noResi || '', r.tglKirim || '']
         .map(function (v) { return v == null ? '' : String(v); });
     });
-    /* PDF memakai 13 kolom yang relevan (tanpa ID, jam, penerima, status, pelapor, validator, catatan); PH, resi, dan tgl kirim wajib ada agar tabel tetap terbaca di A4 landscape */
-    var PDF_COLS = [1, 2, 4, 5, 6, 7, 8, 18, 19, 11, 12, 13, 17];
-    var pick = function (a) { return fmt === 'pdf' ? PDF_COLS.map(function (i) { return a[i]; }) : a; };
-    P.recSave('Laporan Pelaporan DCP', [['Jumlah transaksi', rows.length], ['Tanggal cetak', P.jkt()]], [{ head: pick(head), rows: body.map(pick) }], fmt, 'Laporan_Pelaporan_DCP_STCXXI_' + P.jkt());
+    /* PDF memakai 12 kolom yang relevan (tanpa ID, jam, pelapor, validator, catatan) agar tabel tetap terbaca di A4 landscape */
+    var tbl = { head: head, rows: body };
+    if (fmt === 'pdf') { /* PDF: 11 kolom yang terbaca di A4 landscape; PH dan resi disertakan, kelengkapan diringkas */
+      tbl = { head: ['Jenis', 'Tanggal', 'Kode disk', 'Judul film', 'PH', 'Outlet', 'Tujuan / asal', 'Pengirim', 'Penerima', 'Kelengkapan', 'Status'],
+        rows: rows.map(function (r) {
+          var tuj = r.jenis === 'KELUAR' ? (r.outletTujuan || '-') + (r.noResi ? '\nResi ' + r.noResi + (r.tglKirim ? ' (' + r.tglKirim + ')' : '') : '') : (r.asalDari || '-');
+          return [r.jenis === 'KELUAR' ? 'Keluar' : 'Masuk', r.tanggal + ' ' + r.jam, r.kodeDisk, r.film, r.ph, r.outlet, tuj, r.namaPengirim || '', r.penerima, kelRingkas(r.kelengkapan), statusOf(r)].map(function (v) { return v == null ? '' : String(v); });
+        }) };
+    }
+    P.recSave('Laporan Pelaporan DCP', [['Jumlah transaksi', rows.length], ['Tanggal cetak', P.jkt()]], [tbl], fmt, 'Laporan_Pelaporan_DCP_STCXXI_' + P.jkt());
   }
 
   /* Laporan multi-item: semua item (batchId sama) dalam SATU PDF/Excel — ringkasan, kelengkapan tiap item, foto tiap item */
@@ -118,9 +130,11 @@
     var pairs = [['Jenis laporan', jen], ['Tanggal', f.tanggal + ' ' + f.jam], ['Jumlah item', rows.length], ['Pelapor', f.pelapor || '-'], ['Kode laporan (batch)', f.batchId || f.id], ['Dicetak oleh', P.uname()]];
     var resi = rows.some(function (r) { return r.noResi; });
     if (resi) pairs.push(['Nomor resi', f.noResi || '-'], ['Tanggal pengiriman', f.tglKirim || '-']);
-    var sorted = rows.slice().sort(function (a, b) { return String(a.ph).toLowerCase() < String(b.ph).toLowerCase() ? -1 : String(a.ph).toLowerCase() > String(b.ph).toLowerCase() ? 1 : 0; });
-    var tables = [{ title: 'Ringkasan item (dikelompokkan per PH)', head: ['No', 'Kode disk', 'PH', 'Judul film', 'Jenis DCP', 'Outlet', 'Tujuan / asal', 'Penerima', 'Pengirim', 'Status'].concat(resi ? ['No. resi', 'Tgl kirim'] : []),
-      rows: sorted.map(function (r, i) { return [i + 1, r.kodeDisk, r.ph, r.film, r.jenisDcp || 'Besar', r.outlet, r.jenis === 'KELUAR' ? r.outletTujuan : r.asalDari, r.penerima, r.namaPengirim, statusOf(r)].concat(resi ? [r.noResi || '', r.tglKirim || ''] : []).map(sv); }) }];
+    /* ringkasan dikelompokkan per PH (banyak judul per PH berurutan), lalu judul film */
+    var lc = function (v) { return String(v == null ? '' : v).toLowerCase(); };
+    var sorted = rows.slice().sort(function (a, b) { return lc(a.ph) < lc(b.ph) ? -1 : lc(a.ph) > lc(b.ph) ? 1 : lc(a.film) < lc(b.film) ? -1 : lc(a.film) > lc(b.film) ? 1 : 0; });
+    var tables = [{ title: 'Ringkasan item (dikelompokkan per PH)', head: ['No', 'ID', 'Jenis', 'Kode disk', 'Judul film', 'PH', 'Jenis DCP', 'Outlet', 'Tujuan / asal', 'Penerima', 'Pengirim', 'Resi / tgl kirim', 'Status'],
+      rows: sorted.map(function (r, i) { return [i + 1, r.id, r.jenis === 'KELUAR' ? 'Keluar' : 'Masuk', r.kodeDisk, r.film, r.ph, r.jenisDcp || 'Besar', r.outlet, r.jenis === 'KELUAR' ? r.outletTujuan : r.asalDari, r.penerima, r.namaPengirim, r.noResi ? r.noResi + ' / ' + (r.tglKirim || '') : '-', statusOf(r)].map(sv); }) }];
     rows.forEach(function (r, i) {
       var kr = (r.kelengkapan || []).map(function (c) { return [c.name, c.status, c.note || '-'].map(sv); });
       if (r.keterangan) kr.push(['Keterangan item', '', r.keterangan]);
@@ -128,8 +142,8 @@
     });
     var file = 'Laporan_Pelaporan_DCP_' + rows.length + 'item_' + P.jkt();
     var go = function (ph) { P.recSave('Laporan Pelaporan DCP - ' + rows.length + ' item', pairs, tables, fmt, file, { id: f.batchId || f.id, orient: 'landscape', photos: ph || [], mainSheet: 'Ringkasan' }); };
-    if (fmt === 'pdf' && window.NovaPDF) {
-      toast('Menyiapkan PDF: mengambil foto semua item...');
+    if ((fmt === 'pdf' || window.ExcelJS) && window.NovaPDF) {
+      toast('Menyiapkan ' + (fmt === 'pdf' ? 'PDF' : 'Excel') + ': mengambil foto semua item...');
       P.collectPhotos(rows.map(function (r) { return { foto: r.foto || [], label: r.id + ' ' + r.film }; }), 'dcp_photo_get').then(go).catch(function () { go([]); });
     } else go([]);
   }
@@ -189,6 +203,30 @@
         '<td>' + cnt + ' transaksi' + (wait ? ' · ' + wait + ' menunggu foto' : '') + '</td><td>' + q(last.tanggal) + ' ' + q(last.jam) + '</td>' +
         '<td>' + (enabledK && p.here ? '<button type="button" class="btn sec pel-kirim" data-pel-kirim="' + q(g.kd) + '">Kirim</button>' : '') + '</td></tr>';
     }).join('') : '<tr><td colspan="7" class="mdc-empty">' + (DST.tab === 'stc' ? 'Tidak ada DCP di STC yang cocok.' : 'Tidak ada data yang cocok dengan filter.') + '</td></tr>';
+    mselPel();
+  }
+  /* Multi-Select Admin (per kode disk): validasi massal, unduh terpilih, hapus */
+  function mselPel() {
+    var M = S.msel, host = $('plBody') && $('plBody').closest('.mdc-tbl');
+    if (!M || !host) return;
+    var txOf = function (kds) { return ROWS.filter(function (r) { return kds.indexOf(r.kodeDisk) >= 0; }); };
+    M.mount({ key: 'pel', admin: me().role === 'ADMIN', host: host, rows: '#plBody tr[data-pel-open]', id: function (el) { return el.getAttribute('data-pel-open'); },
+      anchor: document.querySelector('#view .pel-filter'), reload: function () { reload().then(function () { shell(); }); },
+      actions: [
+        { label: 'Validasi', run: function (kds) {
+          var tx = txOf(kds).filter(function (r) { return r.jenis === 'MASUK' && r.modul === 'PEL' && !r.verifiedAt; });
+          if (!tx.length) { toast('Tidak ada DCP Masuk yang perlu divalidasi pada pilihan ini.', 1); return false; }
+          if (!confirm('Validasi ' + tx.length + ' laporan DCP Masuk? Laporan tanpa foto dokumentasi akan dilewati.')) return false;
+          return M.seq(tx.map(function (r) { return r.id; }), function (id) { return api('pel_validasi', { id: id, aksi: 'validasi', quiet: true }); }, 'Memvalidasi');
+        } },
+        { label: 'Unduh Excel', run: function (kds) { plExport('xlsx', kds); return false; } },
+        { label: 'Unduh PDF', run: function (kds) { plExport('pdf', kds); return false; } },
+        { label: 'Hapus', danger: true, run: function (kds) {
+          var tx = txOf(kds);
+          if (!confirm('Hapus ' + tx.length + ' transaksi dari ' + kds.length + ' kode disk beserta fotonya? Tindakan ini tidak dapat dibatalkan.')) return false;
+          return M.seq(tx.map(function (r) { return r.id; }), function (id) { return api('dcp_del', { id: id, quiet: true }); }, 'Menghapus');
+        } }
+      ] });
   }
 
   function bindList() {
@@ -234,8 +272,8 @@
       line('Pelapor', q(r.pelapor || '-'));
     if (masuk) rows += line('Datang dari', q(r.asalDari || '-'));
     rows += line('Pengirim', q(r.namaPengirim || '-'));
-    if (!masuk) rows += line('Penerima', q(r.penerima || '-'));
-    if (!masuk && r.noResi) rows += line('No. resi', q(r.noResi)) + line('Tgl kirim', q(r.tglKirim || '-'));
+    if (!masuk) rows += line('Tujuan', q(r.tipeKeluar === 'PUSAT' ? 'Kirim ke Kantor Pusat' : 'Pindah outlet')) + (r.tipeKeluar === 'PUSAT' ? line('Nomor resi', '<b>' + q(r.noResi || '-') + '</b>') + line('Tanggal kirim', q(r.tglKirim || '-')) : '') + line('Penerima', q(r.penerima || '-'));
+    if (!masuk) rows += line('PH · Judul', q(r.ph || '-') + ' · ' + q(r.film || '-'));
     if (r.kelengkapan && r.kelengkapan.length) rows += line('Jenis DCP', q(r.jenisDcp || 'Besar')) + line('Kelengkapan', kelHtml(r.kelengkapan));
     if (r.keterangan) rows += line('Catatan', q(r.keterangan));
     if (r.verifiedAt) rows += line('Divalidasi', q(r.verifiedBy || '-') + ' · ' + q(dt(r.verifiedAt)));
@@ -426,9 +464,11 @@
       '.pel-tab{border:1px solid var(--bd,#d0d5dd);background:transparent;color:inherit;border-radius:999px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer;min-height:40px}' +
       '.pel-tab.on{background:var(--brand,#4f46e5);border-color:var(--brand,#4f46e5);color:#fff}.pel-tab b{margin-left:4px}' +
       '.pel-kl{display:flex;flex-direction:column;gap:6px;max-height:42vh;overflow:auto;border:1px solid var(--bd,#d0d5dd);border-radius:10px;padding:8px}' +
-      '.pel-ki{border-bottom:1px solid var(--bd,#e4e7ec);padding:6px 2px}.pel-ki:last-child{border-bottom:0}.pel-ki[hidden]{display:none}' +
+      '.pel-ki{border-bottom:1px solid var(--line,#e4e7ec);padding:6px 2px}.pel-ki:last-child{border-bottom:0}.pel-ki[hidden]{display:none}' +
       '.pel-kd{margin:4px 0 0 28px;font-size:13px}.pel-kd summary{cursor:pointer;opacity:.8}.pel-kcs{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px}' +
-      '.pel-kcs .pel-kn{flex:1 1 100%}.pel-kirim{padding:6px 12px;min-height:36px}.pel-ph{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 2px 4px;font-size:13px;position:sticky;top:0;background:var(--card,#fff)}.pel-phall{padding:4px 10px;min-height:32px}.pel-tipe{display:flex;flex-wrap:wrap;gap:6px 18px;margin:10px 0}';
+      '.pel-kcs .pel-kn{flex:1 1 100%}.pel-kirim{padding:6px 12px;min-height:36px}' +
+      '.pel-phg{border:1px solid var(--line,#e4e7ec);border-radius:10px;margin:8px 0;padding:0 10px}.pel-phh{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line,#e4e7ec)}' +
+      '.pel-phall{background:none;border:0;color:var(--brand,#6246d9);font-weight:600;cursor:pointer;padding:6px 4px;min-height:36px}.pel-phg[hidden]{display:none}';
     document.head.appendChild(st);
   })();
   function lastJenis(g) {
@@ -437,34 +477,37 @@
   }
   function openKirim(pre) {
     var stc = groups().filter(function (g) { return posisi(g).here; })
-      .sort(function (a, b) { var x = String(a.ph).toLowerCase() + '|' + String(a.film).toLowerCase(), y = String(b.ph).toLowerCase() + '|' + String(b.film).toLowerCase(); return x < y ? -1 : x > y ? 1 : 0; });
+      .sort(function (a, b) { var x = key(a.last), y = key(b.last); return x < y ? 1 : x > y ? -1 : 0; });
     if (!stc.length) { toast('Tidak ada DCP di ' + OUTLET_SAYA + '. Catat DCP Masuk terlebih dahulu.', 1); return; }
     var savedP = ''; try { savedP = localStorage.getItem('nova_pel_pengirim') || ''; } catch (e) {}
-    var prevPh = null;
-    var list = stc.map(function (g) {
+    var byPh = {}, phs = [];
+    stc.forEach(function (g) { var k = g.ph || '-'; if (!byPh[k]) { byPh[k] = []; phs.push(k); } byPh[k].push(g); });
+    phs.sort(function (a, b) { return a.toLowerCase() < b.toLowerCase() ? -1 : 1; });
+    function itemHtml(g) {
       var jn = lastJenis(g);
-      var phHead = g.ph !== prevPh ? '<div class="pel-ph"><span>PH <b>' + q(g.ph || '-') + '</b></span><button type="button" class="btn sec pel-phall" data-ph="' + q(g.ph || '') + '">Pilih PH ini</button></div>' : '';
-      prevPh = g.ph;
       var kel = komp(jn).map(function (n, k) { return '<label class="mdc-cbx pel-kc"><input type="checkbox" data-k="' + k + '" checked> <span>' + q(n) + '</span></label>'; }).join('');
-      return phHead + '<div class="pel-ki" data-ph="' + q(g.ph || '') + '" data-kd="' + q(g.kd) + '" data-s="' + q((g.kd + ' ' + g.film + ' ' + g.ph).toLowerCase()) + '" data-j="' + q(jn) + '">' +
+      return '<div class="pel-ki" data-kd="' + q(g.kd) + '" data-s="' + q((g.kd + ' ' + g.film + ' ' + g.ph).toLowerCase()) + '" data-j="' + q(jn) + '">' +
         '<label class="mdc-cbx"><input type="checkbox" name="kdsel" value="' + q(g.kd) + '"' + (pre === g.kd ? ' checked' : '') + '> <span><b class="mdc-mono">' + q(g.kd) + '</b> · ' + q(g.film) + ' <small>PH ' + q(g.ph) + ' · DCP ' + q(jn) + '</small></span></label>' +
         '<details class="pel-kd"><summary>Kelengkapan: semua lengkap</summary><div class="pel-kcs">' + kel +
         '<input class="pel-kn" maxlength="300" placeholder="Keterangan (wajib jika ada yang tidak dicentang)" aria-label="Keterangan kelengkapan ' + q(g.kd) + '"></div></details></div>';
+    }
+    var list = phs.map(function (ph) {
+      return '<div class="pel-phg" data-ph="' + q(ph) + '"><div class="pel-phh"><span><b>' + q(ph) + '</b> <small>' + byPh[ph].length + ' judul</small></span><button type="button" class="pel-phall">Pilih semua</button></div>' + byPh[ph].map(itemHtml).join('') + '</div>';
     }).join('');
     var tujOpts = OUTLET.filter(function (o) { return o !== OUTLET_SAYA; }).concat([LAIN]).map(function (x) { return '<option value="' + q(x) + '">' + q(x) + '</option>'; }).join('');
     modal('<h3>Kirim DCP</h3><p class="mdc-note">Pilih DCP yang akan dikirim dari ' + q(OUTLET_SAYA) + '. Judul film, PH, dan jenis DCP terisi otomatis dari catatan Masuk.</p>' +
       '<form id="plkf" class="mdc-form" novalidate>' +
       '<div class="mdc-grid"><input id="plkq" type="search" placeholder="Cari kode disk, judul film, atau PH" aria-label="Cari DCP"><button type="button" class="btn sec" id="plkall">Pilih semua yang tampil</button></div>' +
       '<div class="pel-kl" id="plkl">' + list + '</div><p class="mdc-note" id="plkcnt"></p>' +
-      '<div class="pel-tipe" role="radiogroup" aria-label="Tujuan pengiriman"><label class="mdc-cbx"><input type="radio" name="tipeKeluar" value="OUTLET" checked> <span>Pindah outlet</span></label><label class="mdc-cbx"><input type="radio" name="tipeKeluar" value="PUSAT"> <span>Kirim ke Kantor Pusat</span></label></div>' +
-      '<div id="plkOut"><div class="mdc-grid"><label>Outlet tujuan<select name="outletTujuan"><option value="">Pilih outlet tujuan</option>' + tujOpts + '</select></label>' +
+      '<div class="mdc-tg pel-tipe" role="radiogroup" aria-label="Tujuan pengiriman"><label><input type="radio" name="tipeKeluar" value="PINDAH" checked><span>Pindah outlet</span></label><label><input type="radio" name="tipeKeluar" value="PUSAT"><span>Kirim ke Kantor Pusat</span></label></div>' +
+      '<div id="plkPindah"><div class="mdc-grid"><label>Outlet tujuan<select name="outletTujuan"><option value="">Pilih outlet tujuan</option>' + tujOpts + '</select></label>' +
       '<label>Nama penerima di outlet tujuan<input name="penerima" maxlength="120" placeholder="mis. Budi"></label></div>' +
       '<label class="pel-lain" id="plkLain" hidden>Nama outlet tujuan lain<input name="outletTujuanLain" maxlength="120"></label></div>' +
-      '<div id="plkPus" class="mdc-grid" hidden><label>Nomor resi<input name="noResi" maxlength="60" placeholder="Nomor resi pengiriman"></label>' +
-      '<label>Tanggal pengiriman<input type="date" name="tglKirim" value="' + q(P.jkt()) + '"></label></div>' +
+      '<div id="plkPusat" hidden><div class="mdc-grid"><label>Nomor resi<input name="noResi" maxlength="60" placeholder="mis. JNE 1234567890" autocomplete="off"></label>' +
+      '<label>Tanggal pengiriman<input type="date" name="tglKirim" value="' + P.jkt() + '"></label></div></div>' +
       '<div class="mdc-grid"><label>Nama pengirim (di STC)<input name="namaPengirim" required maxlength="120" value="' + q(savedP || myName()) + '"></label></div>' +
       '<label>Catatan (opsional)<textarea name="keterangan" maxlength="2000" rows="2"></textarea></label>' +
-      '<p class="mdc-note">Tanpa validasi: DCP keluar hanya didata. Foto bersifat opsional.</p>' + P.photoBox('plk') +
+      '<p class="mdc-note">Tanpa validasi: DCP keluar hanya didata. Unggah foto bukti pengiriman / serah terima (satu set foto berlaku untuk semua DCP dalam pengiriman ini).</p>' + P.photoBox('plk') +
       '<p class="mdc-err" id="plkerr" role="alert"></p>' +
       '<div class="mdc-foot"><button type="button" class="btn sec" id="plkx">Batal</button><button type="submit" class="btn" id="plks">Kirim DCP</button></div></form>');
     var f = $('plkf'), pb = P.photoBind('plk');
@@ -476,25 +519,24 @@
         var bad = [].some.call(el.querySelectorAll('.pel-kcs input[type=checkbox]'), function (c) { return !c.checked; });
         el.querySelector('summary').textContent = bad ? 'Kelengkapan: ada yang tidak lengkap (isi keterangan)' : 'Kelengkapan: semua lengkap';
       });
-      var pusat = f.tipeKeluar.value === 'PUSAT';
-      $('plkOut').hidden = pusat; $('plkPus').hidden = !pusat;
-      var tw = $('plkLain'); if (tw) tw.hidden = f.outletTujuan.value !== LAIN;
-      var phs = {}; chosen().forEach(function (el) { phs[el.getAttribute('data-ph')] = 1; });
-      var np = Object.keys(phs).length;
-      if (np) $('plkcnt').textContent = chosen().length + ' DCP dipilih dari ' + np + ' PH.';
+      var pusat = f.tipeKeluar.value === 'PUSAT', tw = $('plkLain');
+      $('plkPindah').hidden = pusat; $('plkPusat').hidden = !pusat;
+      if (tw) tw.hidden = pusat || f.outletTujuan.value !== LAIN;
+      var phSet = {}; chosen().forEach(function (el) { phSet[el.closest('.pel-phg').getAttribute('data-ph')] = 1; });
+      var np = Object.keys(phSet).length; if (n) $('plkcnt').textContent = n + ' DCP dipilih' + (np ? ' dari ' + np + ' PH' : '') + '.';
+      [].forEach.call(f.querySelectorAll('.pel-phg'), function (g) { var v = [].some.call(g.querySelectorAll('.pel-ki'), function (e) { return !e.hidden; }); g.hidden = !v; });
     }
     f.addEventListener('change', sync);
-    f.querySelectorAll('.pel-phall').forEach(function (b) {
-      b.onclick = function () {
-        var ph = b.getAttribute('data-ph');
-        items().forEach(function (el) { if (!el.hidden && el.getAttribute('data-ph') === ph) el.querySelector('input[name=kdsel]').checked = true; });
-        sync();
-      };
-    });
     $('plkq').oninput = function () {
       var s = this.value.trim().toLowerCase();
       items().forEach(function (el) { el.hidden = !!s && el.getAttribute('data-s').indexOf(s) < 0; });
     };
+    f.addEventListener('click', function (e) {
+      var b = e.target.closest('.pel-phall'); if (!b) return;
+      var on = true, its = [].slice.call(b.closest('.pel-phg').querySelectorAll('.pel-ki')).filter(function (x) { return !x.hidden; });
+      its.forEach(function (el) { if (!el.querySelector('input[name=kdsel]').checked) on = false; });
+      its.forEach(function (el) { el.querySelector('input[name=kdsel]').checked = !on; }); sync();
+    });
     $('plkall').onclick = function () {
       items().forEach(function (el) { if (!el.hidden) el.querySelector('input[name=kdsel]').checked = true; });
       sync();
@@ -506,11 +548,11 @@
       var err = $('plkerr'); err.textContent = '';
       var sel = chosen();
       if (!sel.length) { err.textContent = 'Pilih minimal satu DCP yang akan dikirim.'; return; }
-      var pusat = f.tipeKeluar.value === 'PUSAT', resi = f.noResi.value.trim(), tglK = f.tglKirim.value;
-      var tuj = pusat ? 'Kantor Pusat' : f.outletTujuan.value, penerima = pusat ? 'Kantor Pusat' : f.penerima.value.trim(), pengirim = f.namaPengirim.value.trim();
+      var pusat = f.tipeKeluar.value === 'PUSAT', tuj = pusat ? 'Kantor Pusat' : f.outletTujuan.value, penerima = f.penerima.value.trim(), pengirim = f.namaPengirim.value.trim();
+      var resi = f.noResi.value.trim(), tgl = f.tglKirim.value;
       if (pusat) {
         if (!resi) { err.textContent = 'Isi nomor resi pengiriman.'; return; }
-        if (!tglK) { err.textContent = 'Isi tanggal pengiriman.'; return; }
+        if (!tgl) { err.textContent = 'Isi tanggal pengiriman.'; return; }
       } else {
         if (!tuj) { err.textContent = 'Pilih outlet tujuan.'; return; }
         if (tuj === LAIN && !f.outletTujuanLain.value.trim()) { err.textContent = 'Isi nama outlet tujuan lain.'; return; }
@@ -524,7 +566,8 @@
         var cbs = el.querySelectorAll('.pel-kcs input[type=checkbox]');
         var kel = komp(jn).map(function (n, i) { return { name: n, status: cbs[i].checked ? 'Lengkap' : 'Tidak Ada', note: cbs[i].checked ? '' : note }; });
         if (kel.some(function (c) { return c.status !== 'Lengkap' && !c.note; }) && !problem) problem = 'Isi keterangan kelengkapan untuk disk ' + kd + '.';
-        return { jenis: 'KELUAR', kodeDisk: kd, film: g.film, ph: g.ph, outlet: (g.last.outlet || OUTLET_SAYA), outletTujuan: tuj, tipeKeluar: pusat ? 'PUSAT' : 'OUTLET', noResi: resi, tglKirim: tglK,
+        return { jenis: 'KELUAR', kodeDisk: kd, film: g.film, ph: g.ph, outlet: (g.last.outlet || OUTLET_SAYA), outletTujuan: pusat ? '' : tuj,
+          tipeKeluar: pusat ? 'PUSAT' : 'PINDAH', noResi: pusat ? resi : '', tglKirim: pusat ? tgl : '',
           outletTujuanLain: pusat ? '' : f.outletTujuanLain.value.trim(), penerima: penerima, namaPengirim: pengirim, keterangan: f.keterangan.value.trim(),
           jenisDcp: jn, kelengkapan: kel, batchId: batch };
       });
@@ -537,10 +580,10 @@
         try { localStorage.setItem('nova_pel_pengirim', pengirim); } catch (e2) {}
         var files = pb.get();
         var finish = function () {
-          toast(ids.length + ' DCP dikirim ke ' + (tuj === LAIN ? f.outletTujuanLain.value.trim() : tuj) + (pusat ? ' (resi ' + resi + ')' : '') + '.');
+          toast(ids.length + ' DCP dikirim ke ' + (pusat ? 'Kantor Pusat (resi ' + resi + ')' : (tuj === LAIN ? f.outletTujuanLain.value.trim() : tuj)) + '.');
           reload().then(function () { DST.tab = 'kirim'; refresh(''); });
         };
-        if (files.length) P.sendPhotos(ids[0], files, 'Foto DCP Keluar', 'dcp_photo_save', finish); else finish();
+        if (files.length) P.sendPhotos(ids[0], files, pusat ? 'Bukti pengiriman' : 'Bukti serah terima', 'dcp_photo_save', finish); else finish();
       }).catch(function (er) { btn.disabled = false; toast(er.message, 1); err.textContent = er.message; });
     };
   }
@@ -562,9 +605,13 @@
       '<div class="pel-loc"><span>' + (masuk ? 'Outlet penerima (outlet ini)' : 'Outlet asal (posisi DCP saat ini)') + '</span><b id="plLoc">' + q(defOutlet || '-') + '</b></div></div>' +
       '<input type="hidden" name="outlet" value="' + q(defOutlet) + '">';
     if (!masuk) {
-      h += '<div class="mdc-grid"><label>Outlet tujuan<select name="outletTujuan" required><option value="">Pilih outlet tujuan</option>' + outletOpts(defTujuan) + '</select></label>' +
-        '<label>Nama penerima di outlet tujuan<input name="penerima" required maxlength="120" value="' + q(rec ? rec.penerima : '') + '" placeholder="mis. Budi"></label></div>' +
-        '<label class="pel-lain" id="plLainT"' + (lainVal(defTujuan) || defTujuan === LAIN ? '' : ' hidden') + '>Nama outlet tujuan lain<input name="outletTujuanLain" maxlength="120" value="' + q(lainVal(defTujuan)) + '"></label>' +
+      var isP = rec && rec.tipeKeluar === 'PUSAT';
+      h += '<div class="mdc-tg pel-tipe" role="radiogroup" aria-label="Tujuan pengiriman"><label><input type="radio" name="tipeKeluar" value="PINDAH"' + (isP ? '' : ' checked') + '><span>Pindah outlet</span></label><label><input type="radio" name="tipeKeluar" value="PUSAT"' + (isP ? ' checked' : '') + '><span>Kirim ke Kantor Pusat</span></label></div>' +
+        '<div id="plPindah"' + (isP ? ' hidden' : '') + '><div class="mdc-grid"><label>Outlet tujuan<select name="outletTujuan"><option value="">Pilih outlet tujuan</option>' + outletOpts(isP ? '' : defTujuan) + '</select></label>' +
+        '<label>Nama penerima di outlet tujuan<input name="penerima" maxlength="120" value="' + q(rec && !isP ? rec.penerima : '') + '" placeholder="mis. Budi"></label></div>' +
+        '<label class="pel-lain" id="plLainT"' + (lainVal(defTujuan) || defTujuan === LAIN ? '' : ' hidden') + '>Nama outlet tujuan lain<input name="outletTujuanLain" maxlength="120" value="' + q(lainVal(defTujuan)) + '"></label></div>' +
+        '<div id="plPusat"' + (isP ? '' : ' hidden') + '><div class="mdc-grid"><label>Nomor resi<input name="noResi" maxlength="60" value="' + q(rec ? rec.noResi : '') + '" placeholder="mis. JNE 1234567890" autocomplete="off"></label>' +
+        '<label>Tanggal pengiriman<input type="date" name="tglKirim" value="' + q(rec && rec.tglKirim ? rec.tglKirim : P.jkt()) + '"></label></div></div>' +
         '<div class="mdc-grid"><label>Nama pengirim (di STC)<input name="namaPengirim" required maxlength="120" value="' + q(rec ? rec.namaPengirim : '') + '" placeholder="mis. Budi"></label></div>';
     }
     if (masuk) {
@@ -602,11 +649,14 @@
       syncLain();
     }
     function syncLain() {
-      var tw = $('plLainT'); if (tw) tw.hidden = !f.outletTujuan || f.outletTujuan.value !== LAIN;
+      var pu = f.tipeKeluar && f.tipeKeluar.value === 'PUSAT';
+      if ($('plPindah')) { $('plPindah').hidden = !!pu; $('plPusat').hidden = !pu; }
+      var tw = $('plLainT'); if (tw) tw.hidden = !!pu || !f.outletTujuan || f.outletTujuan.value !== LAIN;
       var la = $('plLainA'); if (la) la.hidden = !f.asalDari || f.asalDari.value !== LAIN;
     }
     f.kodeDisk.oninput = sync;
     if (f.outletTujuan) f.outletTujuan.onchange = syncLain;
+    if (f.tipeKeluar) [].forEach.call(f.querySelectorAll('input[name=tipeKeluar]'), function (r) { r.onchange = syncLain; });
     if (f.asalDari) f.asalDari.onchange = syncLain;
     sync();
 
@@ -626,9 +676,11 @@
         keterangan: f.keterangan.value.trim()
       };
       if (!masuk) {
-        body.outletTujuan = f.outletTujuan.value;
-        body.outletTujuanLain = f.outletTujuanLain ? f.outletTujuanLain.value.trim() : '';
-        body.penerima = f.penerima.value.trim();
+        var pu = f.tipeKeluar.value === 'PUSAT';
+        body.tipeKeluar = pu ? 'PUSAT' : 'PINDAH'; body.noResi = pu ? f.noResi.value.trim() : ''; body.tglKirim = pu ? f.tglKirim.value : '';
+        body.outletTujuan = pu ? '' : f.outletTujuan.value;
+        body.outletTujuanLain = !pu && f.outletTujuanLain ? f.outletTujuanLain.value.trim() : '';
+        body.penerima = pu ? '' : f.penerima.value.trim();
         body.namaPengirim = f.namaPengirim.value.trim();
         if (!body.namaPengirim) { toast('Isi nama pengirim DCP.', 1); return; }
       }
@@ -646,7 +698,9 @@
       $('plerr').textContent = '';
       if (!body.kodeDisk) { toast('Kode disk wajib diisi.', 1); return; }
       if (!body.outlet) { toast(masuk ? 'Outlet DCP masuk tidak valid.' : 'DCP belum berada di outlet ini. Catat DCP Masuk terlebih dahulu.', 1); return; }
-      if (!masuk && !body.outletTujuan) { toast('Pilih outlet tujuan.', 1); return; }
+      if (!masuk && body.tipeKeluar === 'PUSAT') { if (!body.noResi) { toast('Isi nomor resi pengiriman.', 1); return; } if (!body.tglKirim) { toast('Isi tanggal pengiriman.', 1); return; } }
+      else if (!masuk && !body.outletTujuan) { toast('Pilih outlet tujuan.', 1); return; }
+      else if (!masuk && !body.penerima) { toast('Isi nama penerima di outlet tujuan.', 1); return; }
       var ex = MI ? MI.read() : { items: [] };
       if (ex.error) { $('plerr').textContent = ex.error; return; }
       var batch = ex.items.length ? S.mi.uid() : '';
