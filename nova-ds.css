@@ -786,3 +786,20 @@ table.acd tr.acd-e td { background: color-mix(in srgb, var(--err) 5%, transparen
 .ftd-chip.ok{border-color:#9bdcb8;background:#effaf4}.ftd-chip.ok span{color:#0b6b43;font-weight:600}
 .ftd-chip.part{border-color:#f0d6a5;background:#fff8ea}.ftd-chip.part span{color:#8a5200;font-weight:600}
 .ftd-chip.none{opacity:.8}
+
+/* v20.1.6 Ceklis Harian: kotak dokumentasi rapi, tombol & info foto tidak saling menimpa.
+   Akar masalah: .mdc-ph (grid kolom 120px) membungkus tombol, input tersembunyi, dan teks info
+   sebagai item grid sehingga info foto jatuh ke kolom sebelah dan menutupi tombol kamera. */
+.ftd-doc .mdc-ph{display:block;margin:0}
+.ftd-doc .mdc-ph .pick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}
+.ftd-doc .mdc-ph .pick .btn,.ftd-doc .mdc-ph .pick .pk{display:inline-flex;align-items:center;justify-content:center;width:100%;min-width:0;min-height:44px;margin:0;padding:8px 12px;text-align:center;white-space:normal;line-height:1.25;box-sizing:border-box}
+.ftd-doc .mdc-ph .vh{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden}
+.ftd-doc .mdc-ph .mdc-note{display:block;margin:10px 0 0;padding:0;background:none;border-radius:0;font-size:12px;line-height:1.5;color:var(--muted,#6b6785);overflow-wrap:anywhere}
+.ftd-doc .mdc-ph .ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin:10px 0 0}
+.ftd-doc .mdc-ph .ph:empty{display:none}
+.ftd-doc .mdc-ph .ph>div{position:relative;min-width:0}
+.ftd-doc .mdc-ph .ph img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+.ftd-doc .mdc-ph .ph .x{position:absolute;top:4px;right:4px;width:28px;height:28px;min-height:0;padding:0;border:0;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:18px;line-height:28px;cursor:pointer}
+/* foto tersimpan (blok .mdc-ph pertama) diberi jarak ke tombol unggah di bawahnya */
+.ftd-doc>.mdc-ph:not(:last-child){margin-bottom:12px}
+@media (max-width:380px){.ftd-doc .mdc-ph .pick{grid-template-columns:1fr}}
