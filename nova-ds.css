@@ -742,3 +742,47 @@ table.acd tr.acd-e td { background: color-mix(in srgb, var(--err) 5%, transparen
 .mdc-sec:first-child{margin-top:4px}
 .mdc-sec+.mdc-note{margin-top:0}
 #view .mdc-note+.btn,#view .mdc-note+button{margin-bottom:6px}
+
+/* v20.1.4 Daily Ceklis Konten Film: kartu per studio (ceklis ringkas + dokumentasi + pelapor) */
+.ftd{max-width:760px;margin:0 auto}
+.ftd-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.ftd-head h2{margin:0;font-size:22px;line-height:1.25}
+.ftd-sub{margin:2px 0 0;color:var(--muted,#6b6785);font-size:14px}
+.ftd-role{background:var(--brand-soft);color:var(--brand-ink);font-size:12px;font-weight:700;border-radius:999px;padding:4px 12px;white-space:nowrap}
+.ftd-note{margin:14px 0 10px;padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:var(--brand-soft);color:var(--brand-ink);font-size:14px}
+.ftd-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:0 0 6px}
+.ftd-bar label{display:flex;align-items:center;gap:8px;font-size:14px}
+.ftd-bar input[type=date]{min-height:38px}
+.ftd-sum{font-size:13px;font-weight:600;color:var(--ink);margin-right:auto}
+.ftd h3{margin:18px 0 10px;font-size:16px}
+.ftd-card{border:1px solid var(--line-2,#c9c6ea);border-radius:16px;margin:0 0 16px;background:var(--surface);overflow:hidden}
+.ftd-card.ok{border-color:#9bdcb8}
+.ftd-card>header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:14px 16px;background:var(--brand-soft);color:var(--brand-ink)}
+.ftd-card>header b{font-size:17px}
+.ftd-bs{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.ftd-b{font-size:11px;font-weight:800;letter-spacing:.03em;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.ftd-b.ok{background:#d6f5e4;color:#0b6b43}.ftd-b.warn{background:#fff0d6;color:#8a5200}.ftd-b.act{background:#e6f7ee;color:#1d7a50}.ftd-b.late{background:#fde2e0;color:#a4261b}
+.ftd-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;border-top:1px solid var(--line);font-size:15px;min-height:48px}
+.ftd-row>span{min-width:0}
+.ftd-cb{width:24px;height:24px;flex:0 0 auto;accent-color:#ea580c;cursor:pointer}
+.ftd-cb:disabled{cursor:default;opacity:.75}
+.ftd-pic b{font-weight:700;text-align:right;overflow-wrap:anywhere}
+.ftd-doc{padding:12px 16px;border-top:1px solid var(--line)}
+.ftd-dh{font-size:14px;font-weight:700;margin-bottom:8px}.ftd-dh small{font-weight:500;color:var(--muted,#6b6785)}
+.ftd-doc .mdc-ph{margin:0}
+.ftd-card>footer{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--line);background:var(--surface-2)}
+.ftd-meta{margin-right:auto;font-size:13px;color:var(--muted,#6b6785)}
+.ftd-err{margin:0;padding:10px 16px;background:#fde2e0;color:#a4261b;font-size:13px}
+.ftd-err[hidden]{display:none}
+@media (max-width:640px){.ftd-card>footer .btn{flex:1 1 auto}.ftd-bar .btn{flex:0 0 auto}}
+.ftd-head h2,.ftd h3{font-weight:700}
+
+/* v20.1.5 ringkasan "Studio dites hari ini" di Daily Ceklis */
+.ftd-today{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:12px 14px;margin:6px 0 4px}
+.ftd-th{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:8px}.ftd-th span{font-weight:700;color:var(--brand-ink)}
+.ftd-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.ftd-chip{display:flex;flex-direction:column;gap:1px;padding:9px 11px;border:1px solid var(--line);border-radius:12px;text-decoration:none;color:var(--ink);background:var(--surface-2);min-width:0}
+.ftd-chip b{font-size:14px}.ftd-chip span{font-size:12px;color:var(--muted,#6b6785)}.ftd-chip small{font-size:11px;color:var(--muted,#6b6785);overflow-wrap:anywhere}
+.ftd-chip.ok{border-color:#9bdcb8;background:#effaf4}.ftd-chip.ok span{color:#0b6b43;font-weight:600}
+.ftd-chip.part{border-color:#f0d6a5;background:#fff8ea}.ftd-chip.part span{color:#8a5200;font-weight:600}
+.ftd-chip.none{opacity:.8}

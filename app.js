@@ -179,10 +179,10 @@ function openMenu(){$('side').classList.add('open');$('shade').classList.add('op
 /* ---- tombol "+" (buat laporan) di tengah navigasi bawah ---- */
 IC.search='<svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
 var NEWBTN='<a data-p="new" class="pl" role="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Buat laporan baru"><span class="pl-b" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><em>Buat</em></a>';
-var NEWI={ADMIN:[['dcpk','DCP Keluar','Catat pengiriman DCP','dcp'],['dcpm','DCP Masuk','Catat pengembalian DCP','dcp'],['pelk','Pelaporan DCP Keluar','Tujuan, penerima, dokumentasi','pel'],['pelm','Pelaporan DCP Masuk','Outlet, dokumentasi','pel'],['ftest','Input Testing','Pengetesan harian film'],['work','Laporan Pekerjaan','Pekerjaan teknis harian'],['meter','Laporan Meteran','Listrik & air'],['ac','Daily Monitoring AC','Suhu & kondisi AC'],['purchase','Laporan Pembelian','Barang & jasa'],['audience','Data Penonton','Penonton per show & studio'],['issue','Perlu Diperbaiki','Lapor kerusakan'],['patrol','Inspeksi & Patroli Studio','Catat hasil patroli']],
+var NEWI={ADMIN:[['pelk','Pelaporan DCP Keluar','Tujuan, penerima, dokumentasi','pel'],['pelm','Pelaporan DCP Masuk','Outlet, dokumentasi','pel'],['ftest','Ceklis Harian Film','Ceklis per studio + dokumentasi'],['work','Laporan Pekerjaan','Pekerjaan teknis harian'],['meter','Laporan Meteran','Listrik & air'],['ac','Daily Monitoring AC','Suhu & kondisi AC'],['purchase','Laporan Pembelian','Barang & jasa'],['audience','Data Penonton','Penonton per show & studio'],['issue','Perlu Diperbaiki','Lapor kerusakan'],['patrol','Inspeksi & Patroli Studio','Catat hasil patroli']],
  REPORTER:[['issue','Perlu Diperbaiki','Lapor kerusakan'],['audience','Data Penonton','Penonton per show & studio']],
  GUIDE_SECURITY:[['patrol','Inspeksi & Patroli Studio','Catat hasil patroli'],['audience','Data Penonton','Penonton per show & studio']]};
-var NEWCREATE={work:'ra',meter:'ra',ac:'ra',purchase:'ra',audience:'ra',issue:'ra',patrol:'ra',ftest:'ftnew'};
+var NEWCREATE={work:'ra',meter:'ra',ac:'ra',purchase:'ra',audience:'ra',issue:'ra',patrol:'ra'};
 var NEWDCP={dcpk:'KELUAR',dcpm:'MASUK'};
 var NEWPEL={pelk:'KELUAR',pelm:'MASUK'};
 function newOpen(){
@@ -206,7 +206,7 @@ function newCreate(p){
   (function wait(){var r=document.querySelector('input[name=dcpjt][value='+NEWDCP[p]+']'),b=document.getElementById('dcpnew');if(r&&b){r.checked=true;b.click();return}if(++k<60)setTimeout(wait,100)})();
   return;
  }
- go(p);
+ go(p);if(p==='ftest')return; /* ceklis harian: formulir langsung tampil di halaman */
  var id=NEWCREATE[p]||'ra',tries=0;
  (function wait(){var b=document.getElementById(id);if(b){b.click();return}if(++tries<50)setTimeout(wait,100)})();
 }

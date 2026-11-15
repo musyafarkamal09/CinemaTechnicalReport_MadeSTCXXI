@@ -11,7 +11,7 @@
   var $ = S.$;
   function curU() { return S.getU(); }
   var META = null;
-  Object.assign(S.DESC, { dcp: 'Catat DCP keluar dan masuk, kelengkapan komponen, dan foto', ftest: 'Pengetesan harian film: checklist PASS/FAIL, status, dan riwayat ulang' });
+  Object.assign(S.DESC, { dcp: 'Lihat, ubah, dan hapus data DCP lengkap. DCP keluar/masuk dilaporkan lewat Pelaporan DCP', ftest: 'Ceklis harian konten film per studio, lengkap dengan dokumentasi' });
   S.IC.dcp = '<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M7 15h4"/></svg>';
   S.IC.ftest = '<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14"/><path d="M10.5 9.5v5l3.5-2.5z"/></svg>';
   var KOMP_DEF = ['HDD', 'USB', 'Kabel Power', 'Adaptor'];
@@ -153,7 +153,7 @@
         kpi('Sudah keluar', d.sudahKeluar != null ? d.sudahKeluar : d.totalKeluar, '') + kpi('DCP Masuk', d.totalMasuk, '') +
         kpi('Belum kembali', d.belumKembali, d.belumKembali ? 'warn' : '') +
         kpi('DCP aktif', d.aktif != null ? d.aktif : d.dcpAktif, '') + kpi('Diproses', d.dalamProses, '') + kpi('Bermasalah', d.bermasalah, d.bermasalah ? 'bad' : '') + '</div>' +
-        '<div class="mdc-acts">' + (canWrite() ? '<div class="mdc-tg" role="radiogroup" aria-label="Jenis laporan"><label><input type="radio" name="dcpjt" value="KELUAR" checked><span>DCP Keluar</span></label><label><input type="radio" name="dcpjt" value="MASUK"><span>DCP Masuk</span></label></div><button type="button" class="btn" id="dcpnew">Tambah DCP</button>' : '') + dlMenu('dcp') + '<button type="button" class="btn sec" id="dcprh">Riwayat disk</button>' + (curU().role === 'ADMIN' ? '<button type="button" class="btn sec" id="dcpadm">Izin &amp; pengingat</button>' : '') + '</div></div>';
+        '<div class="mdc-acts">' + dlMenu('dcp') + '<button type="button" class="btn sec" id="dcprh">Riwayat disk</button>' + (curU().role === 'ADMIN' ? '<button type="button" class="btn sec" id="dcpadm">Izin &amp; pengingat</button>' : '') + '</div></div>';
       if (over) {
         h += '<div class="mdc-alert" role="alert"><b>' + over + ' DCP belum kembali lebih dari ' + d.batasHari + ' hari</b><ul>' +
           d.overdue.slice(0, 6).map(function (o) { return '<li>' + q(o.film) + ' · ' + q(o.kodeDisk) + ' · keluar ' + q(o.tanggal) + '</li>'; }).join('') + '</ul></div>';
@@ -220,7 +220,6 @@
     $('dcpq').oninput = function (e) { DST.q = e.target.value; clearTimeout(t); t = setTimeout(vDcp, 350); };
     $('dcpj').onchange = function (e) { DST.jenis = e.target.value; vDcp(); };
     $('dcps').onchange = function (e) { DST.status = e.target.value; vDcp(); };
-    if ($('dcpnew')) $('dcpnew').onclick = function () { var c = document.querySelector('input[name=dcpjt]:checked'); dcpForm(c ? c.value : 'KELUAR', null); };
     $('dcpxl').onclick = function () { dcpExport('xlsx'); };
     $('dcppdf').onclick = function () { dcpExport('pdf'); };
     if ($('dcpadm')) $('dcpadm').onclick = function () { permAdmin(); };
@@ -539,7 +538,7 @@
             (canWrite() ? '<button type="button" class="btn sec" data-mi-edit="' + q(r.id) + '">Ubah</button>' : '') +
             (canDel() ? '<button type="button" class="btn danger" data-mi-del="' + q(r.id) + '">Hapus</button>' : '') + '</td></tr>';
         }).join('') + '</tbody></table></div>' +
-        '<div class="mdc-foot mi-bfoot">' + (canWrite() ? '<button type="button" class="btn sec" id="mi-add2">+ Tambah item ke laporan ini</button>' : '') + (can('pdf') ? dlMenu('mib', 'Download laporan lengkap') : '') + '</div>';
+        '<div class="mdc-foot mi-bfoot">' + (can('pdf') ? dlMenu('mib', 'Download laporan lengkap') : '') + '</div>';
       host.innerHTML = h;
       var by = {}; items.forEach(function (r) { by[r.id] = r; });
       [].forEach.call(host.querySelectorAll('[data-mi-open]'), function (b) { b.onclick = function () { dcpDetail(b.getAttribute('data-mi-open')); }; });
@@ -556,12 +555,6 @@
           }).catch(function (e) { b.disabled = false; toast(e.message, 1); });
         };
       });
-      if ($('mi-add2')) $('mi-add2').onclick = function () {
-        var bid = x.batchId || S.mi.uid(), btn = this; btn.disabled = true;
-        /* laporan tunggal lama diikat ke batch dulu (data lama tidak berubah selain batchId) */
-        var pre = x.batchId ? Promise.resolve() : api('dcp_save', Object.assign({}, x, { batchId: bid }));
-        pre.then(function () { dcpForm(x.jenis, null, null, { batchId: bid, seed: x }); }).catch(function (e) { btn.disabled = false; toast(e.message, 1); });
-      };
       if ($('mibxl')) $('mibxl').onclick = function () { dcpBatchExport(items, 'xlsx'); };
       if ($('mibpdf')) $('mibpdf').onclick = function () { dcpBatchExport(items, 'pdf'); };
     }).catch(function () { host.innerHTML = ''; });
@@ -620,8 +613,7 @@
       }).join('') + '</div>';
       if (canWrite()) h += '<div class="mdc-ph-up"><p class="mdc-note">Dokumentasi ' + (x.jenis === 'KELUAR' ? 'DCP Keluar' : 'DCP Masuk') + ': tambah foto dari galeri atau langsung dari kamera.</p><div class="pick"><label class="btn sec pk" for="dcpphg">Pilih dari galeri</label><label class="btn sec pk" for="dcpphc">Ambil dengan kamera</label></div><input class="vh" type="file" id="dcpphg" accept="image/jpeg,image/png,image/webp" multiple><input class="vh" type="file" id="dcpphc" accept="image/*" capture="environment"></div>';
       h += '<div class="mdc-foot">' + dlMenu('mdc') + (can('verify') && !x.verifiedAt ? '<button type="button" class="btn" id="dcpver">Verifikasi</button>' : '') + (canWrite() ? '<button type="button" class="btn sec" id="dcpedit">Ubah</button>' : '') +
-        (x.jenis === 'KELUAR' && x.modul !== 'PEL' && !x.masukId && canWrite() ? '<button type="button" class="btn sec" id="dcpin">Catat DCP Masuk</button>' : '') +
-        (canDel() ? '<button type="button" class="btn danger" id="dcpdel">Hapus</button>' : '') + '</div>';
+                (canDel() ? '<button type="button" class="btn danger" id="dcpdel">Hapus</button>' : '') + '</div>';
       modal(h);
       bindPhotoDel();
       loadPhotos();
@@ -632,7 +624,6 @@
       ['dcpphg', 'dcpphc'].forEach(function (id) { if ($(id)) $(id).onchange = function (e) { var fl = Array.prototype.slice.call(e.target.files || []); e.target.value = ''; sendPhotos(x.id, fl, kindPh, 'dcp_photo_save', function () { dcpDetail(x.id); }); }; });
       if ($('dcpedit')) $('dcpedit').onclick = function () { editRow(x); };
       if ($('dcpver')) $('dcpver').onclick = function () { api('dcp_verify_save', { id: x.id }).then(function () { toast('DCP diverifikasi'); dcpDetail(x.id); }).catch(function (e) { toast(e.message, 1); }); };
-      if ($('dcpin')) $('dcpin').onclick = function () { dcpForm('MASUK', null, x); };
       if ($('dcpdel')) $('dcpdel').onclick = function () {
         if (!confirm('Hapus DCP ' + x.id + '? Tindakan ini tidak dapat dibatalkan.')) return;
         api('dcp_del', { id: x.id }).then(function () { closeM(); toast('DCP dihapus'); vDcp(); }).catch(function (e) { toast(e.message, 1); });
@@ -874,10 +865,74 @@
     return '<span class="ftr-chip ' + q(s) + '" title="Studio ' + q(e.z) + ': ' + q(e.latest.status) + '"><i></i>Studio ' + q(e.z) + '</span>';
   }
 
+
+  /* ================= DAILY CEKLIS KONTEN FILM: ceklis per studio, dokumentasi, nama pelapor dari akun ================= */
+  var FTD = { tanggal: '' };
+  function ftdTgl(t) { try { return new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(t + 'T00:00:00+07:00')); } catch (e) { return t; } }
   window.vFt = function () {
     var v = $('view');
-    Promise.all([ftRows(), getMeta(), loadMyPerm()]).then(function (r) {
-      var all = r[0] || [], studios = studioList(all);
+    Promise.all([api('ftd_list', FTD.tanggal ? { tanggal: FTD.tanggal } : {}), loadMyPerm()]).then(function (r) {
+      var d = r[0], me = curU() || {}, adm = me.role === 'ADMIN', arsip = d.tanggal !== d.hariIni;
+      FTD.tanggal = d.tanggal;
+      var lengkap = d.studios.filter(function (z) { return z.complete; }).length, dites = d.studios.filter(function (z) { return z.id; });
+      var h = '<div class="ftd"><div class="ftd-head"><div><h2>Daily Ceklis Konten Film</h2><p class="ftd-sub">Ceklis per studio &mdash; ' + q(ftdTgl(d.tanggal)) + '</p></div><span class="ftd-role">' + (adm ? 'Admin' : 'Teknisi') + '</span></div>' +
+        '<div class="ftd-bar"><label>Tanggal <input type="date" id="ftdd" value="' + q(d.tanggal) + '" max="' + q(d.hariIni) + '"></label>' +
+        (arsip ? '<button type="button" class="btn sec" id="ftdnow">Hari ini</button>' : '') + '<span class="ftd-sum">' + lengkap + ' / ' + d.studios.length + ' studio lengkap</span>' +
+        '<button type="button" class="btn sec" id="ftdold">Riwayat testing lama</button></div>' +
+        '<section class="ftd-today" aria-label="' + (arsip ? 'Studio dites pada tanggal ini' : 'Studio dites hari ini') + '"><div class="ftd-th"><b>' + (arsip ? 'Studio dites ' + q(ftdTgl(d.tanggal)) : 'Studio dites hari ini') + '</b><span>' + dites.length + ' / ' + d.studios.length + '</span></div>' +
+        '<div class="ftd-chips">' + d.studios.map(function (z, zi) {
+          var n = z.checks.filter(Boolean).length;
+          return '<a class="ftd-chip ' + (z.complete ? 'ok' : (z.id ? 'part' : 'none')) + '" href="#ftd-' + zi + '" data-go="' + zi + '"><b>' + q(z.studio) + '</b><span>' + (z.id ? n + '/' + d.items.length + ' ceklis' + (z.foto.length ? ' &middot; ' + z.foto.length + ' foto' : ' &middot; tanpa foto') : 'belum diisi') + '</span>' + (z.id ? '<small>' + q(z.pic) + (z.jam ? ' &middot; ' + q(z.jam) : '') + '</small>' : '') + '</a>';
+        }).join('') + '</div></section>' +
+        '<h3>Ceklis Harian per Studio</h3>' +
+        d.studios.map(function (z, zi) {
+          var ed = z.editable && canWrite(), done = z.complete;
+          return '<section id="ftd-' + zi + '" class="ftd-card' + (done ? ' ok' : '') + '" data-studio="' + q(z.studio) + '" data-i="' + zi + '"><header><b>' + q(z.studio) + '</b><span class="ftd-bs">' +
+            '<span class="ftd-b ' + (done ? 'ok' : 'warn') + '">' + (done ? 'LENGKAP' : (z.id ? 'BELUM LENGKAP' : 'BELUM DIISI')) + '</span>' +
+            (ed && !arsip ? '<span class="ftd-b act">AKTIF</span>' : '') + '</span></header>' +
+            d.items.map(function (it, ii) { return '<label class="ftd-row"><span>' + q(it) + '</span><input type="checkbox" class="ftd-cb" data-ii="' + ii + '"' + (z.checks[ii] ? ' checked' : '') + (ed ? '' : ' disabled') + '></label>'; }).join('') +
+            '<div class="ftd-row ftd-pic"><span>Pelapor</span><b>' + q(z.pic || me.name || '-') + '</b></div>' +
+            '<div class="ftd-doc"><div class="ftd-dh">Dokumentasi' + (z.foto.length ? ' <small>' + z.foto.length + ' foto</small>' : '') + '</div>' +
+            (z.foto.length ? '<div class="mdc-ph"><div class="ph">' + z.foto.map(function (f) { return '<div><img data-fid="' + q(f.fotoId) + '" data-fk="ft" alt="Dokumentasi ' + q(z.studio) + '">' + (ed ? '<button type="button" class="x" data-fdel="' + q(f.fotoId) + '" aria-label="Hapus foto">&times;</button>' : '') + '</div>'; }).join('') + '</div></div>' : '') +
+            (ed ? photoBox('ftd' + zi, true) : (z.foto.length ? '' : '<p class="mdc-note">Belum ada dokumentasi.</p>')) + '</div>' +
+            (ed ? '<footer><span class="ftd-meta">' + (z.id ? 'Terakhir disimpan ' + q(z.jam) : 'Belum disimpan') + '</span><button type="button" class="btn" data-save="1">Simpan ceklis</button>' + (adm && z.id ? '<button type="button" class="btn danger" data-del="' + q(z.id) + '">Hapus</button>' : '') + '</footer>' : (z.id && adm ? '<footer><span class="ftd-meta">Diisi ' + q(z.jam) + '</span><button type="button" class="btn danger" data-del="' + q(z.id) + '">Hapus</button></footer>' : '')) +
+            '<p class="ftd-err" role="alert" hidden></p></section>';
+        }).join('') +
+        '<p class="mdc-note">Status LENGKAP: keempat ceklis tercentang dan ada minimal satu foto dokumentasi. Nama pelapor diambil otomatis dari akun.</p></div>';
+      v.innerHTML = h;
+      loadPhotos();
+      $('ftdd').onchange = function () { FTD.tanggal = this.value || ''; window.vFt(); };
+      if ($('ftdnow')) $('ftdnow').onclick = function () { FTD.tanggal = ''; window.vFt(); };
+      $('ftdold').onclick = function () { vFtLama(); };
+      [].forEach.call(v.querySelectorAll('.ftd-chip'), function (a) { a.onclick = function (ev) { ev.preventDefault(); var c = $('ftd-' + a.getAttribute('data-go')); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); }; });
+      [].forEach.call(v.querySelectorAll('.ftd-card'), function (card) {
+        var zi = card.getAttribute('data-i'), studio = card.getAttribute('data-studio'), pb = card.querySelector('#ftd' + zi + 'gi') ? photoBind('ftd' + zi) : null, err = card.querySelector('.ftd-err');
+        var save = card.querySelector('[data-save]');
+        if (save) save.onclick = function () {
+          var checks = [].map.call(card.querySelectorAll('.ftd-cb'), function (c) { return c.checked; }), files = pb ? pb.get() : [];
+          save.disabled = true; err.hidden = true;
+          api('ftd_save', { tanggal: d.tanggal, studio: studio, checks: checks }).then(function (r) {
+            if (!files.length) { toast('Ceklis ' + studio + ' tersimpan.'); window.vFt(); return; }
+            sendPhotos(r.id, files, 'Dokumentasi ceklis', 'ft_photo_save', function () { window.vFt(); });
+          }).catch(function (e) { save.disabled = false; err.textContent = e.message; err.hidden = false; });
+        };
+        [].forEach.call(card.querySelectorAll('[data-del]'), function (b) { b.onclick = function () {
+          if (!confirm('Hapus ceklis ' + studio + ' tanggal ' + ftdTgl(d.tanggal) + ' beserta fotonya? Tindakan ini tidak dapat dibatalkan.')) return;
+          api('ft_del', { id: b.getAttribute('data-del') }).then(function () { toast('Ceklis dihapus.'); window.vFt(); }).catch(function (e) { toast(e.message, 1); });
+        }; });
+        [].forEach.call(card.querySelectorAll('[data-fdel]'), function (b) { b.onclick = function (ev) {
+          ev.stopPropagation(); if (!confirm('Hapus foto ini?')) return;
+          api('ft_photo_del', { fotoId: b.getAttribute('data-fdel') }).then(function () { window.vFt(); }).catch(function (e) { toast(e.message, 1); });
+        }; });
+      });
+    }).catch(function (e) { v.innerHTML = '<div class="mdc-alert bad" role="alert">' + q(e.message) + '</div>'; });
+  };
+
+  window.vFtLama = function () {
+    var v = $('view');
+    Promise.all([ftRows(), getMeta(), loadMyPerm(), api('ftd_list', {}).catch(function () { return null; })]).then(function (r) {
+      var all = r[0] || [], studios = studioList(all), dly = r[3];
+      var dn = {}; if (dly) dly.studios.forEach(function (z) { if (z.id) dn[String(z.studio).replace(/^Studio\s+/i, '')] = 1; }); /* studio yang ceklis hariannya sudah diisi hari ini */
       var sel = (FST.sel || studios).filter(function (z) { return studios.indexOf(z) >= 0; });
       if (!sel.length) sel = studios.slice();
       var allSel = sel.length === studios.length;
@@ -903,13 +958,14 @@
       var hasRe = {}; all.forEach(function (t) { if (t.parentId) hasRe[t.parentId] = 1; });
       var perlu = []; view.forEach(function (rp) { rp.shown.forEach(function (e) { var t = e.latest; if ((t.status === 'FAILED' || t.status === 'RETEST') && !hasRe[t.id]) perlu.push({ t: t, rp: rp }); }); });
       FT_VIEW = { sel: sel, studios: studios, items: items, reports: view, all: reports };
+      var hariZ = function (z, o) { return o.hari + (dn[String(z)] && !o.hari ? 1 : 0); }; /* ceklis harian yang sudah diisi dihitung sebagai studio dites hari ini */
 
       var h = '<div class="mdc-studio-tabs" role="group" aria-label="Pilih studio (boleh lebih dari satu)">' +
         '<button type="button" class="mdc-stab' + (allSel ? ' on' : '') + '" aria-pressed="' + allSel + '" data-stu-all="1">Semua studio</button>' +
         studios.map(function (z) { var on = sel.indexOf(z) >= 0; return '<button type="button" class="mdc-stab' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-stu="' + q(z) + '">Studio ' + q(z) + ' <small>' + cnt[z] + '</small></button>'; }).join('') +
         (canWrite() ? '<button type="button" class="mdc-stab add" id="stuadd" aria-label="Tambah studio">+ Studio</button>' : '') + '</div>' +
-        '<div class="mdc-top"><div class="mdc-kpis">' + kpi('Laporan', view.length, '') + kpi('Studio dipilih', sel.length, '') + kpi('PASSED', tot.passed, 'ok') + kpi('FAILED', tot.failed, tot.failed ? 'bad' : '') + kpi('RETEST', tot.retest, tot.retest ? 'warn' : '') + kpi('Studio dites hari ini', tot.hari, '') + '</div>' +
-        '<div class="mdc-acts">' + (canWrite() ? '<button type="button" class="btn" id="ftnew">Mulai film testing</button>' : '') + (can('pdf') ? dlMenu('ft', 'Download laporan gabungan') : '') + '</div></div>';
+        '<div class="mdc-top"><div class="mdc-kpis">' + kpi('Laporan', view.length, '') + kpi('Studio dipilih', sel.length, '') + kpi('PASSED', tot.passed, 'ok') + kpi('FAILED', tot.failed, tot.failed ? 'bad' : '') + kpi('RETEST', tot.retest, tot.retest ? 'warn' : '') + kpi('Studio dites hari ini', (function () { var u = Object.assign({}, dn); all.forEach(function (t) { if (t.tanggal === (dly && dly.hariIni)) u[String(t.studio).replace(/^Studio\s+/i, '')] = 1; }); return Object.keys(u).length; })(), '') + '</div>' +
+        '<div class="mdc-acts">' + '<button type="button" class="btn sec" id="ftdback">&larr; Ceklis harian</button>' + (can('pdf') ? dlMenu('ft', 'Download laporan gabungan') : '') + '</div></div>';
       if (perlu.length) {
         h += '<div class="mdc-alert bad"><b>Perlu tindakan / tes ulang (' + perlu.length + ')</b><ul>' +
           perlu.map(function (p) { return '<li><button type="button" class="mdc-link" data-ft-open="' + q(p.t.id) + '">Studio ' + q(p.t.studio) + ' · ' + q(p.t.film) + ' · ' + q(p.t.tanggal) + '</button> ' + stFt(p.t.status) + '</li>'; }).join('') + '</ul></div>';
@@ -923,9 +979,9 @@
         sel.map(function (z) {
           var l = []; view.forEach(function (rp) { rp.shown.forEach(function (e) { if (e.z === z) l.push(e.latest); }); });
           var o = ftStat(l);
-          return '<tr><td data-l="Studio"><b>Studio ' + q(z) + '</b></td><td data-l="Total">' + o.n + '</td><td data-l="PASSED">' + o.passed + '</td><td data-l="FAILED">' + o.failed + '</td><td data-l="RETEST">' + o.retest + '</td><td data-l="Hari ini">' + o.hari + '</td></tr>';
+          return '<tr><td data-l="Studio"><b>Studio ' + q(z) + '</b></td><td data-l="Total">' + o.n + '</td><td data-l="PASSED">' + o.passed + '</td><td data-l="FAILED">' + o.failed + '</td><td data-l="RETEST">' + o.retest + '</td><td data-l="Hari ini">' + hariZ(z, o) + '</td></tr>';
         }).join('') +
-        '</tbody><tfoot><tr><td data-l="Studio"><b>Total</b></td><td data-l="Total"><b>' + tot.n + '</b></td><td data-l="PASSED"><b>' + tot.passed + '</b></td><td data-l="FAILED"><b>' + tot.failed + '</b></td><td data-l="RETEST"><b>' + tot.retest + '</b></td><td data-l="Hari ini"><b>' + tot.hari + '</b></td></tr></tfoot></table></div></section>';
+        '</tbody><tfoot><tr><td data-l="Studio"><b>Total</b></td><td data-l="Total"><b>' + tot.n + '</b></td><td data-l="PASSED"><b>' + tot.passed + '</b></td><td data-l="FAILED"><b>' + tot.failed + '</b></td><td data-l="RETEST"><b>' + tot.retest + '</b></td><td data-l="Hari ini"><b>' + sel.reduce(function (n, z) { var l = []; view.forEach(function (rp) { rp.shown.forEach(function (e) { if (e.z === z) l.push(e.latest); }); }); return n + hariZ(z, ftStat(l)); }, 0) + '</b></td></tr></tfoot></table></div></section>';
       /* SATU daftar: satu baris = satu laporan harian berisi semua studionya */
       h += '<section class="ft-studio ftr-list" aria-label="Daftar laporan testing"><div class="ft-sh"><h3>Laporan Daily Film Testing</h3><span class="ft-sm">' + view.length + ' laporan · tiap laporan memuat semua studio yang dites pada hari itu</span></div>' +
         '<div class="mdc-tbl stack" role="region" aria-label="Daftar laporan testing"><table><thead><tr><th>Tanggal</th><th>Laporan</th><th>Film</th><th>Studio dan hasil</th><th>Hasil</th><th>Foto</th></tr></thead><tbody>' +
@@ -941,21 +997,21 @@
       v.innerHTML = h;
       mselFt(view);
       var t;
-      $('ftq').oninput = function (e) { FST.q = e.target.value; clearTimeout(t); t = setTimeout(vFt, 350); };
-      $('fts').onchange = function (e) { FST.status = e.target.value; vFt(); };
-      $('ftf1').onchange = function (e) { FST.from = e.target.value; vFt(); };
-      $('ftf2').onchange = function (e) { FST.to = e.target.value; vFt(); };
-      if ($('ftrst')) $('ftrst').onclick = function () { FST.q = ''; FST.status = ''; FST.from = ''; FST.to = ''; vFt(); };
+      $('ftq').oninput = function (e) { FST.q = e.target.value; clearTimeout(t); t = setTimeout(vFtLama, 350); };
+      $('fts').onchange = function (e) { FST.status = e.target.value; vFtLama(); };
+      $('ftf1').onchange = function (e) { FST.from = e.target.value; vFtLama(); };
+      $('ftf2').onchange = function (e) { FST.to = e.target.value; vFtLama(); };
+      if ($('ftrst')) $('ftrst').onclick = function () { FST.q = ''; FST.status = ''; FST.from = ''; FST.to = ''; vFtLama(); };
       [].forEach.call(v.querySelectorAll('[data-stu]'), function (b) {
         b.onclick = function () {
           var z = b.getAttribute('data-stu'), cur = (FST.sel || studios).filter(function (k) { return studios.indexOf(k) >= 0; });
           var i2 = cur.indexOf(z); if (i2 >= 0) { if (cur.length === 1) { toast('Minimal satu studio harus dipilih.', 1); return; } cur.splice(i2, 1); } else cur.push(z);
-          cur.sort(studioKey); FST.sel = cur.length === studios.length ? null : cur; vFt();
+          cur.sort(studioKey); FST.sel = cur.length === studios.length ? null : cur; vFtLama();
         };
       });
-      if (v.querySelector('[data-stu-all]')) v.querySelector('[data-stu-all]').onclick = function () { FST.sel = null; vFt(); };
-      if ($('stuadd')) $('stuadd').onclick = function () { if (addStudioPrompt()) vFt(); };
-      if ($('ftnew')) $('ftnew').onclick = function () { ftForm(null, null); };
+      if (v.querySelector('[data-stu-all]')) v.querySelector('[data-stu-all]').onclick = function () { FST.sel = null; vFtLama(); };
+      if ($('stuadd')) $('stuadd').onclick = function () { if (addStudioPrompt()) vFtLama(); };
+      if ($('ftdback')) $('ftdback').onclick = function () { window.vFt(); };
       if ($('ftxl')) $('ftxl').onclick = function () { ftExport('xlsx'); };
       if ($('ftpdf')) $('ftpdf').onclick = function () { ftExport('pdf'); };
       document.querySelectorAll('[data-ft-open]').forEach(function (rw) {
@@ -969,7 +1025,7 @@
     var host = document.querySelector('#view .ftr-list .mdc-tbl'), M = S.msel;
     if (!M || !host) return;
     M.mount({ key: 'ft', admin: (curU() || {}).role === 'ADMIN', host: host, rows: 'tbody tr[data-ft-open]', id: function (el) { return el.getAttribute('data-ft-open'); },
-      anchor: document.querySelector('#view .ftr-list .ft-sh'), reload: function () { vFt(); },
+      anchor: document.querySelector('#view .ftr-list .ft-sh'), reload: function () { vFtLama(); },
       actions: [{ label: 'Hapus laporan', danger: true, run: function (ids) {
         var del = [];
         view.forEach(function (rp) { if (ids.indexOf(rp.id) >= 0) rp.entries.forEach(function (e) { e.chain.slice().reverse().forEach(function (x) { del.push(x.id); }); }); });
@@ -1035,7 +1091,7 @@
           if (!confirm('Hapus Studio ' + e.z + ' dari laporan ini' + (rev.length > 1 ? ' (termasuk ' + (rev.length - 1) + ' pengetesan ulang)' : '') + '? Foto Studio ini ikut dihapus.')) return;
           b.disabled = true;
           rev.reduce(function (p, x) { return p.then(function () { return api('ft_del', { id: x.id }); }); }, Promise.resolve())
-            .then(function () { toast('Studio ' + e.z + ' dihapus'); vFt(); if (rp.entries.length > 1) ftDetail(rp.entries.filter(function (z) { return z !== e; })[0].root.id); else closeM(); })
+            .then(function () { toast('Studio ' + e.z + ' dihapus'); vFtLama(); if (rp.entries.length > 1) ftDetail(rp.entries.filter(function (z) { return z !== e; })[0].root.id); else closeM(); })
             .catch(function (er) { b.disabled = false; toast(er.message, 1); });
         };
       });
@@ -1045,8 +1101,8 @@
         var del = []; rp.entries.forEach(function (e) { e.chain.slice().reverse().forEach(function (x) { del.push(x.id); }); });
         $('ftdelall').disabled = true;
         del.reduce(function (p, id2) { return p.then(function () { return api('ft_del', { id: id2 }); }); }, Promise.resolve())
-          .then(function () { closeM(); toast('Laporan dihapus'); vFt(); })
-          .catch(function (er) { $('ftdelall').disabled = false; toast(er.message, 1); vFt(); });
+          .then(function () { closeM(); toast('Laporan dihapus'); vFtLama(); })
+          .catch(function (er) { $('ftdelall').disabled = false; toast(er.message, 1); vFtLama(); });
       };
     }).catch(function (e) { toast(e.message, 1); });
   }
@@ -1174,7 +1230,7 @@
         var run = out.length === 1 ? api('ft_save', out[0]).then(function (id) { return [id]; })
           : api('ft_batch_save', { batchId: bid, items: out }).then(function (r) { return r.ids; });
         run.then(function (ids) {
-          toast(ids.length > 1 ? 'Testing ' + ids.length + ' studio tersimpan dalam satu laporan' : 'Testing tersimpan'); vFt();
+          toast(ids.length > 1 ? 'Testing ' + ids.length + ' studio tersimpan dalam satu laporan' : 'Testing tersimpan'); vFtLama();
           return sel.reduce(function (p, i, k) {
             var pf = phs[i].get();
             return p.then(function () { return pf.length ? new Promise(function (res) { sendPhotos(ids[k], pf, 'Dokumentasi Studio ' + studios[i], 'ft_photo_save', res); }) : 0; });
